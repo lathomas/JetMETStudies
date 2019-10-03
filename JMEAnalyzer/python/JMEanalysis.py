@@ -8,16 +8,12 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(1000) )
 
 process.source = cms.Source("PoolSource",
-                                # replace 'myfile.root' with the source file you want to use
                                 fileNames = cms.untracked.vstring(
-#                                    '/store/data/Run2018D/EGamma/MINIAOD/PromptReco-v2/000/325/170/00000/27EBB2A5-03A7-294E-8FD6-6F61E43D8112.root',
-#        '/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/325/170/00000/C306B61C-2803-9B48-BE41-D9CDBA154513.root',
-        '/store/data/Run2018D/JetHT/MINIAOD/PromptReco-v2/000/325/159/00000/94116504-96F4-0844-BED9-0D4F68432B9E.root'
-#                                    '/store/mc/PhaseIITDRSpring19MiniAOD/TTbar_14TeV_TuneCP5_Pythia8/MINIAODSIM/PU200_106X_upgrade2023_realistic_v3_ext1-v3/60000/F0225E24-F876-D448-8318-2D89795D632F.root'
+                                    '/store/mc/PhaseIITDRSpring19MiniAOD/TTbar_14TeV_TuneCP5_Pythia8/MINIAODSIM/PU200_106X_upgrade2023_realistic_v3_ext1-v3/60000/E73765BC-F41D-6349-9394-2858D7CF81E1.root'
         )
                             )
 
-process.TFileService = cms.Service("TFileService", fileName = cms.string("output_updatejecs.root") )
+process.TFileService = cms.Service("TFileService", fileName = cms.string("output.root") )
 
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 process.GlobalTag.globaltag="102X_dataRun2_v8"

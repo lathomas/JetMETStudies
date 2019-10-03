@@ -309,7 +309,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
 {
    //now do what ever initialization is needed
   edm::Service<TFileService> fs; 
-  h_nvtx  = fs->make<TH1F>("h_nvtx" , "Number of reco vertices (MET>200);N_{vtx};Events"  ,    100, 0., 100.);
+  h_nvtx  = fs->make<TH1F>("h_nvtx" , "Number of reco vertices;N_{vtx};Events"  ,    100, 0., 100.);
   h_PFMet  = fs->make<TH1F>("h_PFMet" , "Type 1 PFMET (GeV);Type 1 PFMET (GeV);Events"  ,    1000, 0., 5000.);
   h_PuppiMet  = fs->make<TH1F>("h_PuppiMet" , "PUPPI MET (GeV);PUPPI MET (GeV);Events"  ,    1000, 0., 5000.);
 
