@@ -7,6 +7,7 @@
 // system include files
 #include <memory>
 
+
 // user include files
 #include "JetMETCorrections/Objects/interface/JetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
@@ -190,6 +191,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector<double>  _jetPUMVA; 
   vector<double>  _jetPtNoL2L3Res;
   vector<double> _jet_corrjecs;
+  vector<int> _jethadronFlavour;
+  vector<int> _jetpartonFlavour;
 
   //Leptons
   vector<double>  _lEta;
@@ -418,7 +421,11 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _jet_PHM.push_back((&*jet)->photonMultiplicity());
     _jet_NM.push_back((&*jet)->neutralMultiplicity());
     _jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
+    
+    _jethadronFlavour.push_back((&*jet)->hadronFlavour());  
+    _jetpartonFlavour.push_back((&*jet)->partonFlavour());   
 
+    
     bool passid = PassJetID(  (&*jet) ,"2018");
     _jetPassID.push_back(passid);
     _jetRawPt.push_back( (&*jet)->correctedP4("Uncorrected").Pt() );
@@ -491,7 +498,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   pfmet = &(pfmetcol->front());
   _met = pfmet->pt();
   _met_phi = pfmet->phi();
-  
+
   //PUPPI MET
   edm::Handle< vector<pat::MET> > ThePUPPIMET;
   iEvent.getByToken(puppimetToken_, ThePUPPIMET);
@@ -676,6 +683,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetPUMVA",&_jetPUMVA);
   outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
   outputTree->Branch("_jet_corrjecs",&_jet_corrjecs);
+  outputTree->Branch("_jethadronFlavour",&_jethadronFlavour);
+  outputTree->Branch("_jetpartonFlavour",&_jetpartonFlavour);
 
   
   outputTree->Branch("_lEta",&_lEta);
@@ -867,7 +876,8 @@ void JMEAnalyzer::InitandClearStuff(){
   _jetPUMVA.clear();
   _jetPtNoL2L3Res.clear();
   _jet_corrjecs.clear();
-
+  _jetpartonFlavour.clear();
+  _jethadronFlavour.clear();
 
   _lEta.clear();
   _lPhi.clear();
