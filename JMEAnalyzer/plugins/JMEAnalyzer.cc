@@ -38,11 +38,14 @@
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
+#include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
+#include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
 #include "SimDataFormats/PileupSummaryInfo/interface/PileupSummaryInfo.h" 
 
 
 #include "JetMETStudies/JMEAnalyzer/interface/Tools.h"
- 
+#include "RecoJets/JetProducers/plugins/PileupJetIdProducer.h" 
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -52,6 +55,8 @@
 #include "TString.h"
 #include "TMath.h"
 #include "TLorentzVector.h"
+#include "Math/Vector4D.h"
+#include "Math/Vector4Dfwd.h"
 
 const int  N_METFilters=16;
 enum METFilterIndex{
@@ -100,6 +105,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   virtual void beginJob() override;
   virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() override;
+  virtual bool PassSkim();
   virtual bool GetMETFilterDecision(const edm::Event& iEvent, edm::Handle<TriggerResults> METFilterResults, TString studiedfilter);
   virtual bool GetIdxFilterDecision(int it);
   virtual TString GetIdxFilterName(int it);
@@ -114,9 +120,16 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<bool> ecalDeadCellBoundaryEnergyFilterUpdateToken_;
   edm::EDGetTokenT<bool> badChargedCandidateFilterUpdateToken_;
   edm::EDGetTokenT<std::vector<Vertex> > verticesToken_; 
+  edm::EDGetTokenT<double> rhoJetsToken_;
+  edm::EDGetTokenT<double> rhoJetsNCToken_;
+
 
   edm::EDGetTokenT<std::vector< pat::Jet> > jetToken_;
   edm::EDGetTokenT<std::vector< pat::Jet> > jetPuppiToken_;
+  edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdateToken_;
+  edm::EDGetTokenT<edm::ValueMap<StoredPileupJetIdentifier> > pileupJetIdVariablesUpdateToken_;
+  edm::EDGetTokenT<edm::ValueMap<float> > qgLToken_;
+
   edm::EDGetTokenT<pat::PackedCandidateCollection> pfcandsToken_;
   
   edm::EDGetTokenT<std::vector< pat::MET> > metToken_;
@@ -126,12 +139,25 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<std::vector< pat::Photon> > photonToken_;
 
   edm::EDGetTokenT<GenParticleCollection> genpartToken_;
+  edm::EDGetTokenT<GenEventInfoProduct> geninfoToken_;
+  edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
+  edm::EDGetTokenT<LHEEventProduct> lheEventALTToken_;
+
   edm::EDGetTokenT<vector<PileupSummaryInfo> > puInfoToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> trgresultsToken_;
 
-  Float_t JetPtCut_, ElectronPtCut_, MuonPtCut_, PhotonPtCut_, PFCandPtCut_;
-  Bool_t SaveTree_, IsMC_;
+
+  Float_t JetPtCut_;
+  Float_t ElectronPtCut_;
+  string ElectronVetoWP_, ElectronTightWP_;
+  Float_t MuonPtCut_, PhotonPtCut_;
+  string PhotonTightWP_;
+  Float_t PFCandPtCut_;
+
+  Bool_t SaveTree_, IsMC_, SavePUIDVariables_,DropUnmatchedJets_;
+  string Skim_;
+  Bool_t Debug_;
 
   //Some histos to be saved for simple checks 
   TH1F *h_PFMet, *h_PuppiMet, *h_nvtx;
@@ -148,7 +174,9 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   //Nb of primary vertices
   int _n_PV;
   int trueNVtx;
-  
+  //Rho and RhoNC;
+  Float_t _rho, _rhoNC;
+
   //MINIAOD original MET filters decisions
   bool Flag_goodVertices;
   bool Flag_globalTightHalo2016Filter;
@@ -170,68 +198,99 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   bool PassBadChargedCandidateFilter_Update;
 
   //Jets 
-  vector<double>  _jetEta;
-  vector<double>  _jetPhi;
-  vector<double>  _jetPt;
-  vector<double>  _jetRawPt;
-  vector<double>  _jet_CHEF;
-  vector<double>  _jet_NHEF;
-  vector<double>  _jet_NEEF;
-  vector<double>  _jet_CEEF;
-  vector<double>  _jet_MUEF;
+  vector<Float_t>  _jetEta;
+  vector<Float_t>  _jetPhi;
+  vector<Float_t>  _jetPt;
+  vector<Float_t>  _jetRawPt;
+  vector<Float_t>  _jet_CHEF;
+  vector<Float_t>  _jet_NHEF;
+  vector<Float_t>  _jet_NEEF;
+  vector<Float_t>  _jet_CEEF;
+  vector<Float_t>  _jet_MUEF;
   vector <int>  _jet_CHM;
   vector <int>  _jet_NHM;
   vector <int>  _jet_PHM;
   vector <int>  _jet_NM;
+  vector <Float_t>  _jetArea;
   vector <bool> _jetPassID;
-  vector <double>  _jetPtGen;
-  vector <double>  _jetEtaGen;
-  vector <double>  _jetPhiGen;
-  vector<double>  _jetJECuncty;
-  vector<double>  _jetPUMVA; 
-  vector<double>  _jetPtNoL2L3Res;
-  vector<double> _jet_corrjecs;
+  vector <Float_t>  _jetPtGen;
+  vector <Float_t>  _jetEtaGen;
+  vector <Float_t>  _jetPhiGen;
+  vector<Float_t>  _jetJECuncty;
+  vector<Float_t>  _jetPUMVA; 
+  vector<Float_t>  _jetPUMVAUpdate; 
+  vector<Float_t>  _jetPtNoL2L3Res;
+  vector<Float_t> _jet_corrjecs;
   vector<int> _jethadronFlavour;
   vector<int> _jetpartonFlavour;
+  
+  vector<Float_t> _jetDeepJet_b;
+  vector<Float_t> _jetDeepJet_c;
+  vector<Float_t> _jetDeepJet_uds;
+  vector<Float_t> _jetDeepJet_g;
+  vector<Float_t> _jetQuarkGluonLikelihood;
+
+  
+
+
+  vector<Float_t>  _jet_beta ;
+  vector<Float_t>  _jet_dR2Mean ;
+  vector<Float_t>  _jet_majW ;
+  vector<Float_t>  _jet_minW ;
+  vector<Float_t>  _jet_frac01 ;
+  vector<Float_t>  _jet_frac02 ;
+  vector<Float_t>  _jet_frac03 ;
+  vector<Float_t>  _jet_frac04 ;
+  vector<Float_t>  _jet_ptD ;
+  vector<Float_t>  _jet_betaStar ;
+  vector<Float_t>  _jet_pull ;
+  vector<Float_t>  _jet_jetR ;
+  vector<Float_t>  _jet_jetRchg ;
+  vector<int>  _jet_nParticles ;
+  vector<int>  _jet_nCharged ;
+
 
   //Leptons
-  vector<double>  _lEta;
-  vector<double>  _lPhi;
-  vector<double>  _lPt;
+  vector<Float_t>  _lEta;
+  vector<Float_t>  _lPhi;
+  vector<Float_t>  _lPt;
+  vector<Float_t>  _lPassTightID;
   vector<int> _lpdgId;
+  int _nEles, _nMus;
 
-  vector<double>  _lgenEta;
-  vector<double>  _lgenPhi;
-  vector<double>  _lgenPt;
+  vector<Float_t>  _lgenEta;
+  vector<Float_t>  _lgenPhi;
+  vector<Float_t>  _lgenPt;
   vector<int> _lgenpdgId;
-
+  
 
   //Photons
-  vector<double>  _phEta;
-  vector<double>  _phPhi;
-  vector<double>  _phPt;
+  vector<Float_t>  _phEta;
+  vector<Float_t>  _phPhi;
+  vector<Float_t>  _phPt;
+  
+  vector<Float_t>  _phgenEta;
+  vector<Float_t>  _phgenPhi;
+  vector<Float_t>  _phgenPt;
 
-  vector<double>  _phgenEta;
-  vector<double>  _phgenPhi;
-  vector<double>  _phgenPt;
-
+  Float_t _genHT, _weight;
 
   //PF candidates
-  vector <double> _PFcand_pt;
-  vector <double> _PFcand_eta;
-  vector <double> _PFcand_phi;
+  vector <Float_t> _PFcand_pt;
+  vector <Float_t> _PFcand_eta;
+  vector <Float_t> _PFcand_phi;
   vector <int> _PFcand_pdgId;
   vector <int> _PFcand_fromPV;
 
 
   //MET
-  double _met;
-  double _met_phi;
-  double _puppimet;
-  double _puppimet_phi;
+  Float_t _met;
+  Float_t _met_phi;
+  Float_t _puppimet;
+  Float_t _puppimet_phi;
 
-  double _genmet;
-  double _genmet_phi;
+  Float_t _genmet;
+  Float_t _genmet_phi;
 
   //Triggers
   bool HLT_Photon110EB_TightID_TightIso;
@@ -291,8 +350,13 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   ecalDeadCellBoundaryEnergyFilterUpdateToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("ECALDeadCellBoundaryEnergyFilterUpdate"))),
   badChargedCandidateFilterUpdateToken_(consumes<bool>(iConfig.getParameter<edm::InputTag>("BadChargedCandidateFilterUpdate"))),
   verticesToken_(consumes<std::vector<Vertex> > (iConfig.getParameter<edm::InputTag>("Vertices"))),
+  rhoJetsToken_(consumes<double>(edm::InputTag("fixedGridRhoFastjetAll",""))),
+  rhoJetsNCToken_(consumes<double>(edm::InputTag("fixedGridRhoFastjetCentralNeutral",""))),
   jetToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("Jets"))),
   jetPuppiToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsPuppi"))),
+  pileupJetIdDiscriminantUpdateToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate"))),
+  pileupJetIdVariablesUpdateToken_(consumes<edm::ValueMap<StoredPileupJetIdentifier> >(iConfig.getParameter<edm::InputTag>("pileupJetIdVariablesUpdate"))),
+  qgLToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("QuarkGluonLikelihood"))),
   pfcandsToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("PFCandCollection"))),
   metToken_(consumes<std::vector<pat::MET> > (iConfig.getParameter<edm::InputTag>("PFMet"))),
   puppimetToken_(consumes<std::vector<pat::MET> > (iConfig.getParameter<edm::InputTag>("PuppiMet"))),
@@ -300,15 +364,25 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   muonToken_(consumes< std::vector< pat::Muon> >(iConfig.getParameter<edm::InputTag>("Muons"))),
   photonToken_(consumes< std::vector< pat::Photon> >(iConfig.getParameter<edm::InputTag>("Photons"))),
   genpartToken_(consumes<GenParticleCollection> (iConfig.getParameter<edm::InputTag>("GenParticles"))),
+  geninfoToken_(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("GenInfo"))),
+  lheEventToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabel"))),
+  lheEventALTToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabelALT"))),
   puInfoToken_(consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("PULabel"))),
   trgresultsToken_(consumes<TriggerResults>(iConfig.getParameter<edm::InputTag>("Triggers"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
   ElectronPtCut_(iConfig.getParameter<double>("ElectronPtCut")),
+  ElectronVetoWP_(iConfig.getParameter<string>("ElectronVetoWorkingPoint")),
+  ElectronTightWP_(iConfig.getParameter<string>("ElectronTightWorkingPoint")),
   MuonPtCut_(iConfig.getParameter<double>("MuonPtCut")),
   PhotonPtCut_(iConfig.getParameter<double>("PhotonPtCut")),
+  PhotonTightWP_(iConfig.getParameter<string>("PhotonTightWorkingPoint")),
   PFCandPtCut_(iConfig.getParameter<double>("PFCandPtCut")),
-  SaveTree_(iConfig.getParameter<bool>("SaveTree"))
-  //  IsMC_(iConfig.getParameter<bool>("IsMC"))
+  SaveTree_(iConfig.getParameter<bool>("SaveTree")), 
+  IsMC_(iConfig.getParameter<bool>("IsMC")),
+  SavePUIDVariables_(iConfig.getParameter<bool>("SavePUIDVariables")),
+  DropUnmatchedJets_(iConfig.getParameter<bool>("DropUnmatchedJets")),
+  Skim_(iConfig.getParameter<string>("Skim")),
+  Debug_(iConfig.getParameter<bool>("Debug"))
 {
    //now do what ever initialization is needed
   edm::Service<TFileService> fs; 
@@ -351,6 +425,17 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle<std::vector<Vertex> > theVertices;
   iEvent.getByToken(verticesToken_,theVertices) ;
   _n_PV = theVertices->size();
+  
+  //Rho
+  edm::Handle<double> rhoJets;
+  iEvent.getByToken(rhoJetsToken_,rhoJets);
+  _rho = *rhoJets;
+
+  //Rho Neutral Central 
+  edm::Handle<double> rhoJetsNC;
+  iEvent.getByToken(rhoJetsNCToken_,rhoJetsNC);
+  _rhoNC = *rhoJetsNC;
+
 
   
   //MET filters are stored in TriggerResults::RECO or TriggerResults::PAT . Should take the latter if it exists
@@ -376,22 +461,81 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle<bool> handle_PassecalBadCalibFilter_Update ;
   iEvent.getByToken(ecalBadCalibFilterUpdateToken_,handle_PassecalBadCalibFilter_Update);
   if(handle_PassecalBadCalibFilter_Update.isValid()) PassecalBadCalibFilter_Update =  (*handle_PassecalBadCalibFilter_Update );
-  else PassecalBadCalibFilter_Update = true;
+  else{ 
+    if(Debug_) std::cout <<"handle_PassecalBadCalibFilter_Update.isValid() =false" <<endl;
+    PassecalBadCalibFilter_Update = true;
+  }
   
   edm::Handle<bool> handle_PassecalLaserCorrFilter_Update ;
   iEvent.getByToken(ecalLaserCorrFilterUpdateToken_,handle_PassecalLaserCorrFilter_Update);
   if(handle_PassecalLaserCorrFilter_Update.isValid())PassecalLaserCorrFilter_Update =  (*handle_PassecalLaserCorrFilter_Update );
-  else PassecalLaserCorrFilter_Update = true;
-  
+  else{ 
+    if(Debug_) std::cout <<"handle_PassecalLaserCorrFilter_Update.isValid() =false" <<endl;
+    PassecalLaserCorrFilter_Update = true;
+  }
+
   edm::Handle<bool> handle_PassEcalDeadCellBoundaryEnergyFilter_Update;
   iEvent.getByToken(ecalDeadCellBoundaryEnergyFilterUpdateToken_,handle_PassEcalDeadCellBoundaryEnergyFilter_Update);
   if(handle_PassEcalDeadCellBoundaryEnergyFilter_Update.isValid())PassEcalDeadCellBoundaryEnergyFilter_Update =  (*handle_PassEcalDeadCellBoundaryEnergyFilter_Update );
-  else{  std::cout <<"handle_PassEcalDeadCellBoundaryEnergyFilter_Update.isValid =false" <<endl; PassEcalDeadCellBoundaryEnergyFilter_Update = true;}
+  else{  
+    if(Debug_) std::cout <<"handle_PassEcalDeadCellBoundaryEnergyFilter_Update.isValid =false" <<endl; 
+    PassEcalDeadCellBoundaryEnergyFilter_Update = true;
+  }
 
   edm::Handle<bool> handle_PassBadChargedCandidateFilter_Update;
   iEvent.getByToken(badChargedCandidateFilterUpdateToken_,handle_PassBadChargedCandidateFilter_Update);
   if(handle_PassBadChargedCandidateFilter_Update.isValid())PassBadChargedCandidateFilter_Update =  (*handle_PassBadChargedCandidateFilter_Update );
-  else{  std::cout <<"handle_PassBadChargedCandidateFilter_Update.isValid =false" <<endl; PassBadChargedCandidateFilter_Update = true;}
+  else{  
+    if(Debug_) std::cout <<"handle_PassBadChargedCandidateFilter_Update.isValid =false" <<endl; 
+    PassBadChargedCandidateFilter_Update = true;
+  }
+
+
+
+  edm::Handle< std::vector<pat::Electron> > thePatElectrons;
+  iEvent.getByToken(electronToken_,thePatElectrons);
+  for( std::vector<pat::Electron>::const_iterator electron = (*thePatElectrons).begin(); electron != (*thePatElectrons).end(); electron++ ) {
+
+    bool passvetoid = (&*electron)->electronID(ElectronVetoWP_)&& (&*electron)->pt()>10;
+    if(!passvetoid) continue;
+    _nEles++;
+    if((&*electron)->pt()<ElectronPtCut_)continue;    
+    _lEta.push_back((&*electron)->eta());
+    _lPhi.push_back((&*electron)->phi());
+    _lPt.push_back((&*electron)->pt());
+    _lpdgId.push_back(-11*(&*electron)->charge());
+    _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
+    
+  }
+
+  edm::Handle< std::vector<pat::Muon> > thePatMuons;
+  iEvent.getByToken(muonToken_,thePatMuons);
+  for( std::vector<pat::Muon>::const_iterator muon = (*thePatMuons).begin(); muon != (*thePatMuons).end(); muon++ ) {
+
+    bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>10 ;  
+    if(!passvetoid) continue;
+    _nMus++;
+    if((&*muon)->pt()<MuonPtCut_)continue;
+    _lEta.push_back((&*muon)->eta());
+    _lPhi.push_back((&*muon)->phi());
+    _lPt.push_back((&*muon)->pt());
+    _lpdgId.push_back(-13*(&*muon)->charge());
+    _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
+  }
+
+  edm::Handle< std::vector<pat::Photon> > thePatPhotons;
+  iEvent.getByToken(photonToken_,thePatPhotons);
+  for( std::vector<pat::Photon>::const_iterator photon = (*thePatPhotons).begin(); photon != (*thePatPhotons).end(); photon++ ) {
+    if((&*photon)->pt()<PhotonPtCut_)continue;
+    bool passtightid = (&*photon)->photonID(PhotonTightWP_) && (&*photon)->passElectronVeto()&& !((&*photon)->hasPixelSeed()  ) &&fabs((&*photon)->eta())<1.4442&& (&*photon)->r9()>0.9 ; 
+    if(!passtightid) continue;
+    _phEta.push_back((&*photon)->eta());
+    _phPhi.push_back((&*photon)->phi());
+    _phPt.push_back((&*photon)->pt());
+    
+  }
+  
+  if(!PassSkim()) return;
 
     
   //Jets
@@ -401,92 +545,110 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iSetup.get<JetCorrectionsRecord>().get("AK4PFchs",JetCorParColl); 
   JetCorrectorParameters const & JetCorPar = (*JetCorParColl)["Uncertainty"];
   JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(JetCorPar);
+  
+  //Value map for the recalculated PU ID
+  edm::Handle<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate;
+  //Value map to access the recalculated variables entering PU ID
+  edm::Handle<edm::ValueMap<StoredPileupJetIdentifier> > pileupJetIdVariablesUpdate;
 
-  double leadjetpt (0.);
-  for( std::vector<pat::Jet>::const_iterator jet = (*theJets).begin(); jet != (*theJets).end(); jet++ ) {
-    if((&*jet)->pt() >leadjetpt) leadjetpt = (&*jet)->pt();
-    if((&*jet)->pt()<JetPtCut_) continue;
+  //Value map for Quark/gluon likelihood
+  edm::Handle<edm::ValueMap<float> > quarkgluonlikelihood;
 
-    
-    _jetEta.push_back((&*jet)->eta());
-    _jetPhi.push_back((&*jet)->phi());
-    _jetPt.push_back((&*jet)->pt());
-    _jet_CHEF.push_back((&*jet)->chargedHadronEnergyFraction());
-    _jet_NHEF.push_back((&*jet)->neutralHadronEnergyFraction() );
-    _jet_NEEF.push_back((&*jet)->neutralEmEnergyFraction() );
-    _jet_CEEF.push_back((&*jet)->chargedEmEnergyFraction() );
-    _jet_MUEF.push_back((&*jet)->muonEnergyFraction() );
-    _jet_CHM.push_back((&*jet)->chargedMultiplicity());
-    _jet_NHM.push_back((&*jet)->neutralHadronMultiplicity());
-    _jet_PHM.push_back((&*jet)->photonMultiplicity());
-    _jet_NM.push_back((&*jet)->neutralMultiplicity());
-    _jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
-    
-    _jethadronFlavour.push_back((&*jet)->hadronFlavour());  
-    _jetpartonFlavour.push_back((&*jet)->partonFlavour());   
+  Float_t leadjetpt (0.);
+  if(theJets.isValid()){
+    for( std::vector<pat::Jet>::const_iterator jet = (*theJets).begin(); jet != (*theJets).end(); jet++ ) {
+      if((&*jet)->pt() >leadjetpt) leadjetpt = (&*jet)->pt();
+      if((&*jet)->pt()<JetPtCut_) continue;
+      if( (&*jet) ->genJet() ==0&& DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;//Drop genunmatched jets (mostly PU). Keep those with pt>50 as these probably require special attention.
+      
+      _jetEta.push_back((&*jet)->eta());
+      _jetPhi.push_back((&*jet)->phi());
+      _jetPt.push_back((&*jet)->pt());
+      _jet_CHEF.push_back((&*jet)->chargedHadronEnergyFraction());
+      _jet_NHEF.push_back((&*jet)->neutralHadronEnergyFraction() );
+      _jet_NEEF.push_back((&*jet)->neutralEmEnergyFraction() );
+      _jet_CEEF.push_back((&*jet)->chargedEmEnergyFraction() );
+      _jet_MUEF.push_back((&*jet)->muonEnergyFraction() );
+      _jet_CHM.push_back((&*jet)->chargedMultiplicity());
+      _jet_NHM.push_back((&*jet)->neutralHadronMultiplicity());
+      _jet_PHM.push_back((&*jet)->photonMultiplicity());
+      _jet_NM.push_back((&*jet)->neutralMultiplicity());
+      _jetArea.push_back((&*jet)->jetArea());
+      //Accessing the default PU ID stored in MINIAOD https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
+      _jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
+      //Accessing the recomputed PU ID. This must be done with a value map. 
+      edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>( theJets , jet -theJets->begin()));
+      iEvent.getByToken(pileupJetIdDiscriminantUpdateToken_,pileupJetIdDiscriminantUpdate);
+      if(pileupJetIdDiscriminantUpdate.isValid()) _jetPUMVAUpdate.push_back((*pileupJetIdDiscriminantUpdate)[jetRef] );
+      else  _jetPUMVAUpdate.push_back(-1 );
 
-    
-    bool passid = PassJetID(  (&*jet) ,"2018");
-    _jetPassID.push_back(passid);
-    _jetRawPt.push_back( (&*jet)->correctedP4("Uncorrected").Pt() );
-    _jetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() ); 
-    _jet_corrjecs.push_back((&*jet)->pt() / (&*jet)->correctedP4("Uncorrected").Pt() );
-    //Accessing uncertainties
-    jecUnc->setJetEta((&*jet)->eta());
-    jecUnc->setJetPt((&*jet)->pt());
-    _jetJECuncty.push_back( jecUnc->getUncertainty(true) );
-    
-    double jetptgen(-99.), jetetagen(-99.),jetphigen(-99.);
-    if( (&*jet) ->genJet() !=0 ){
-      jetptgen= (&*jet)->genJet()->pt() ;
-      jetetagen= (&*jet)->genJet()->eta() ;
-      jetphigen= (&*jet)->genJet()->phi() ;
+      //Accessing the recomputed input variables to the PUID BDT
+      iEvent.getByToken(pileupJetIdVariablesUpdateToken_,pileupJetIdVariablesUpdate);
+      if(pileupJetIdVariablesUpdate.isValid()){
+	StoredPileupJetIdentifier pujetidentifier = (*pileupJetIdVariablesUpdate)[jetRef] ;
+	
+	_jet_beta.push_back(pujetidentifier.beta());
+	_jet_dR2Mean.push_back(pujetidentifier.dR2Mean());
+	_jet_majW.push_back(pujetidentifier.majW());
+	_jet_minW.push_back(pujetidentifier.minW());
+	_jet_frac01.push_back(pujetidentifier.frac01());
+	_jet_frac02.push_back(pujetidentifier.frac02());
+	_jet_frac03.push_back(pujetidentifier.frac03());
+	_jet_frac04.push_back(pujetidentifier.frac04());
+	_jet_ptD.push_back(pujetidentifier.ptD());
+	_jet_betaStar.push_back(pujetidentifier.betaStar());
+	_jet_pull.push_back(pujetidentifier.pull());
+	_jet_jetR.push_back(pujetidentifier.jetR());
+	_jet_jetRchg.push_back(pujetidentifier.jetRchg());
+	_jet_nParticles.push_back(pujetidentifier.nParticles());
+	_jet_nCharged.push_back(pujetidentifier.nCharged());
+	
+	
+      
+      }
+      else if(Debug_) cout << "PUID variables are not valid"<<endl;
+
+      // Parton flavour (gen level)
+      _jethadronFlavour.push_back((&*jet)->hadronFlavour());  
+      _jetpartonFlavour.push_back((&*jet)->partonFlavour());   
+      
+      //Flavour tagging (reco)
+      //Deep Jet https://twiki.cern.ch/twiki/bin/viewauth/CMS/BtagRecommendation102X
+      _jetDeepJet_b.push_back(  (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probb")+ (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probbb") + (&*jet)->bDiscriminator("pfDeepFlavourJetTags:problepb") );
+      _jetDeepJet_c.push_back( (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probc") );
+      _jetDeepJet_uds.push_back( (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probuds")  );
+      _jetDeepJet_g.push_back(  (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probg")  );
+
+      //Quark Gluon likelihood  https://twiki.cern.ch/twiki/bin/viewauth/CMS/QuarkGluonLikelihood
+      iEvent.getByToken(qgLToken_, quarkgluonlikelihood);
+      if(quarkgluonlikelihood.isValid() )_jetQuarkGluonLikelihood.push_back( (*quarkgluonlikelihood)[jetRef] );
+      else _jetQuarkGluonLikelihood.push_back( -1.);
+      
+      bool passid = PassJetID(  (&*jet) ,"2018");
+      _jetPassID.push_back(passid);
+      _jetRawPt.push_back( (&*jet)->correctedP4("Uncorrected").Pt() );
+      _jetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() ); 
+      _jet_corrjecs.push_back((&*jet)->pt() / (&*jet)->correctedP4("Uncorrected").Pt() );
+      //Accessing uncertainties
+      jecUnc->setJetEta((&*jet)->eta());
+      jecUnc->setJetPt((&*jet)->pt());
+      _jetJECuncty.push_back( jecUnc->getUncertainty(true) );
+      
+      Float_t jetptgen(-99.), jetetagen(-99.),jetphigen(-99.);
+      if( (&*jet) ->genJet() !=0 ){
+	//N.B. As of today only gen jets with pt >8 are saved in MINIAOD, see: https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py
+	//N.B. The gen jets are defined excluding neutrinos. 
+	jetptgen= (&*jet)->genJet()->pt() ;
+	jetetagen= (&*jet)->genJet()->eta() ;
+	jetphigen= (&*jet)->genJet()->phi() ;
+      }
+      _jetPtGen.push_back(jetptgen);
+      _jetEtaGen.push_back(jetetagen);
+      _jetPhiGen.push_back(jetphigen);
+      
     }
-    _jetPtGen.push_back(jetptgen);
-    _jetEtaGen.push_back(jetetagen);
-    _jetPhiGen.push_back(jetphigen);
-
   }
-  
-  
-  edm::Handle< std::vector<pat::Electron> > thePatElectrons;
-  iEvent.getByToken(electronToken_,thePatElectrons);
-  for( std::vector<pat::Electron>::const_iterator electron = (*thePatElectrons).begin(); electron != (*thePatElectrons).end(); electron++ ) {
-    if((&*electron)->pt()<ElectronPtCut_)continue;
-    bool passid = (&*electron)->electronID("mvaEleID-Fall17-iso-V2-wp90");
-    if(!passid) continue;
-    
-    _lEta.push_back((&*electron)->eta());
-    _lPhi.push_back((&*electron)->phi());
-    _lPt.push_back((&*electron)->pt());
-    _lpdgId.push_back(-11*(&*electron)->charge());
-
-  }
-
-  edm::Handle< std::vector<pat::Muon> > thePatMuons;
-  iEvent.getByToken(muonToken_,thePatMuons);
-  for( std::vector<pat::Muon>::const_iterator muon = (*thePatMuons).begin(); muon != (*thePatMuons).end(); muon++ ) {
-    if((&*muon)->pt()<MuonPtCut_)continue;
-    bool passid=  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ); 
-    if(!passid) continue;
-    
-    _lEta.push_back((&*muon)->eta());
-    _lPhi.push_back((&*muon)->phi());
-    _lPt.push_back((&*muon)->pt());
-    _lpdgId.push_back(-13*(&*muon)->charge());
-  }
-
-  edm::Handle< std::vector<pat::Photon> > thePatPhotons;
-  iEvent.getByToken(photonToken_,thePatPhotons);
-  for( std::vector<pat::Photon>::const_iterator photon = (*thePatPhotons).begin(); photon != (*thePatPhotons).end(); photon++ ) {
-    if((&*photon)->pt()<PhotonPtCut_)continue;
-    bool passid = (&*photon)->photonID("mvaPhoID-RunIIFall17-v1p1-wp80") && (&*photon)->passElectronVeto()&& !((&*photon)->hasPixelSeed()) ; 
-    if(!passid) continue;
-        
-    _phEta.push_back((&*photon)->eta());
-    _phPhi.push_back((&*photon)->phi());
-    _phPt.push_back((&*photon)->pt());
-  }
+  else if(Debug_){cout << "Invalid jet collection"<<endl;}
   
 
    
@@ -499,6 +661,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _met = pfmet->pt();
   _met_phi = pfmet->phi();
 
+
   //PUPPI MET
   edm::Handle< vector<pat::MET> > ThePUPPIMET;
   iEvent.getByToken(puppimetToken_, ThePUPPIMET);
@@ -507,7 +670,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   puppimet = &(puppimetcol->front());
   _puppimet = puppimet->pt();
   _puppimet_phi = puppimet->phi();
-  
+
+
   //PF candidates
   edm::Handle<pat::PackedCandidateCollection> pfcands;
   iEvent.getByToken(pfcandsToken_ ,pfcands);
@@ -527,9 +691,21 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   iEvent.getByToken(genpartToken_, TheGenParticles);
   TLorentzVector Gen0;
   Gen0.SetPtEtaPhiE( 0, 0, 0, 0);
+  _genHT = 0;
   if(TheGenParticles.isValid()){
     for(GenParticleCollection::const_reverse_iterator p = TheGenParticles->rbegin() ; p != TheGenParticles->rend() ; p++ ) {
       int id = TMath::Abs(p->pdgId());
+      /*      if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id== 6 || id == 21 || id == 22 ) ) cout << "p ID, status, pt, eta, phi " << 
+												       p->pdgId() <<", "<<
+												       p->status() <<", "<<
+												       p->pt() <<", "<<
+												       p->eta() <<", "<<
+												       p->phi() <<
+												       endl;
+      */
+      if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id == 21 || id == 22 ) && (p->status() == 23&& TMath::Abs(p->mother()->pdgId())!=6 &&TMath::Abs(p->mother()->pdgId())!=24 )){
+	_genHT += p->pt();
+      }
       if ( (id == 12 || id == 14 || id == 16 ) && (p->status() == 1) ) {
 	TLorentzVector Gen;
 	Gen.SetPtEtaPhiE( p->pt(), p->eta(), p->phi(), p->energy() );
@@ -564,6 +740,44 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _genmet_phi = 0;
   }
 
+
+
+  edm::Handle<GenEventInfoProduct> GenInfoHandle;
+  iEvent.getByToken(geninfoToken_, GenInfoHandle);
+  _weight=GenInfoHandle->weight();
+  /*for(unsigned int a =0; a< (GenInfoHandle->binningValues()).size();a++){
+    double thebinning = GenInfoHandle->hasBinningValues() ? (GenInfoHandle->binningValues())[a] : 0.0 ;
+    }*/
+
+  edm::Handle<LHEEventProduct> lhe_handle;
+  iEvent.getByToken(lheEventToken_, lhe_handle);
+  if ( !lhe_handle.isValid()) iEvent.getByToken(lheEventALTToken_, lhe_handle);
+  double lheht = 0;
+  if (lhe_handle.isValid()){ 
+    std::vector<lhef::HEPEUP::FiveVector> lheParticles = lhe_handle->hepeup().PUP;
+    ROOT::Math::PxPyPzEVector cand_;
+
+    for (unsigned i = 0; i < lheParticles.size(); ++i) {
+      cand_ = ROOT::Math::PxPyPzEVector(lheParticles[i][0],lheParticles[i][1],lheParticles[i][2],lheParticles[i][3]);
+    
+      int imotherfirst = lhe_handle->hepeup().MOTHUP[i].first-1;// See the warning here: https://github.com/cms-sw/cmssw/blob/master/GeneratorInterface/AlpgenInterface/src/AlpgenEventRecordFixes.cc#L4-L16
+      int imotherlast = lhe_handle->hepeup().MOTHUP[i].second-1;
+      bool istopdecay = fabs( lhe_handle->hepeup().IDUP[imotherfirst]) ==6 ||fabs( lhe_handle->hepeup().IDUP[imotherlast])==6 ;
+      bool isZdecay = fabs( lhe_handle->hepeup().IDUP[imotherfirst]) ==23 ||fabs( lhe_handle->hepeup().IDUP[imotherlast])==23 ;
+      bool isWdecay = fabs( lhe_handle->hepeup().IDUP[imotherfirst]) ==24 ||fabs( lhe_handle->hepeup().IDUP[imotherlast])==24 ;
+      //      cout <<"LHE parti: pdgid, pt: "<< lhe_handle->hepeup().IDUP[i] << ", "<< cand_.Pt()<< ", "<< lhe_handle->hepeup().IDUP[imotherfirst] <<", "<<lhe_handle->hepeup().IDUP[imotherlast] <<endl;
+      //cout <<"imotherfirst/last " <<imotherfirst <<", "<<imotherlast<<endl;
+      if(istopdecay) continue;
+      if(isZdecay) continue;
+      if(isWdecay) continue;
+      if(fabs( lhe_handle->hepeup().IDUP[i]) <=5|| lhe_handle->hepeup().IDUP[i] ==21 ) lheht += cand_.Pt();//That definition works to retrieve the HT in madgraph HT binned QCD 
+    }
+  }
+  bool problem =_genHT<600||_genHT>800 || lheht <600|| lheht>800;
+  if(problem) cout <<"Orig/new genHT "<< _genHT<<"/"<<lheht<<endl;
+  _genHT = lheht;
+  // if(_genHT<600||_genHT>800)  cout <<"New genHT "<< _genHT<<endl;
+  //Tested with QCD/photon jets/DY with madgraphm
   Handle<std::vector<PileupSummaryInfo> > puInfo;
   iEvent.getByToken(puInfoToken_, puInfo);
   if(puInfo.isValid()){
@@ -623,11 +837,12 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   
   
   //Filling trees and histos   
-  if(SaveTree_)outputTree->Fill();
-  h_PFMet->Fill(_met);
-  h_PuppiMet->Fill(_puppimet);
-  h_nvtx->Fill(_n_PV);
-  
+  if(PassSkim()){
+      if(SaveTree_)outputTree->Fill();
+      h_PFMet->Fill(_met);
+      h_PuppiMet->Fill(_puppimet);
+      h_nvtx->Fill(_n_PV);
+    }
 }
 
 
@@ -641,6 +856,9 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
   outputTree->Branch("_bx", &_bx, "_bx/l");
   outputTree->Branch("_n_PV", &_n_PV, "_n_PV/I");
+  outputTree->Branch("_rho", &_rho, "_rho/f");
+  outputTree->Branch("_rhoNC", &_rhoNC, "_rhoNC/f");
+  
 
   outputTree->Branch("Flag_goodVertices",&Flag_goodVertices,"Flag_goodVertices/O");
   outputTree->Branch("Flag_globalTightHalo2016Filter",&Flag_globalTightHalo2016Filter,"Flag_globalTightHalo2016Filter/O");
@@ -674,6 +892,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jet_NHM",&_jet_NHM);
   outputTree->Branch("_jet_PHM",&_jet_PHM);
   outputTree->Branch("_jet_NM",&_jet_NM);
+  outputTree->Branch("_jetArea",&_jetArea);
   outputTree->Branch("_jetPassID",&_jetPassID);
 
   outputTree->Branch("_jetPtGen",&_jetPtGen);
@@ -681,22 +900,58 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetPhiGen",&_jetPhiGen);
   outputTree->Branch("_jetJECuncty",&_jetJECuncty);
   outputTree->Branch("_jetPUMVA",&_jetPUMVA);
+  outputTree->Branch("_jetPUMVAUpdate",&_jetPUMVAUpdate);
   outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
   outputTree->Branch("_jet_corrjecs",&_jet_corrjecs);
   outputTree->Branch("_jethadronFlavour",&_jethadronFlavour);
   outputTree->Branch("_jetpartonFlavour",&_jetpartonFlavour);
+  outputTree->Branch("_jetDeepJet_b",&_jetDeepJet_b);
+  outputTree->Branch("_jetDeepJet_c",&_jetDeepJet_c);
+  outputTree->Branch("_jetDeepJet_uds",&_jetDeepJet_uds);
+  outputTree->Branch("_jetDeepJet_g",&_jetDeepJet_g);
+  outputTree->Branch("_jetQuarkGluonLikelihood",&_jetQuarkGluonLikelihood);
 
+
+  if(SavePUIDVariables_){ 
+  outputTree->Branch("_jet_beta",&_jet_beta);
+  outputTree->Branch("_jet_dR2Mean",&_jet_dR2Mean);
+  outputTree->Branch("_jet_majW",&_jet_majW);
+  outputTree->Branch("_jet_minW",&_jet_minW);
+  outputTree->Branch("_jet_frac01",&_jet_frac01);
+  outputTree->Branch("_jet_frac02",&_jet_frac02);
+  outputTree->Branch("_jet_frac03",&_jet_frac03);
+  outputTree->Branch("_jet_frac04",&_jet_frac04);
+  outputTree->Branch("_jet_ptD",&_jet_ptD);
+  outputTree->Branch("_jet_betaStar",&_jet_betaStar);
+  outputTree->Branch("_jet_pull",&_jet_pull);
+  outputTree->Branch("_jet_jetR",&_jet_jetR);
+  outputTree->Branch("_jet_jetRchg",&_jet_jetRchg);
+  outputTree->Branch("_jet_nParticles",&_jet_nParticles);
+  outputTree->Branch("_jet_nCharged",&_jet_nCharged);
+  }
+  
   
   outputTree->Branch("_lEta",&_lEta);
   outputTree->Branch("_lPhi",&_lPhi);
   outputTree->Branch("_lPt",&_lPt);
   outputTree->Branch("_lpdgId",&_lpdgId);
+  outputTree->Branch("_nEles", &_nEles, "_nEles/I");
+  outputTree->Branch("_nMus", &_nMus, "_nMus/I");
 
-  outputTree->Branch("_lgenEta",&_lgenEta);
-  outputTree->Branch("_lgenPhi",&_lgenPhi);
-  outputTree->Branch("_lgenPt",&_lgenPt);
-  outputTree->Branch("_lgenpdgId",&_lgenpdgId);
+  if(IsMC_){
+    outputTree->Branch("_lgenEta",&_lgenEta);
+    outputTree->Branch("_lgenPhi",&_lgenPhi);
+    outputTree->Branch("_lgenPt",&_lgenPt);
+    outputTree->Branch("_lgenpdgId",&_lgenpdgId);
+    outputTree->Branch("_phgenEta",&_phgenEta);
+    outputTree->Branch("_phgenPhi",&_phgenPhi);
+    outputTree->Branch("_phgenPt",&_phgenPt);
+    outputTree->Branch("_genHT",&_genHT,"_genHT/f");
+    outputTree->Branch("_weight",&_weight,"_weight/f");
+    
 
+  }
+  
 
   outputTree->Branch("_phEta",&_phEta);
   outputTree->Branch("_phPhi",&_phPhi);
@@ -708,15 +963,15 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_PFcand_pdgId",&_PFcand_pdgId);
   outputTree->Branch("_PFcand_fromPV",&_PFcand_fromPV);
 
-  //  if(IsMC_){
-  outputTree->Branch("_genmet", &_genmet, "_genmet/D");
-  outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/D");
+  if(IsMC_){
+  outputTree->Branch("_genmet", &_genmet, "_genmet/f");
+  outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
   outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
-  //}
-  outputTree->Branch("_met", &_met, "_met/D");
-  outputTree->Branch("_met_phi", &_met_phi, "_met_phi/D");
-  outputTree->Branch("_puppimet", &_puppimet, "_puppimet/D");
-  outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/D");
+  }
+  outputTree->Branch("_met", &_met, "_met/f");
+  outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
+  outputTree->Branch("_puppimet", &_puppimet, "_puppimet/f");
+  outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/f");
   
 
   outputTree->Branch("HLT_Photon110EB_TightID_TightIso",&HLT_Photon110EB_TightID_TightIso,"HLT_Photon110EB_TightID_TightIso/O");
@@ -868,21 +1123,53 @@ void JMEAnalyzer::InitandClearStuff(){
   _jet_NHM.clear();
   _jet_PHM.clear();
   _jet_NM.clear();
+  _jetArea.clear();
   _jetPassID.clear();
   _jetPtGen.clear();
   _jetEtaGen.clear();
   _jetPhiGen.clear();
   _jetJECuncty.clear();
   _jetPUMVA.clear();
+  _jetPUMVAUpdate.clear();
   _jetPtNoL2L3Res.clear();
   _jet_corrjecs.clear();
   _jetpartonFlavour.clear();
   _jethadronFlavour.clear();
+  _jetDeepJet_b.clear();
+  _jetDeepJet_c.clear();
+  _jetDeepJet_uds.clear();
+  _jetDeepJet_g.clear();
+  _jetQuarkGluonLikelihood.clear();
+
+
+
+
+  _jet_beta.clear();
+  _jet_dR2Mean.clear();
+  _jet_majW.clear();
+  _jet_minW.clear();
+  _jet_frac01.clear();
+  _jet_frac02.clear();
+  _jet_frac03.clear();
+  _jet_frac04.clear();
+  _jet_ptD.clear();
+  _jet_betaStar.clear();
+  _jet_pull.clear();
+  _jet_jetR.clear();
+  _jet_jetRchg.clear();
+  _jet_nParticles.clear();
+  _jet_nCharged.clear();
+
+
 
   _lEta.clear();
   _lPhi.clear();
   _lPt.clear();
   _lpdgId.clear();
+  _lPassTightID.clear();
+  _nEles=0;
+  _nMus=0;
+  
 
   _lgenEta.clear();
   _lgenPhi.clear();
@@ -939,6 +1226,47 @@ void JMEAnalyzer::InitandClearStuff(){
   HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ=false;
   HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL=false;
   HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL=false;  
+}
+
+bool JMEAnalyzer::PassSkim(){
+  
+  
+  if(Skim_=="ZToEEorMuMu"){
+    
+    TLorentzVector l1, l2;
+    Float_t mass(0.);
+    for(unsigned int i = 0; i < _lPt.size(); i++){
+      if(_lPt[i]<20) continue;
+      if(!_lPassTightID[i])  continue;
+      if(fabs(_lpdgId[i]) !=11 && fabs(_lpdgId[i])!=13 ) continue;
+      for(unsigned int j = 0; j < i; j++){
+	if(_lPt[j]<20) continue;
+	if(!_lPassTightID[j])  continue;
+	if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
+	if( _lpdgId[i] != -_lpdgId[j]  ) continue;
+	l1.SetPtEtaPhiM(_lPt[i],_lEta[i],_lPhi[i],0);
+	l2.SetPtEtaPhiM(_lPt[j],_lEta[j],_lPhi[j],0);
+	mass=(l1+l2).Mag();
+	if(mass>70&&mass<110) return true;
+      }
+    }
+    return false;
+  }
+  else if(Skim_=="Photon"){
+    
+    int ngoodphotons =0;
+    for(unsigned int i = 0; i < _phPt.size(); i++){
+      if(_phPt[i]<20) continue;
+      if(fabs(_phEta[i])>1.4442) continue;
+      ngoodphotons++;
+    }
+    if( ngoodphotons>0) return true;
+    return false;
+  }
+  
+  
+  return true; 
+
 }
 
 //define this as a plug-in
