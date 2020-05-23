@@ -103,6 +103,8 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      Jets=cms.InputTag("updatedPatJetsUpdatedJEC"),
                                      JetsPuppi=cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
                                      pileupJetIdDiscriminantUpdate = cms.InputTag('pileupJetIdUpdate:fullDiscriminant'),
+                                     pileupJetIdDiscriminantUpdate2017 = cms.InputTag('pileupJetIdUpdate2017:fullDiscriminant'),
+                                     pileupJetIdDiscriminantUpdate2018 = cms.InputTag('pileupJetIdUpdate2018:fullDiscriminant'),
                                      pileupJetIdVariablesUpdate = cms.InputTag('pileupJetIdUpdate'),
                                      QuarkGluonLikelihood = cms.InputTag('QGTagger:qgLikelihood'),
                                      PFCandCollection=cms.InputTag("packedPFCandidates"),
@@ -129,6 +131,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      IsMC=cms.bool(ISMC),
                                      SavePUIDVariables=cms.bool(True),
                                      DropUnmatchedJets=cms.bool(False),
+                                     DropBadJets=cms.bool(False),
 #                                     Skim=cms.string("ZToEEorMuMu"),
                                      Skim=cms.string(""),
                                      Debug=cms.bool(False)
@@ -356,7 +359,7 @@ runMetCorAndUncFromMiniAOD(process,
                            )
 
 #Recompute pile up ID
-from RecoJets.JetProducers.PileupJetID_cfi import  _chsalgos_81x
+from RecoJets.JetProducers.PileupJetID_cfi import  _chsalgos_81x, _chsalgos_94x, _chsalgos_102x
 process.load("RecoJets.JetProducers.PileupJetID_cfi")
 process.pileupJetIdUpdate = process.pileupJetId.clone()
 process.pileupJetIdUpdate.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
@@ -364,6 +367,21 @@ process.pileupJetIdUpdate.inputIsCorrected = True
 process.pileupJetIdUpdate.applyJec = False
 process.pileupJetIdUpdate.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
 process.pileupJetIdUpdate.algos = cms.VPSet(_chsalgos_81x) 
+
+
+process.pileupJetIdUpdate2017 = process.pileupJetId.clone()
+process.pileupJetIdUpdate2017.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
+process.pileupJetIdUpdate2017.inputIsCorrected = True
+process.pileupJetIdUpdate2017.applyJec = False
+process.pileupJetIdUpdate2017.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
+process.pileupJetIdUpdate2017.algos = cms.VPSet(_chsalgos_94x)
+
+process.pileupJetIdUpdate2018 = process.pileupJetId.clone()
+process.pileupJetIdUpdate2018.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
+process.pileupJetIdUpdate2018.inputIsCorrected = True
+process.pileupJetIdUpdate2018.applyJec = False
+process.pileupJetIdUpdate2018.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
+process.pileupJetIdUpdate2018.algos = cms.VPSet(_chsalgos_102x)
 
 
 #Compute QGL 
