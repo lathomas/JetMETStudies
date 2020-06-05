@@ -33,8 +33,12 @@ process.load("Geometry.CMSCommonData.cmsIdealGeometryXML_cfi")
 
 process.load('Configuration.StandardSequences.Reconstruction_cff')
 
+
 ISMC=False
-runEra="2018MC"
+runEra="MC2018"
+UseSQLiteFiles=False
+
+
 if "MC" in runEra:
     ISMC=True
 
@@ -44,41 +48,44 @@ EleTightWP=''
 PhotonTightWP=''
 
 
-if "2018Data" in runEra:
-    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v19" #2018
+if "Data2018" in runEra:
+    if "2018D" in runEra: 
+        process.GlobalTag.globaltag="102X_dataRun2_Prompt_v16" #2018D
+    else:
+        process.GlobalTag.globaltag="102X_dataRun2_v12" #2018ABC
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
-if "2017Data" in runEra:
-    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v19" #2017      
+if "Data2017" in runEra:
+    process.GlobalTag.globaltag="102X_dataRun2_v12" #2017      
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
 
-if "2016Data" in runEra:
-    process.GlobalTag.globaltag="94X_mcRun2_asymptotic_v3" #2016
+if "Data2016" in runEra:
+    process.GlobalTag.globaltag="102X_dataRun2_v12" #2016
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     
 
 
-if "2018MC" in runEra:
-    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v19" #2018     
+if "MC2018" in runEra:
+    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v20" #2018     
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
-if "2017MC" in runEra:
-    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v16" #2017
+if "MC2017" in runEra:
+    process.GlobalTag.globaltag="102X_mc2017_realistic_v8" #2017
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
-if "2016MC" in runEra:
-    process.GlobalTag.globaltag="94X_mcRun2_asymptotic_v3" #2016
+if "MC2016" in runEra:
+    process.GlobalTag.globaltag="102X_mcRun2_asymptotic_v8" #2016
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
@@ -96,6 +103,8 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      Jets=cms.InputTag("updatedPatJetsUpdatedJEC"),
                                      JetsPuppi=cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
                                      pileupJetIdDiscriminantUpdate = cms.InputTag('pileupJetIdUpdate:fullDiscriminant'),
+                                     pileupJetIdDiscriminantUpdate2017 = cms.InputTag('pileupJetIdUpdate2017:fullDiscriminant'),
+                                     pileupJetIdDiscriminantUpdate2018 = cms.InputTag('pileupJetIdUpdate2018:fullDiscriminant'),
                                      pileupJetIdVariablesUpdate = cms.InputTag('pileupJetIdUpdate'),
                                      QuarkGluonLikelihood = cms.InputTag('QGTagger:qgLikelihood'),
                                      PFCandCollection=cms.InputTag("packedPFCandidates"),
@@ -122,6 +131,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      IsMC=cms.bool(ISMC),
                                      SavePUIDVariables=cms.bool(True),
                                      DropUnmatchedJets=cms.bool(False),
+                                     DropBadJets=cms.bool(False),
 #                                     Skim=cms.string("ZToEEorMuMu"),
                                      Skim=cms.string(""),
                                      Debug=cms.bool(False)
@@ -198,18 +208,18 @@ myLumis = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
 
 #Updating JECs
 JECsVersion=""
-if "2018MC" in runEra:
+if "MC2018" in runEra:
     JECsVersion='Autumn18_V19_MC'
-if "2017MC" in runEra:
+if "MC2017" in runEra:
     JECsVersion='Fall17_17Nov2017_V32_102X_MC'
-if "2016MC" in runEra:
+if "MC2016" in runEra:
     JECsVersion='Summer16_07Aug2017_V11_MC'
 
-if "2018DATA" in runEra:
+if "Data2018" in runEra:
     JECsVersion='Autumn18_RunABCD_V19_DATA'
-if "2017DATA" in runEra:
+if "Data2017" in runEra:
     JECsVersion='Fall17_17Nov2017_V32_102X_DATA'
-if "2016DATA" in runEra:
+if "Data2016" in runEra:
     JECsVersion='Summer16_07Aug2017All_V11_DATA'
 
 
@@ -220,6 +230,8 @@ TagForAK4CHSJet='JetCorrectorParametersCollection_'+JECsVersion+'_AK4PFchs'
 TagForAK4PuppiJet='JetCorrectorParametersCollection_'+JECsVersion+'_AK4PFPuppi'
 
 from CondCore.DBCommon.CondDBSetup_cfi import CondDBSetup
+
+
 process.jec = cms.ESSource('PoolDBESSource',
                            CondDBSetup,
                            connect = cms.string(SQLiteFile),
@@ -238,7 +250,65 @@ process.jec = cms.ESSource('PoolDBESSource',
                            )
 
 # Add an ESPrefer to override JEC that might be available from the global tag
-process.es_prefer_jec = cms.ESPrefer('PoolDBESSource', 'jec')
+if UseSQLiteFiles:
+    process.es_prefer_jec = cms.ESPrefer('PoolDBESSource', 'jec')
+else:
+    process.es_prefer_jec = cms.ESPrefer('PoolDBESSource', 'GlobalTag')
+
+
+JERVersion=''
+
+if "MC2018" in runEra:
+    JERVersion='Autumn18_V7b_MC'
+if "MC2017" in runEra:
+    JERVersion='Fall17_V3b_MC'
+if "MC2016" in runEra:
+    JERVersion='Summer16_25nsV1b_MC'
+
+if "Data2018" in runEra:
+    JERVersion='Autumn18_V7b_DATA'
+if "Data2017" in runEra:
+    JERVersion='Fall17_V3b_DATA'
+if "Data2016" in runEra:
+    JERVersion='Summer16_25nsV1b_DATA'
+
+SQLiteFileJER='sqlite:'+JERVersion+'.db'
+
+
+print SQLiteFileJER
+process.jer = cms.ESSource("PoolDBESSource",
+                           CondDBSetup,
+                           toGet = cms.VPSet(
+        cms.PSet(
+            record = cms.string('JetResolutionRcd'),
+            tag    = cms.string('JR_'+JERVersion+'_PtResolution_AK4PFchs'),
+            label  = cms.untracked.string('AK4PFchs_pt')
+            ),
+        cms.PSet(
+            record = cms.string('JetResolutionScaleFactorRcd'),
+            tag    = cms.string('JR_'+JERVersion+'_SF_AK4PFchs'),
+            label  = cms.untracked.string('AK4PFchs')
+            ),
+        cms.PSet(                                                                                                                                                                                            
+            record = cms.string('JetResolutionRcd'),                                                                                                                                                         
+            tag    = cms.string('JR_'+JERVersion+'_PtResolution_AK4PFPuppi'),
+            label  = cms.untracked.string('AK4PFPuppi_pt')                                                                                                                                                   
+            ),                                                                                                                                                                                               
+        cms.PSet(                                                                                                                                                                                            
+            record = cms.string('JetResolutionScaleFactorRcd'),                                                                                                                                              
+            tag    = cms.string('JR_'+JERVersion+'_SF_AK4PFPuppi'),                                                                                                                                    
+            label  = cms.untracked.string('AK4PFPuppi')                                                                                                                                                      
+            ),                                                                                                                                                                                               
+
+        ),
+                           connect = cms.string(SQLiteFileJER)
+                           )
+
+if UseSQLiteFiles: 
+    process.es_prefer_jer = cms.ESPrefer('PoolDBESSource', 'jer')
+else:
+    process.es_prefer_jer = cms.ESPrefer('PoolDBESSource', 'GlobalTag')
+
 
 from PhysicsTools.PatAlgos.tools.jetTools import updateJetCollection
 
@@ -289,7 +359,7 @@ runMetCorAndUncFromMiniAOD(process,
                            )
 
 #Recompute pile up ID
-from RecoJets.JetProducers.PileupJetID_cfi import  _chsalgos_81x
+from RecoJets.JetProducers.PileupJetID_cfi import  _chsalgos_81x, _chsalgos_94x, _chsalgos_102x
 process.load("RecoJets.JetProducers.PileupJetID_cfi")
 process.pileupJetIdUpdate = process.pileupJetId.clone()
 process.pileupJetIdUpdate.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
@@ -297,6 +367,21 @@ process.pileupJetIdUpdate.inputIsCorrected = True
 process.pileupJetIdUpdate.applyJec = False
 process.pileupJetIdUpdate.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
 process.pileupJetIdUpdate.algos = cms.VPSet(_chsalgos_81x) 
+
+
+process.pileupJetIdUpdate2017 = process.pileupJetId.clone()
+process.pileupJetIdUpdate2017.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
+process.pileupJetIdUpdate2017.inputIsCorrected = True
+process.pileupJetIdUpdate2017.applyJec = False
+process.pileupJetIdUpdate2017.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
+process.pileupJetIdUpdate2017.algos = cms.VPSet(_chsalgos_94x)
+
+process.pileupJetIdUpdate2018 = process.pileupJetId.clone()
+process.pileupJetIdUpdate2018.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
+process.pileupJetIdUpdate2018.inputIsCorrected = True
+process.pileupJetIdUpdate2018.applyJec = False
+process.pileupJetIdUpdate2018.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
+process.pileupJetIdUpdate2018.algos = cms.VPSet(_chsalgos_102x)
 
 
 #Compute QGL 
@@ -308,12 +393,12 @@ process.QGTagger.jetsLabel        = cms.string('QGL_AK4PFchs')
 
 
 process.applyjecs =  cms.Path( process.jecSequence )
-#process.computepuppimet = cms.Path( process.puppiMETSequence  )
-#process.computepfmetanduncties = cms.Path( process.fullPatMetSequence )
-#process.computepuppimetanduncties = cms.Path( process.fullPatMetSequencePuppi)
-#process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
-#process.computepuid = cms.Path(process.pileupJetIdUpdate )
-#process.computeqgl = cms.Path(process.QGTagger)
+process.computepuppimet = cms.Path( process.puppiMETSequence  )
+process.computepfmetanduncties = cms.Path( process.fullPatMetSequence )
+process.computepuppimetanduncties = cms.Path( process.fullPatMetSequencePuppi)
+process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
+process.computepuid = cms.Path(process.pileupJetIdUpdate )
+process.computeqgl = cms.Path(process.QGTagger)
 process.endpath = cms.EndPath( process.jmeanalyzer)
 
 

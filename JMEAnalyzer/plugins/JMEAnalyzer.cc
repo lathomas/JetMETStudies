@@ -127,6 +127,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<std::vector< pat::Jet> > jetToken_;
   edm::EDGetTokenT<std::vector< pat::Jet> > jetPuppiToken_;
   edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdateToken_;
+  edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2017Token_;
+  edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2018Token_;
   edm::EDGetTokenT<edm::ValueMap<StoredPileupJetIdentifier> > pileupJetIdVariablesUpdateToken_;
   edm::EDGetTokenT<edm::ValueMap<float> > qgLToken_;
 
@@ -155,9 +157,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   string PhotonTightWP_;
   Float_t PFCandPtCut_;
 
-  Bool_t SaveTree_, IsMC_, SavePUIDVariables_,DropUnmatchedJets_;
+  Bool_t SaveTree_, IsMC_, SavePUIDVariables_,DropUnmatchedJets_, DropBadJets_;
   string Skim_;
   Bool_t Debug_;
+
+  Float_t _PtCutPFforMultiplicity[6]={0,0.3,0.5,1,5,10};
 
   //Some histos to be saved for simple checks 
   TH1F *h_PFMet, *h_PuppiMet, *h_nvtx;
@@ -218,6 +222,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector <Float_t>  _jetPhiGen;
   vector<Float_t>  _jetJECuncty;
   vector<Float_t>  _jetPUMVA; 
+  vector<Float_t>  _jetPUMVAUpdate2017;
+  vector<Float_t>  _jetPUMVAUpdate2018;
   vector<Float_t>  _jetPUMVAUpdate; 
   vector<Float_t>  _jetPtNoL2L3Res;
   vector<Float_t> _jet_corrjecs;
@@ -282,6 +288,9 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector <int> _PFcand_pdgId;
   vector <int> _PFcand_fromPV;
 
+  //Nb of CH in PV fit and corresponding HT, for different pt cuts
+  int _n_CH_fromvtxfit[6];
+  Float_t _HT_CH_fromvtxfit[6];
 
   //MET
   Float_t _met;
@@ -355,6 +364,8 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   jetToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("Jets"))),
   jetPuppiToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsPuppi"))),
   pileupJetIdDiscriminantUpdateToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate"))),
+  pileupJetIdDiscriminantUpdate2017Token_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate2017"))),
+  pileupJetIdDiscriminantUpdate2018Token_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate2018"))),
   pileupJetIdVariablesUpdateToken_(consumes<edm::ValueMap<StoredPileupJetIdentifier> >(iConfig.getParameter<edm::InputTag>("pileupJetIdVariablesUpdate"))),
   qgLToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("QuarkGluonLikelihood"))),
   pfcandsToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("PFCandCollection"))),
@@ -381,6 +392,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   IsMC_(iConfig.getParameter<bool>("IsMC")),
   SavePUIDVariables_(iConfig.getParameter<bool>("SavePUIDVariables")),
   DropUnmatchedJets_(iConfig.getParameter<bool>("DropUnmatchedJets")),
+  DropBadJets_(iConfig.getParameter<bool>("DropBadJets")),
   Skim_(iConfig.getParameter<string>("Skim")),
   Debug_(iConfig.getParameter<bool>("Debug"))
 {
@@ -539,6 +551,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     
   //Jets
+  
   edm::Handle< std::vector< pat::Jet> > theJets;
   iEvent.getByToken(jetToken_,theJets );
 
@@ -553,6 +566,11 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //Value map to access the recalculated variables entering PU ID
   edm::Handle<edm::ValueMap<StoredPileupJetIdentifier> > pileupJetIdVariablesUpdate;
 
+
+  edm::Handle<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2017;
+  edm::Handle<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2018;
+
+
   //Value map for Quark/gluon likelihood
   edm::Handle<edm::ValueMap<float> > quarkgluonlikelihood;
 
@@ -561,8 +579,10 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     for( std::vector<pat::Jet>::const_iterator jet = (*theJets).begin(); jet != (*theJets).end(); jet++ ) {
       if((&*jet)->pt() >leadjetpt) leadjetpt = (&*jet)->pt();
       if((&*jet)->pt()<JetPtCut_) continue;
+      bool passid = PassJetID(  (&*jet) ,"2018");
+      if( DropBadJets_ && !passid  ) continue;//Drop bad jets (mostly leptons).
+
       if( (&*jet) ->genJet() ==0&& DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;//Drop genunmatched jets (mostly PU). Keep those with pt>50 as these probably require special attention.
-      
       _jetEta.push_back((&*jet)->eta());
       _jetPhi.push_back((&*jet)->phi());
       _jetPt.push_back((&*jet)->pt());
@@ -576,6 +596,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jet_PHM.push_back((&*jet)->photonMultiplicity());
       _jet_NM.push_back((&*jet)->neutralMultiplicity());
       _jetArea.push_back((&*jet)->jetArea());
+      _jetPassID.push_back(passid);
       //Accessing the default PU ID stored in MINIAOD https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
       _jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
       //Accessing the recomputed PU ID. This must be done with a value map. 
@@ -583,6 +604,14 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       iEvent.getByToken(pileupJetIdDiscriminantUpdateToken_,pileupJetIdDiscriminantUpdate);
       if(pileupJetIdDiscriminantUpdate.isValid()) _jetPUMVAUpdate.push_back((*pileupJetIdDiscriminantUpdate)[jetRef] );
       else  _jetPUMVAUpdate.push_back(-1 );
+      iEvent.getByToken(pileupJetIdDiscriminantUpdate2017Token_,pileupJetIdDiscriminantUpdate2017);
+      if(pileupJetIdDiscriminantUpdate2017.isValid()) _jetPUMVAUpdate2017.push_back((*pileupJetIdDiscriminantUpdate2017)[jetRef] );
+      else  _jetPUMVAUpdate2017.push_back(-1 );
+      iEvent.getByToken(pileupJetIdDiscriminantUpdate2018Token_,pileupJetIdDiscriminantUpdate2018);
+      if(pileupJetIdDiscriminantUpdate2018.isValid()) _jetPUMVAUpdate2018.push_back((*pileupJetIdDiscriminantUpdate2018)[jetRef] );
+      else  _jetPUMVAUpdate2018.push_back(-1 );
+      
+
 
       //Accessing the recomputed input variables to the PUID BDT
       iEvent.getByToken(pileupJetIdVariablesUpdateToken_,pileupJetIdVariablesUpdate);
@@ -626,8 +655,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(quarkgluonlikelihood.isValid() )_jetQuarkGluonLikelihood.push_back( (*quarkgluonlikelihood)[jetRef] );
       else _jetQuarkGluonLikelihood.push_back( -1.);
       
-      bool passid = PassJetID(  (&*jet) ,"2018");
-      _jetPassID.push_back(passid);
+
       _jetRawPt.push_back( (&*jet)->correctedP4("Uncorrected").Pt() );
       _jetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() ); 
       _jet_corrjecs.push_back((&*jet)->pt() / (&*jet)->correctedP4("Uncorrected").Pt() );
@@ -677,7 +705,20 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //PF candidates
   edm::Handle<pat::PackedCandidateCollection> pfcands;
   iEvent.getByToken(pfcandsToken_ ,pfcands);
+  for(int i = 0; i< 6; i++){
+    _n_CH_fromvtxfit[i] = 0;
+    _HT_CH_fromvtxfit[i] = 0;
+  }
   for(pat::PackedCandidateCollection::const_reverse_iterator p = pfcands->rbegin() ; p != pfcands->rend() ; p++ ) {
+    if(fabs(p->pdgId())  == 211&& p->fromPV(0)==3 ){
+      for(int i = 0; i< 6; i++){
+	if(p->pt()>_PtCutPFforMultiplicity[i]){
+	  _n_CH_fromvtxfit[i] ++;
+	  _HT_CH_fromvtxfit[i] += p->pt();
+	}
+      }
+    }
+        
     if(p->pt()<PFCandPtCut_)continue;
     _PFcand_pt.push_back(p->pt());
     _PFcand_eta.push_back(p->eta());
@@ -746,7 +787,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   edm::Handle<GenEventInfoProduct> GenInfoHandle;
   iEvent.getByToken(geninfoToken_, GenInfoHandle);
-  _weight=GenInfoHandle->weight();
+  if(GenInfoHandle.isValid())_weight=GenInfoHandle->weight();
+  else _weight = 0;
   /*for(unsigned int a =0; a< (GenInfoHandle->binningValues()).size();a++){
     double thebinning = GenInfoHandle->hasBinningValues() ? (GenInfoHandle->binningValues())[a] : 0.0 ;
     }*/
@@ -775,8 +817,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(fabs( lhe_handle->hepeup().IDUP[i]) <=5|| lhe_handle->hepeup().IDUP[i] ==21 ) lheht += cand_.Pt();//That definition works to retrieve the HT in madgraph HT binned QCD 
     }
   }
-  bool problem =_genHT<600||_genHT>800 || lheht <600|| lheht>800;
-  if(problem) cout <<"Orig/new genHT "<< _genHT<<"/"<<lheht<<endl;
+  //  bool problem =_genHT<600||_genHT>800 || lheht <600|| lheht>800;
+  //if(problem) cout <<"Orig/new genHT "<< _genHT<<"/"<<lheht<<endl;
   _genHT = lheht;
   // if(_genHT<600||_genHT>800)  cout <<"New genHT "<< _genHT<<endl;
   //Tested with QCD/photon jets/DY with madgraphm
@@ -903,6 +945,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetJECuncty",&_jetJECuncty);
   outputTree->Branch("_jetPUMVA",&_jetPUMVA);
   outputTree->Branch("_jetPUMVAUpdate",&_jetPUMVAUpdate);
+  outputTree->Branch("_jetPUMVAUpdate2017",&_jetPUMVAUpdate2017);
+  outputTree->Branch("_jetPUMVAUpdate2018",&_jetPUMVAUpdate2018);
   outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
   outputTree->Branch("_jet_corrjecs",&_jet_corrjecs);
   outputTree->Branch("_jethadronFlavour",&_jethadronFlavour);
@@ -964,6 +1008,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_PFcand_phi",&_PFcand_phi);
   outputTree->Branch("_PFcand_pdgId",&_PFcand_pdgId);
   outputTree->Branch("_PFcand_fromPV",&_PFcand_fromPV);
+  outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
+  outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
 
   if(IsMC_){
   outputTree->Branch("_genmet", &_genmet, "_genmet/f");
@@ -1093,7 +1139,7 @@ TString JMEAnalyzer::GetIdxFilterName(int it){
 
 void JMEAnalyzer::InitandClearStuff(){
 
-
+  if(!IsMC_) DropUnmatchedJets_=false;
 
   Flag_goodVertices=false;
   Flag_globalTightHalo2016Filter=false;
@@ -1133,6 +1179,9 @@ void JMEAnalyzer::InitandClearStuff(){
   _jetJECuncty.clear();
   _jetPUMVA.clear();
   _jetPUMVAUpdate.clear();
+  _jetPUMVAUpdate2017.clear();
+  _jetPUMVAUpdate2018.clear();
+
   _jetPtNoL2L3Res.clear();
   _jet_corrjecs.clear();
   _jetpartonFlavour.clear();
@@ -1250,6 +1299,7 @@ bool JMEAnalyzer::PassSkim(){
 	l2.SetPtEtaPhiM(_lPt[j],_lEta[j],_lPhi[j],0);
 	mass=(l1+l2).Mag();
 	if(mass>70&&mass<110) return true;
+	
       }
     }
     return false;
@@ -1265,7 +1315,11 @@ bool JMEAnalyzer::PassSkim(){
     if( ngoodphotons>0) return true;
     return false;
   }
-  
+  else if(Skim_=="MET100"&&_met<100) return false;
+  else if(Skim_=="MET100"&&_met>100) return true;
+   
+
+
   
   return true; 
 
