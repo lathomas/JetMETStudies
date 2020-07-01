@@ -57,26 +57,26 @@ if "Data2018" in runEra:
     if "2018D" in runEra: 
         process.GlobalTag.globaltag="102X_dataRun2_Prompt_v16" #2018D
     else:
-        process.GlobalTag.globaltag="102X_dataRun2_v12" #2018ABC
+        process.GlobalTag.globaltag="102X_dataRun2_v13" #2018ABC
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
 if "Data2017" in runEra:
-    process.GlobalTag.globaltag="102X_dataRun2_v12" #2017      
+    process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
 if "DataUL2017" in runEra:
-    process.GlobalTag.globaltag="102X_dataRun2_v12" #2017      
+    process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
 
 if "Data2016" in runEra:
-    process.GlobalTag.globaltag="102X_dataRun2_v12" #2016
+    process.GlobalTag.globaltag="102X_dataRun2_v13" #2016
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
@@ -84,7 +84,7 @@ if "Data2016" in runEra:
 
 
 if "MC2018" in runEra:
-    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v20" #2018     
+    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v21" #2018     
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
@@ -465,11 +465,3 @@ process.endpath = cms.EndPath( process.jmeanalyzer)
 
 
 #
-'''
-Need to 
-add new JECs UL17 => done
-add PUPPI V14 => done
-add prefiring module
-egm smearing
-
-'''
