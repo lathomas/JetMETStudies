@@ -7,6 +7,10 @@ process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(20000) )  
 
+from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
+patAlgosToolsTask = getPatAlgosToolsTask(process)
+
+
 process.source = cms.Source("PoolSource",
                                 fileNames = cms.untracked.vstring(
 #                                    '/store/mc/PhaseIITDRSpring19MiniAOD/TTbar_14TeV_TuneCP5_Pythia8/MINIAODSIM/PU200_106X_upgrade2023_realistic_v3_ext1-v3/60000/E73765BC-F41D-6349-9394-2858D7CF81E1.root'
@@ -15,7 +19,8 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIIAutumn18MiniAOD/QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/20000/0E772C3C-0A8F-8341-886E-21A550D8E283.root'
 #'/store/mc/RunIIAutumn18MiniAOD/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v2/90000/FD805C2C-92E0-4044-8061-770C77462EBC.root'
 #'/store/mc/RunIIAutumn18MiniAOD/GJets_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/20000/435256CF-C2B1-4646-B28A-EE1A23DFD4DC.root'
-'/store/mc/RunIIAutumn18MiniAOD/TTJets_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/10000/014F2D77-CD31-8348-B6CC-B09134F7E8E4.root'
+#'/store/mc/RunIIAutumn18MiniAOD/TTJets_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/10000/014F2D77-CD31-8348-B6CC-B09134F7E8E4.root'
+'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/70000/FCBBCC59-954C-3143-9634-DF8825F76369.root'
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FC03A7B5-7FC0-E811-99BA-B496910A9A2C.root'
 #'/store/mc/RunIIAutumn18MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat_13TeV_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15_ext1-v1/110000/EC1F3053-63C3-6245-814E-74759808D0C7.root'
         )
@@ -35,8 +40,8 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 
 
 ISMC=False
-runEra="MC2018"
-UseSQLiteFiles=False
+runEra="MCUL2017"
+UseSQLiteFiles=True
 
 
 if "MC" in runEra:
@@ -58,6 +63,12 @@ if "Data2018" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
 if "Data2017" in runEra:
+    process.GlobalTag.globaltag="102X_dataRun2_v12" #2017      
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+
+if "DataUL2017" in runEra:
     process.GlobalTag.globaltag="102X_dataRun2_v12" #2017      
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
@@ -90,6 +101,11 @@ if "MC2016" in runEra:
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
+if "MCUL2017" in runEra:
+    process.GlobalTag.globaltag="102X_mc2017_realistic_v8" #2017
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
 
 
 process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
@@ -101,7 +117,8 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      BadChargedCandidateFilterUpdate=cms.InputTag("BadChargedCandidateFilterUpdate"),
                                      Vertices=cms.InputTag("offlineSlimmedPrimaryVertices"),
                                      Jets=cms.InputTag("updatedPatJetsUpdatedJEC"),
-                                     JetsPuppi=cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
+#                                     JetsPuppi=cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
+                                     JetsPuppi=cms.InputTag("slimmedJetsPuppi"),
                                      pileupJetIdDiscriminantUpdate = cms.InputTag('pileupJetIdUpdate:fullDiscriminant'),
                                      pileupJetIdDiscriminantUpdate2017 = cms.InputTag('pileupJetIdUpdate2017:fullDiscriminant'),
                                      pileupJetIdDiscriminantUpdate2018 = cms.InputTag('pileupJetIdUpdate2018:fullDiscriminant'),
@@ -224,6 +241,21 @@ if "Data2016" in runEra:
 
 
 
+if "MCUL2017" in runEra:
+    JECsVersion='Summer19UL17_V5_MC'
+if "DataUL2017B" in runEra:
+    JECsVersion='Summer19UL17_RunB_V5_DATA'
+if "DataUL2017C" in runEra:
+    JECsVersion='Summer19UL17_RunC_V5_DATA'
+if "DataUL2017D" in runEra:
+    JECsVersion='Summer19UL17_RunD_V5_DATA'
+if "DataUL2017E" in runEra:
+    JECsVersion='Summer19UL17_RunE_V5_DATA'
+if "DataUL2017F" in runEra:
+    JECsVersion='Summer19UL17_RunF_V5_DATA'
+
+
+
 SQLiteFile='sqlite:'+JECsVersion+'.db'
 
 TagForAK4CHSJet='JetCorrectorParametersCollection_'+JECsVersion+'_AK4PFchs'
@@ -272,6 +304,12 @@ if "Data2017" in runEra:
 if "Data2016" in runEra:
     JERVersion='Summer16_25nsV1b_DATA'
 
+if "MCUL2017" in runEra:
+    JERVersion='Summer19UL17_JRV2_MC'
+if "DataUL2017" in runEra:
+    JERVersion='Summer19UL17_JRV2_DATA'
+
+
 SQLiteFileJER='sqlite:'+JERVersion+'.db'
 
 
@@ -289,17 +327,16 @@ process.jer = cms.ESSource("PoolDBESSource",
             tag    = cms.string('JR_'+JERVersion+'_SF_AK4PFchs'),
             label  = cms.untracked.string('AK4PFchs')
             ),
-        cms.PSet(                                                                                                                                                                                            
-            record = cms.string('JetResolutionRcd'),                                                                                                                                                         
-            tag    = cms.string('JR_'+JERVersion+'_PtResolution_AK4PFPuppi'),
-            label  = cms.untracked.string('AK4PFPuppi_pt')                                                                                                                                                   
-            ),                                                                                                                                                                                               
-        cms.PSet(                                                                                                                                                                                            
-            record = cms.string('JetResolutionScaleFactorRcd'),                                                                                                                                              
-            tag    = cms.string('JR_'+JERVersion+'_SF_AK4PFPuppi'),                                                                                                                                    
-            label  = cms.untracked.string('AK4PFPuppi')                                                                                                                                                      
-            ),                                                                                                                                                                                               
-
+#        cms.PSet(                                                                                                                                                                                            
+#            record = cms.string('JetResolutionRcd'),                                                                                                                                                         
+#            tag    = cms.string('JR_'+JERVersion+'_PtResolution_AK4PFPuppi'),
+#            label  = cms.untracked.string('AK4PFPuppi_pt')                                                                                                                                                   
+#            ),                                                                                                                                                                                               
+#        cms.PSet(                                                                                                                                                                                            
+#            record = cms.string('JetResolutionScaleFactorRcd'),                                                                                                                                              
+#            tag    = cms.string('JR_'+JERVersion+'_SF_AK4PFPuppi'),                                                                                                                                    
+#            label  = cms.untracked.string('AK4PFPuppi')                                                                                                                                                      
+#            ),                                                                                                                                                                                               
         ),
                            connect = cms.string(SQLiteFileJER)
                            )
@@ -333,15 +370,15 @@ process.jecSequence = cms.Sequence(process.patJetCorrFactorsUpdatedJEC * process
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 
 #Recompute PFMET (with updated JECs)
-#NOTE: JES is taken from the sqlite file but JER is not ! (JER is taken from Global tag)
 runMetCorAndUncFromMiniAOD (
     process,
-    jetCollUnskimmed="updatedPatJetsUpdatedJEC",
-    isData = not ISMC,
-    reapplyJEC = False
+    isData = not ISMC
 )
 
-#Rerunning PUPPI
+
+
+'''
+#Rerunning PUPPI (standard approach, default tuning)
 from PhysicsTools.PatAlgos.slimming.puppiForMET_cff import makePuppiesFromMiniAOD
 makePuppiesFromMiniAOD( process, True );
 #Set to false if you want to recompute PUPPI weights
@@ -357,6 +394,31 @@ runMetCorAndUncFromMiniAOD(process,
                            jetFlavor="AK4PFPuppi",
                            reapplyJEC = False
                            )
+'''
+
+#Rerunning PUPPi with v14-Chihuahua tune
+from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
+process.ak4PuppiJets  = ak4PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
+
+from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
+addJetCollection(process,labelName = 'Puppi', jetSource = cms.InputTag('ak4PuppiJets'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag('slimmedGenJets'), jetCorrections = ('AK4PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('packedPFCandidates'),
+                 pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
+                 svSource = cms.InputTag('slimmedSecondaryVertices'),
+                 muSource =cms.InputTag( 'slimmedMuons'),
+                 elSource = cms.InputTag('slimmedElectrons'),
+                 genParticles= cms.InputTag('prunedGenParticles'),
+                 getJetMCFlavour=ISMC
+)
+
+process.patJetsPuppi.addGenPartonMatch = cms.bool(ISMC)
+process.patJetsPuppi.addGenJetMatch = cms.bool(ISMC)
+
+from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV14
+
+patAlgosToolsTask.add(process.ak4PuppiJets)
+UpdatePuppiTuneV14(process,ISMC)
+
+
 
 #Recompute pile up ID
 from RecoJets.JetProducers.PileupJetID_cfi import  _chsalgos_81x, _chsalgos_94x, _chsalgos_102x
@@ -391,7 +453,7 @@ process.QGTagger.jetsLabel        = cms.string('QGL_AK4PFchs')
 
 
 
-
+process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
 process.applyjecs =  cms.Path( process.jecSequence )
 process.computepuppimet = cms.Path( process.puppiMETSequence  )
 process.computepfmetanduncties = cms.Path( process.fullPatMetSequence )
@@ -402,24 +464,12 @@ process.computeqgl = cms.Path(process.QGTagger)
 process.endpath = cms.EndPath( process.jmeanalyzer)
 
 
-#process.p = cms.Path(
-#    process.jecSequence *
-#    process.puppiMETSequence *
-#    process.fullPatMetSequence *
-#    process.fullPatMetSequencePuppi *
-#    process.ecalBadCalibReducedMINIAOD2019Filter *
-#    process.ecalLaserCorrFilter *
- #   process.ecalDeadCellBoundaryEnergyFilterUpdate *
- #   process.BadChargedCandidateFilterUpdate *    
-#    process.pileupJetIdUpdate *
-#    process.QGTagger *
-#Add an EDFilter applying the skim (the skim should be simple: selection + trigger. 
-#Add a skim for training based on eventnb? 
-#    process.jmeanalyzer
-#    )
-#process
-#process.p = cms.Task( process.jecSequence)
-
-
-
 #
+'''
+Need to 
+add new JECs UL17 => done
+add PUPPI V14 => done
+add prefiring module
+egm smearing
+
+'''
