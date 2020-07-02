@@ -5,7 +5,7 @@ process = cms.Process("Demo")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(20000) )  
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )  
 
 from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
 patAlgosToolsTask = getPatAlgosToolsTask(process)
@@ -20,13 +20,49 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIIAutumn18MiniAOD/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v2/90000/FD805C2C-92E0-4044-8061-770C77462EBC.root'
 #'/store/mc/RunIIAutumn18MiniAOD/GJets_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/20000/435256CF-C2B1-4646-B28A-EE1A23DFD4DC.root'
 #'/store/mc/RunIIAutumn18MiniAOD/TTJets_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/10000/014F2D77-CD31-8348-B6CC-B09134F7E8E4.root'
-'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/70000/FCBBCC59-954C-3143-9634-DF8825F76369.root'
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FC03A7B5-7FC0-E811-99BA-B496910A9A2C.root'
+#'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/70000/FCBBCC59-954C-3143-9634-DF8825F76369.root'
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/280000/114CE0B4-5CA0-FA47-BCE6-C13EE15A7191.root'
+
+
+
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/FAAFF59A-2340-4641-88E0-8C468D6F56AD.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F47C4B7D-B18A-3D4C-A6B9-601003D5AFF6.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F4750D03-36C4-AD4A-8CAB-1501A5EE8EF3.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F441F52A-9F68-BE42-B91B-DB4A8D1ABA99.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F36E09AC-E7E6-EB43-B61A-A59227282B33.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F18D0162-FF02-7E4A-BBB7-8D2A13CE7E87.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0E52585-2679-E542-BA08-EB22E63443A0.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0BDD302-F7CF-F94A-902B-8DFEF92CF3E8.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0496411-475D-9345-9A07-41BD1DD19F6D.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F002BB55-D805-9B49-8A68-EFEB41E223EB.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EF575753-1880-D047-92BC-DC8FFB908595.root',
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EE195096-4700-6149-AE6F-56BC9150D4E5.root',
+
+#'/store/data/Run2017F/JetHT/MINIAOD/09Aug2019_UL2017-v1/130000/3CD3E778-D5BF-394E-9D46-98D77A3CB58D.root'
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FC03A7B5-7FC0-E811-99BA-B496910A9A2C.root',
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FADA5029-2CC7-E811-BECD-0025907D1D6C.root',
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F855E2C9-30C7-E811-A621-0025901AC0F8.root',
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6A1640F-65C7-E811-BA45-0025901F8740.root',
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6989592-7DC7-E811-96B7-0CC47A0AD3BC.root',
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6670B03-D5C4-E811-AAE4-008CFA1CBB34.root',
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F640A4A9-55C7-E811-A17E-0025901AA5AE.root',
+#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6072CD4-40C7-E811-9E08-0CC47AD24CF8.root'
 #'/store/mc/RunIIAutumn18MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat_13TeV_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15_ext1-v1/110000/EC1F3053-63C3-6245-814E-74759808D0C7.root'
+
+
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3D5E16C8-1B56-5C43-88E0-85F4349F394D.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3C713B35-1710-0347-9BA7-2E11AD7EB3CF.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B7DEEF3-20AE-1941-AB0E-CE55B5643252.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B636F20-F177-D44E-900C-2BA4F105AA48.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B38B71B-EF67-224A-B37C-3A69AAA9DF85.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3A0E2E61-49DE-724D-A41B-F251A4B2AB81.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3939D168-46DC-7B4D-9B77-8619868D592F.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368CAA2A-EA8E-A843-89DD-0B643A326FDD.root',
+'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368194CF-569B-6442-9168-67935A4D045A.root'
         )
                             )
 
-process.TFileService = cms.Service("TFileService", fileName = cms.string("outputttbarht.root") )
+process.TFileService = cms.Service("TFileService", fileName = cms.string("output.root") )
 
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 process.GlobalTag.globaltag="102X_dataRun2_v8"
@@ -40,7 +76,8 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 
 
 ISMC=False
-runEra="MCUL2017"
+runEra="DataUL2017F"
+#runEra="MCUL2017F"
 UseSQLiteFiles=True
 
 
@@ -51,6 +88,8 @@ if "MC" in runEra:
 EleVetoWP=''
 EleTightWP=''
 PhotonTightWP=''
+#Rochester corrections folder: 
+RochesterCorrectionFile="JetMETStudies/JMEAnalyzer/python/RochesterCorrections/"
 
 
 if "Data2018" in runEra:
@@ -61,52 +100,59 @@ if "Data2018" in runEra:
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2018.txt"
 
 if "Data2017" in runEra:
     process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2017.txt"
 
 if "DataUL2017" in runEra:
     process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-
+    RochesterCorrectionFile+="RoccoR2017UL.txt"
 
 if "Data2016" in runEra:
     process.GlobalTag.globaltag="102X_dataRun2_v13" #2016
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    
-
+    RochesterCorrectionFile+="RoccoR2016.txt"
 
 if "MC2018" in runEra:
     process.GlobalTag.globaltag="102X_upgrade2018_realistic_v21" #2018     
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2018.txt"
 
 if "MC2017" in runEra:
     process.GlobalTag.globaltag="102X_mc2017_realistic_v8" #2017
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2017.txt"
 
 if "MC2016" in runEra:
     process.GlobalTag.globaltag="102X_mcRun2_asymptotic_v8" #2016
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2016.txt"
 
 if "MCUL2017" in runEra:
     process.GlobalTag.globaltag="102X_mc2017_realistic_v8" #2017
     EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
     EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2017UL.txt"
 
+print "Roch corr file: " 
+print RochesterCorrectionFile
 
 process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      METFiltersPAT = cms.InputTag("TriggerResults::PAT"),
@@ -127,6 +173,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      PFCandCollection=cms.InputTag("packedPFCandidates"),
                                      PULabel = cms.InputTag("slimmedAddPileupInfo"),
                                      Triggers = cms.InputTag("TriggerResults::HLT"),
+                                     l1GtSrc = cms.InputTag("gtStage2Digis"),
                                      GenParticles=cms.InputTag("prunedGenParticles"),
                                      GenInfo=cms.InputTag("generator"),
                                      LHELabel = cms.InputTag("externalLHEProducer"),
@@ -136,23 +183,29 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      Electrons=cms.InputTag("slimmedElectrons"),
                                      Muons=cms.InputTag("slimmedMuons"),
                                      Photons=cms.InputTag("slimmedPhotons"),
-                                     JetPtCut=cms.double(100),
+                                     JetPtCut=cms.double(20),
                                      ElectronPtCut=cms.double(20),
                                      ElectronVetoWorkingPoint=cms.string(EleVetoWP),
                                      ElectronTightWorkingPoint=cms.string(EleTightWP),
                                      MuonPtCut=cms.double(20),
+                                     RochCorrFile=cms.string(RochesterCorrectionFile),
                                      PhotonPtCut=cms.double(20),
                                      PhotonTightWorkingPoint=cms.string(PhotonTightWP),
-                                     PFCandPtCut=cms.double(200),
+                                     PFCandPtCut=cms.double(1000),
                                      SaveTree=cms.bool(True),
                                      IsMC=cms.bool(ISMC),
                                      SavePUIDVariables=cms.bool(True),
                                      DropUnmatchedJets=cms.bool(False),
                                      DropBadJets=cms.bool(False),
-#                                     Skim=cms.string("ZToEEorMuMu"),
-                                     Skim=cms.string(""),
+                                     ApplyPhotonID=cms.bool(False),
+                                     Skim=cms.string("ZToEEorMuMu"),
+#                                     Skim=cms.string(""),
                                      Debug=cms.bool(False)
                               )
+
+
+
+
 
 #Rerunning the ecalbadcalibration filter
 from RecoMET.METFilters.ecalBadCalibFilter_cfi import ecalBadCalibFilter
@@ -452,6 +505,21 @@ process.QGTagger.srcJets          = cms.InputTag('updatedPatJetsUpdatedJEC')
 process.QGTagger.jetsLabel        = cms.string('QGL_AK4PFchs')   
 
 
+#
+
+eraforEGMSmearing=''
+
+if "UL2017" in runEra or "UL2018" in runEra:
+    if "UL2017" in runEra:
+        eraforEGMSmearing='2017-UL'
+    if "UL2018" in runEra:
+        eraforEGMSmearing='2018-UL'
+    from RecoEgamma.EgammaTools.EgammaPostRecoTools import setupEgammaPostRecoSeq
+    setupEgammaPostRecoSeq(process,
+                           runVID=False, #saves CPU time by not needlessly re-running VID, if you want the Fall17V2 IDs, set this to True or remove (default is True)
+                           era=eraforEGMSmearing)    
+    process.ApplyEGMScaleSmearing=cms.Path(process.egammaPostRecoSeq)
+
 
 process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
 process.applyjecs =  cms.Path( process.jecSequence )
@@ -461,6 +529,7 @@ process.computepuppimetanduncties = cms.Path( process.fullPatMetSequencePuppi)
 process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
 process.computepuid = cms.Path(process.pileupJetIdUpdate )
 process.computeqgl = cms.Path(process.QGTagger)
+
 process.endpath = cms.EndPath( process.jmeanalyzer)
 
 

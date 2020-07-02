@@ -38,6 +38,8 @@
 #include "DataFormats/PatCandidates/interface/Photon.h"
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
+#include "DataFormats/L1TGlobal/interface/GlobalAlgBlk.h"
+
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
@@ -58,6 +60,8 @@
 #include "Math/Vector4D.h"
 #include "Math/Vector4Dfwd.h"
 
+//#include "JetMETStudies/JMEAnalyzer/python/RochesterCorrections/RoccoR.h"
+#include "JetMETStudies/JMEAnalyzer/interface/RoccoR.h"
 const int  N_METFilters=16;
 enum METFilterIndex{
   idx_Flag_goodVertices,
@@ -148,16 +152,18 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<vector<PileupSummaryInfo> > puInfoToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> trgresultsToken_;
-
+  edm::EDGetTokenT<BXVector<GlobalAlgBlk>> l1GtToken_;
 
   Float_t JetPtCut_;
   Float_t ElectronPtCut_;
   string ElectronVetoWP_, ElectronTightWP_;
-  Float_t MuonPtCut_, PhotonPtCut_;
+  Float_t MuonPtCut_;
+  string RochCorrFile_;
+  Float_t PhotonPtCut_;
   string PhotonTightWP_;
   Float_t PFCandPtCut_;
 
-  Bool_t SaveTree_, IsMC_, SavePUIDVariables_,DropUnmatchedJets_, DropBadJets_;
+  Bool_t SaveTree_, IsMC_, SavePUIDVariables_,DropUnmatchedJets_, DropBadJets_, ApplyPhotonID_;
   string Skim_;
   Bool_t Debug_;
 
@@ -260,6 +266,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector<Float_t>  _lEta;
   vector<Float_t>  _lPhi;
   vector<Float_t>  _lPt;
+  vector<Float_t>  _lPtcorr;
   vector<Float_t>  _lPassTightID;
   vector<int> _lpdgId;
   int _nEles, _nMus;
@@ -274,6 +281,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector<Float_t>  _phEta;
   vector<Float_t>  _phPhi;
   vector<Float_t>  _phPt;
+  vector<Float_t>  _phPtcorr;
   
   vector<Float_t>  _phgenEta;
   vector<Float_t>  _phgenPhi;
@@ -335,7 +343,9 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   bool HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ;
   bool HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL;
   bool HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL;
+  bool _l1prefire;
 
+  RoccoR rc; 
 };
 
 //
@@ -380,11 +390,13 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   lheEventALTToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabelALT"))),
   puInfoToken_(consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("PULabel"))),
   trgresultsToken_(consumes<TriggerResults>(iConfig.getParameter<edm::InputTag>("Triggers"))),
+  l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
   ElectronPtCut_(iConfig.getParameter<double>("ElectronPtCut")),
   ElectronVetoWP_(iConfig.getParameter<string>("ElectronVetoWorkingPoint")),
   ElectronTightWP_(iConfig.getParameter<string>("ElectronTightWorkingPoint")),
   MuonPtCut_(iConfig.getParameter<double>("MuonPtCut")),
+  RochCorrFile_(iConfig.getParameter<string>("RochCorrFile")),
   PhotonPtCut_(iConfig.getParameter<double>("PhotonPtCut")),
   PhotonTightWP_(iConfig.getParameter<string>("PhotonTightWorkingPoint")),
   PFCandPtCut_(iConfig.getParameter<double>("PFCandPtCut")),
@@ -393,6 +405,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   SavePUIDVariables_(iConfig.getParameter<bool>("SavePUIDVariables")),
   DropUnmatchedJets_(iConfig.getParameter<bool>("DropUnmatchedJets")),
   DropBadJets_(iConfig.getParameter<bool>("DropBadJets")),
+  ApplyPhotonID_(iConfig.getParameter<bool>("ApplyPhotonID")),
   Skim_(iConfig.getParameter<string>("Skim")),
   Debug_(iConfig.getParameter<bool>("Debug"))
 {
@@ -404,6 +417,10 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
 
   outputTree = fs->make<TTree>("tree","tree");
 
+  
+  rc.init(edm::FileInPath(RochCorrFile_).fullPath()); 
+  
+  
 }
 
 
@@ -507,7 +524,15 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector<pat::Electron> > thePatElectrons;
   iEvent.getByToken(electronToken_,thePatElectrons);
   for( std::vector<pat::Electron>::const_iterator electron = (*thePatElectrons).begin(); electron != (*thePatElectrons).end(); electron++ ) {
-
+    if((&*electron)->pt() <5) continue; //Loose cut  on uncorrected pt 
+    //Implementing smearing/scaling EGM corrections
+    //See here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaMiniAODV2#Applying_the_Energy_Scale_and_sm and here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
+    double ptelecorr = (&*electron)->pt();
+    if((&*electron)->hasUserFloat("ecalEnergyPostCorr") ){
+         ptelecorr = ptelecorr * (&*electron)->userFloat("ecalTrkEnergyPostCorr") /  (&*electron)->energy() ;
+	 //   cout << "Electron energy, Precorr, PostCorr, pt*cosh(eta) " << (&*electron)->energy() <<", "<<(&*electron)->userFloat("ecalEnergyPreCorr") <<", "<< (&*electron)->userFloat("ecalEnergyPostCorr") << ", "<<(&*electron)->pt() *cosh((&*electron)->eta()) <<endl; 
+    }
+    
     bool passvetoid = (&*electron)->electronID(ElectronVetoWP_)&& (&*electron)->pt()>10;
     if(!passvetoid) continue;
     _nEles++;
@@ -515,6 +540,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lEta.push_back((&*electron)->eta());
     _lPhi.push_back((&*electron)->phi());
     _lPt.push_back((&*electron)->pt());
+    _lPtcorr.push_back(ptelecorr );
     _lpdgId.push_back(-11*(&*electron)->charge());
     _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
     
@@ -523,6 +549,17 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector<pat::Muon> > thePatMuons;
   iEvent.getByToken(muonToken_,thePatMuons);
   for( std::vector<pat::Muon>::const_iterator muon = (*thePatMuons).begin(); muon != (*thePatMuons).end(); muon++ ) {
+    if((&*muon)->pt() <5) continue; //Loose cut  on uncorrected pt 
+
+    //Rochester corrections: https://twiki.cern.ch/twiki/bin/viewauth/CMS/RochcorMuon#Rochester_Correction
+    //https://indico.cern.ch/event/926898/contributions/3897122/attachments/2052816/3441285/roccor.pdf
+    double ptmuoncorr= (&*muon)->pt();
+
+    if( !IsMC_) ptmuoncorr *= rc.kScaleDT( (&*muon)->charge(),  (&*muon)->pt(), (&*muon)->eta(),(&*muon)->phi());
+    else{
+      if( (&*muon)->genLepton() !=0)  ptmuoncorr *= rc.kSpreadMC( (&*muon)->charge(),  (&*muon)->pt(), (&*muon)->eta(),(&*muon)->phi(), (&*muon)->genLepton()->pt() );
+      else if(! ((&*muon)->innerTrack()).isNull()) ptmuoncorr *= rc.kSmearMC( (&*muon)->charge(),  (&*muon)->pt(), (&*muon)->eta(),(&*muon)->phi(),  (&*muon)->innerTrack()->hitPattern().trackerLayersWithMeasurement(), gRandom->Rndm());
+    }
 
     bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>10 ;  
     if(!passvetoid) continue;
@@ -531,6 +568,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lEta.push_back((&*muon)->eta());
     _lPhi.push_back((&*muon)->phi());
     _lPt.push_back((&*muon)->pt());
+    _lPtcorr.push_back( ptmuoncorr );
     _lpdgId.push_back(-13*(&*muon)->charge());
     _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
   }
@@ -538,12 +576,22 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector<pat::Photon> > thePatPhotons;
   iEvent.getByToken(photonToken_,thePatPhotons);
   for( std::vector<pat::Photon>::const_iterator photon = (*thePatPhotons).begin(); photon != (*thePatPhotons).end(); photon++ ) {
-    if((&*photon)->pt()<PhotonPtCut_)continue;
+    if((&*photon)->pt() <10) continue; //Loose cut  on uncorrected pt 
+    double ptphotoncorr = (&*photon)->pt(); //This is (possibly) the smeared/scaled pt for data ! 
+    //Implementing smearing/scaling EGM corrections
+    //See here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaMiniAODV2#Applying_the_Energy_Scale_and_sm and here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
+    //For |eta|>2.5 the corrections are not adapted and one should instead pick the uncorrected value:
+    if((&*photon)->hasUserFloat("ecalEnergyPostCorr") && fabs((&*photon)->eta())<2.5){
+         ptphotoncorr = ptphotoncorr * (&*photon)->userFloat("ecalEnergyPostCorr") /  (&*photon)->energy() ;
+    }
+        
+    if(ptphotoncorr <PhotonPtCut_)continue;
     bool passtightid = (&*photon)->photonID(PhotonTightWP_) && (&*photon)->passElectronVeto()&& !((&*photon)->hasPixelSeed()  ) &&fabs((&*photon)->eta())<1.4442&& (&*photon)->r9()>0.9 ; 
-    if(!passtightid) continue;
+    if(!passtightid&& ApplyPhotonID_) continue;
     _phEta.push_back((&*photon)->eta());
     _phPhi.push_back((&*photon)->phi());
-    _phPt.push_back((&*photon)->pt());
+    _phPt.push_back( (&*photon)->pt());
+    _phPtcorr.push_back( ptphotoncorr);
     
   }
   
@@ -878,7 +926,13 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
     }
   }
-  
+
+  //Prefiring, see: https://github.com/nsmith-/PrefireAnalysis/#usage
+  edm::Handle<BXVector<GlobalAlgBlk>> l1GtHandle;
+  iEvent.getByToken(l1GtToken_, l1GtHandle);
+  _l1prefire= false;
+  if(!IsMC_)_l1prefire = l1GtHandle->begin(-1)->getFinalOR();
+
   
   //Filling trees and histos   
   if(PassSkim()){
@@ -980,6 +1034,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lEta",&_lEta);
   outputTree->Branch("_lPhi",&_lPhi);
   outputTree->Branch("_lPt",&_lPt);
+  outputTree->Branch("_lPtcorr",&_lPtcorr);
   outputTree->Branch("_lpdgId",&_lpdgId);
   outputTree->Branch("_nEles", &_nEles, "_nEles/I");
   outputTree->Branch("_nMus", &_nMus, "_nMus/I");
@@ -1002,6 +1057,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_phEta",&_phEta);
   outputTree->Branch("_phPhi",&_phPhi);
   outputTree->Branch("_phPt",&_phPt);
+  outputTree->Branch("_phPtcorr",&_phPtcorr);
   
   outputTree->Branch("_PFcand_pt",&_PFcand_pt);
   outputTree->Branch("_PFcand_eta",&_PFcand_eta);
@@ -1055,7 +1111,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",&HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ,"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ/O");
   outputTree->Branch("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",&HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL,"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL/O");
   outputTree->Branch("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",&HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL,"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL/O");
-
+  if(!IsMC_)outputTree->Branch("_l1prefire",&_l1prefire,"_l1prefire/O");
   
 }
 
@@ -1216,6 +1272,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _lEta.clear();
   _lPhi.clear();
   _lPt.clear();
+  _lPtcorr.clear();
   _lpdgId.clear();
   _lPassTightID.clear();
   _nEles=0;
@@ -1230,6 +1287,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _phEta.clear();
   _phPhi.clear();
   _phPt.clear();
+  _phPtcorr.clear();
 
   _phgenEta.clear();
   _phgenPhi.clear();
