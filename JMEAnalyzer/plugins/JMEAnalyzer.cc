@@ -149,6 +149,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
   edm::EDGetTokenT<LHEEventProduct> lheEventALTToken_;
 
+  edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetAssocCHSToken_;
+  edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetWithNuAssocCHSToken_;
+  edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetAssocPuppiToken_;
+
+
   edm::EDGetTokenT<vector<PileupSummaryInfo> > puInfoToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> trgresultsToken_;
@@ -226,6 +231,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector <Float_t>  _jetPtGen;
   vector <Float_t>  _jetEtaGen;
   vector <Float_t>  _jetPhiGen;
+  vector <Float_t>  _jetPtGenWithNu;
   vector<Float_t>  _jetJECuncty;
   vector<Float_t>  _jetPUMVA; 
   vector<Float_t>  _jetPUMVAUpdate2017;
@@ -388,6 +394,9 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   geninfoToken_(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("GenInfo"))),
   lheEventToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabel"))),
   lheEventALTToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabelALT"))),
+  genJetAssocCHSToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetMatchCHS"))),
+  genJetWithNuAssocCHSToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetWithNuMatchCHS"))),
+  genJetAssocPuppiToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetMatchPuppi"))),
   puInfoToken_(consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("PULabel"))),
   trgresultsToken_(consumes<TriggerResults>(iConfig.getParameter<edm::InputTag>("Triggers"))),
   l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
@@ -622,15 +631,41 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //Value map for Quark/gluon likelihood
   edm::Handle<edm::ValueMap<float> > quarkgluonlikelihood;
 
+  //  Accessing the matching with an updated gen collection
+  edm::Handle<edm::Association<reco::GenJetCollection>> genJetMatch;
+  iEvent.getByToken(genJetAssocCHSToken_, genJetMatch);
+   
+  edm::Handle<edm::Association<reco::GenJetCollection>> genJetWithNuMatch;
+  iEvent.getByToken(genJetWithNuAssocCHSToken_, genJetWithNuMatch);
+
+
   Float_t leadjetpt (0.);
+
   if(theJets.isValid()){
     for( std::vector<pat::Jet>::const_iterator jet = (*theJets).begin(); jet != (*theJets).end(); jet++ ) {
+      edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>( theJets , jet -theJets->begin()));
+      //As of today only gen jets with pt >8 are saved in MINIAOD, see: https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py
+      //The gen jets are defined excluding neutrinos. 
+      //In order to decrease this pt cut and/or include neutrinos, one needs to recluster gen jets. 
+      //Boolean to use the updated gen jet collection or the default one. Should probably be made configurable at some point.
+      bool useupdategenjets = true;
+      
+
+      const reco::GenJet * updatedgenjet =0;
+      const reco::GenJet * updatedgenjetwithnu =0; 
+      if(genJetMatch.isValid() && genJetWithNuMatch.isValid() && useupdategenjets){
+	updatedgenjet = ( (*genJetMatch)[jetRef].isNonnull() && (*genJetMatch)[jetRef].isAvailable()) ? &*(*genJetMatch)[jetRef] : 0;
+	updatedgenjetwithnu = ( (*genJetWithNuMatch)[jetRef].isNonnull() && (*genJetWithNuMatch)[jetRef].isAvailable()) ? &*(*genJetWithNuMatch)[jetRef] : 0;
+      }
+ 
+      const reco::GenJet * genjet = useupdategenjets?updatedgenjet: (&*jet) ->genJet()  ;
+      
       if((&*jet)->pt() >leadjetpt) leadjetpt = (&*jet)->pt();
       if((&*jet)->pt()<JetPtCut_) continue;
       bool passid = PassJetID(  (&*jet) ,"2018");
       if( DropBadJets_ && !passid  ) continue;//Drop bad jets (mostly leptons).
 
-      if( (&*jet) ->genJet() ==0&& DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;//Drop genunmatched jets (mostly PU). Keep those with pt>50 as these probably require special attention.
+      if( genjet ==0   && DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;//Drop genunmatched jets (mostly PU). Keep those with pt>50 as these probably require special attention.
       _jetEta.push_back((&*jet)->eta());
       _jetPhi.push_back((&*jet)->phi());
       _jetPt.push_back((&*jet)->pt());
@@ -648,7 +683,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //Accessing the default PU ID stored in MINIAOD https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
       _jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
       //Accessing the recomputed PU ID. This must be done with a value map. 
-      edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>( theJets , jet -theJets->begin()));
       iEvent.getByToken(pileupJetIdDiscriminantUpdateToken_,pileupJetIdDiscriminantUpdate);
       if(pileupJetIdDiscriminantUpdate.isValid()) _jetPUMVAUpdate.push_back((*pileupJetIdDiscriminantUpdate)[jetRef] );
       else  _jetPUMVAUpdate.push_back(-1 );
@@ -659,8 +693,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(pileupJetIdDiscriminantUpdate2018.isValid()) _jetPUMVAUpdate2018.push_back((*pileupJetIdDiscriminantUpdate2018)[jetRef] );
       else  _jetPUMVAUpdate2018.push_back(-1 );
       
-
-
       //Accessing the recomputed input variables to the PUID BDT
       iEvent.getByToken(pileupJetIdVariablesUpdateToken_,pileupJetIdVariablesUpdate);
       if(pileupJetIdVariablesUpdate.isValid()){
@@ -713,23 +745,22 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetJECuncty.push_back( jecUnc->getUncertainty(true) );
       
       Float_t jetptgen(-99.), jetetagen(-99.),jetphigen(-99.);
-      if( (&*jet) ->genJet() !=0 ){
-	//N.B. As of today only gen jets with pt >8 are saved in MINIAOD, see: https://github.com/cms-sw/cmssw/blob/master/PhysicsTools/PatAlgos/python/slimming/slimmedGenJets_cfi.py
-	//N.B. The gen jets are defined excluding neutrinos. 
-	jetptgen= (&*jet)->genJet()->pt() ;
-	jetetagen= (&*jet)->genJet()->eta() ;
-	jetphigen= (&*jet)->genJet()->phi() ;
+      Float_t jetptgenwithnu(-99.);
+      if( genjet !=0 ){
+	jetptgen= genjet->pt() ;
+	jetetagen= genjet->eta() ;
+	jetphigen= genjet->phi() ;
       }
+      if(updatedgenjetwithnu !=0) jetptgenwithnu = updatedgenjetwithnu->pt() ;
       _jetPtGen.push_back(jetptgen);
       _jetEtaGen.push_back(jetetagen);
       _jetPhiGen.push_back(jetphigen);
+      _jetPtGenWithNu.push_back(jetptgenwithnu);
       
     }
   }
   else if(Debug_){cout << "Invalid jet collection"<<endl;}
   
-
-   
   //Type 1 PFMET
   edm::Handle< vector<pat::MET> > ThePFMET;
   iEvent.getByToken(metToken_, ThePFMET);
@@ -775,8 +806,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _PFcand_fromPV.push_back(p->fromPV(0));//See https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2017#Packed_ParticleFlow_Candidates
   }
   
-
-
   //Gen particle info
   edm::Handle<GenParticleCollection> TheGenParticles;
   iEvent.getByToken(genpartToken_, TheGenParticles);
@@ -865,11 +894,11 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(fabs( lhe_handle->hepeup().IDUP[i]) <=5|| lhe_handle->hepeup().IDUP[i] ==21 ) lheht += cand_.Pt();//That definition works to retrieve the HT in madgraph HT binned QCD 
     }
   }
-  //  bool problem =_genHT<600||_genHT>800 || lheht <600|| lheht>800;
-  //if(problem) cout <<"Orig/new genHT "<< _genHT<<"/"<<lheht<<endl;
+
   _genHT = lheht;
-  // if(_genHT<600||_genHT>800)  cout <<"New genHT "<< _genHT<<endl;
   //Tested with QCD/photon jets/DY with madgraphm
+
+
   Handle<std::vector<PileupSummaryInfo> > puInfo;
   iEvent.getByToken(puInfoToken_, puInfo);
   if(puInfo.isValid()){
@@ -933,7 +962,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _l1prefire= false;
   if(!IsMC_)_l1prefire = l1GtHandle->begin(-1)->getFinalOR();
 
-  
   //Filling trees and histos   
   if(PassSkim()){
       if(SaveTree_)outputTree->Fill();
@@ -996,6 +1024,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetPtGen",&_jetPtGen);
   outputTree->Branch("_jetEtaGen",&_jetEtaGen);
   outputTree->Branch("_jetPhiGen",&_jetPhiGen);
+  outputTree->Branch("_jetPtGenWithNu",&_jetPtGenWithNu);
   outputTree->Branch("_jetJECuncty",&_jetJECuncty);
   outputTree->Branch("_jetPUMVA",&_jetPUMVA);
   outputTree->Branch("_jetPUMVAUpdate",&_jetPUMVAUpdate);
@@ -1232,6 +1261,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _jetPtGen.clear();
   _jetEtaGen.clear();
   _jetPhiGen.clear();
+  _jetPtGenWithNu.clear();
   _jetJECuncty.clear();
   _jetPUMVA.clear();
   _jetPUMVAUpdate.clear();

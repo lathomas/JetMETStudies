@@ -48,17 +48,20 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F640A4A9-55C7-E811-A17E-0025901AA5AE.root',
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6072CD4-40C7-E811-9E08-0CC47AD24CF8.root'
 #'/store/mc/RunIIAutumn18MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat_13TeV_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15_ext1-v1/110000/EC1F3053-63C3-6245-814E-74759808D0C7.root'
+'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/323B80E2-C415-694A-9A24-3E0F68A170D7.root',
+'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BAD0ABF-DB86-9B4C-BD26-D5DED96E54B2.root',
+'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BE12E39-1ADB-F444-ABE2-08E9F3765A11.root'
 
 
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3D5E16C8-1B56-5C43-88E0-85F4349F394D.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3C713B35-1710-0347-9BA7-2E11AD7EB3CF.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B7DEEF3-20AE-1941-AB0E-CE55B5643252.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B636F20-F177-D44E-900C-2BA4F105AA48.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B38B71B-EF67-224A-B37C-3A69AAA9DF85.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3A0E2E61-49DE-724D-A41B-F251A4B2AB81.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3939D168-46DC-7B4D-9B77-8619868D592F.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368CAA2A-EA8E-A843-89DD-0B643A326FDD.root',
-'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368194CF-569B-6442-9168-67935A4D045A.root'
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3D5E16C8-1B56-5C43-88E0-85F4349F394D.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3C713B35-1710-0347-9BA7-2E11AD7EB3CF.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B7DEEF3-20AE-1941-AB0E-CE55B5643252.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B636F20-F177-D44E-900C-2BA4F105AA48.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B38B71B-EF67-224A-B37C-3A69AAA9DF85.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3A0E2E61-49DE-724D-A41B-F251A4B2AB81.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3939D168-46DC-7B4D-9B77-8619868D592F.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368CAA2A-EA8E-A843-89DD-0B643A326FDD.root',
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368194CF-569B-6442-9168-67935A4D045A.root'
         )
                             )
 
@@ -76,8 +79,8 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 
 
 ISMC=False
-runEra="DataUL2017F"
-#runEra="MCUL2017F"
+#runEra="DataUL2017F"
+runEra="MCUL2017F"
 UseSQLiteFiles=True
 
 
@@ -178,6 +181,9 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      GenInfo=cms.InputTag("generator"),
                                      LHELabel = cms.InputTag("externalLHEProducer"),
                                      LHELabelALT = cms.InputTag("source"),
+                                     GenJetMatchCHS= cms.InputTag("patJetGenJetMatchUpdate"),
+                                     GenJetWithNuMatchCHS= cms.InputTag("patJetGenWithNuJetMatchUpdate"),
+                                     GenJetMatchPuppi= cms.InputTag("patJetGenJetMatchUpdatePuppi"),
                                      PFMet=cms.InputTag("slimmedMETs"),
                                      PuppiMet=cms.InputTag("slimmedMETsPuppi"),
                                      Electrons=cms.InputTag("slimmedElectrons"),
@@ -198,8 +204,8 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      DropUnmatchedJets=cms.bool(False),
                                      DropBadJets=cms.bool(False),
                                      ApplyPhotonID=cms.bool(False),
-                                     Skim=cms.string("ZToEEorMuMu"),
-#                                     Skim=cms.string(""),
+#                                     Skim=cms.string("ZToEEorMuMu"),
+                                     Skim=cms.string(""),
                                      Debug=cms.bool(False)
                               )
 
@@ -419,6 +425,38 @@ updateJetCollection(
 process.jecSequence = cms.Sequence(process.patJetCorrFactorsUpdatedJEC * process.updatedPatJetsUpdatedJEC * process.patJetCorrFactorsUpdatedJECPuppi * process.updatedPatJetsUpdatedJECPuppi)
 
 
+#Recluster gen jets
+## Filter out neutrinos from packed GenParticles 
+#The filter on pdgid 2101, 2103, 2203 and 1103 should be harmless for standard samples. I added it because some private samples mistakenly added those unstable states as stable products. 
+process.packedGenParticlesForJetsNoNuNEW = cms.EDFilter("CandPtrSelector", src = cms.InputTag("packedGenParticles"), cut = cms.string("abs(pdgId) != 12 && abs(pdgId) != 14 && abs(pdgId) != 16 && abs(pdgId) != 2101 &&abs(pdgId) != 2103 && abs(pdgId) != 2203  && abs(pdgId) != 1103 "))
+process.packedGenParticlesForJetsWithNuNEW = cms.EDFilter("CandPtrSelector", src = cms.InputTag("packedGenParticles"), cut = cms.string("abs(pdgId) != 2101 &&abs(pdgId) != 2103 && abs(pdgId) != 2203  && abs(pdgId) != 1103 "))
+## Define GenJets 
+from RecoJets.JetProducers.ak4GenJets_cfi import ak4GenJets
+process.ak4GenJetsNoNuNEW = ak4GenJets.clone(src = 'packedGenParticlesForJetsNoNuNEW')
+process.ak4GenJetsWithNuNEW = ak4GenJets.clone(src = 'packedGenParticlesForJetsWithNuNEW')
+#I didn't manage to create a new jet collection on top of MINIAOD with the matching to this updated gen jet collection   
+#Work around: do the matching by hand                                                                                                                                                                                       
+#Now redo the matching. The patJetGenJetMatch produces a matching between the gen jets and the reco jets. 
+from PhysicsTools.PatAlgos.mcMatchLayer0.jetMatch_cfi import patJetGenJetMatch
+
+process.patJetGenJetMatchUpdate = patJetGenJetMatch.clone(
+src         = cms.InputTag("updatedPatJetsUpdatedJEC"),
+matched     = cms.InputTag("ak4GenJetsNoNuNEW")
+)
+process.patJetGenJetMatchUpdatePuppi = patJetGenJetMatch.clone(
+src         = cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
+matched     = cms.InputTag("ak4GenJetsNoNuNEW")
+)
+process.patJetGenWithNuJetMatchUpdate = patJetGenJetMatch.clone(
+src         = cms.InputTag("updatedPatJetsUpdatedJEC"),
+matched     = cms.InputTag("ak4GenJetsWithNuNEW")
+)
+#N.B. at some point will also need to add the equivalent for PUPPI jets (but these are currently not implemented)
+
+
+
+
+
 #Update MET
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 
@@ -521,8 +559,14 @@ if "UL2017" in runEra or "UL2018" in runEra:
     process.ApplyEGMScaleSmearing=cms.Path(process.egammaPostRecoSeq)
 
 
-process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
+
 process.applyjecs =  cms.Path( process.jecSequence )
+if ISMC: 
+    process.reclustergenjets = cms.Path(process.packedGenParticlesForJetsNoNuNEW * process.packedGenParticlesForJetsWithNuNEW *process.ak4GenJetsNoNuNEW * process.ak4GenJetsWithNuNEW * process.patJetGenJetMatchUpdate *process.patJetGenJetMatchUpdatePuppi  * process.patJetGenWithNuJetMatchUpdate)
+
+
+#You may want to comment out some of the following lines to speed things up
+process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
 process.computepuppimet = cms.Path( process.puppiMETSequence  )
 process.computepfmetanduncties = cms.Path( process.fullPatMetSequence )
 process.computepuppimetanduncties = cms.Path( process.fullPatMetSequencePuppi)
@@ -530,7 +574,8 @@ process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter
 process.computepuid = cms.Path(process.pileupJetIdUpdate )
 process.computeqgl = cms.Path(process.QGTagger)
 
+#This one obviously shouldn't be commented out
 process.endpath = cms.EndPath( process.jmeanalyzer)
 
 
-#
+
