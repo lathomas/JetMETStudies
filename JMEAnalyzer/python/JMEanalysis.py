@@ -5,7 +5,8 @@ process = cms.Process("Demo")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )  
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(200000) )  
+#process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(23374) )  
 
 from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
 patAlgosToolsTask = getPatAlgosToolsTask(process)
@@ -23,6 +24,12 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/70000/FCBBCC59-954C-3143-9634-DF8825F76369.root'
 #'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/280000/114CE0B4-5CA0-FA47-BCE6-C13EE15A7191.root'
 
+#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/CD375D55-3419-BD44-891D-0B3396DC9183.root',
+#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/CAA1C836-1A53-1140-8DAE-C3C428EDB304.root',
+#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C93984AD-C2B3-084D-8735-FE533D3FC735.root',
+#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C7F52CEB-C7C1-6B45-B016-4731B8FF000E.root',
+#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C764B195-A6AD-984A-9A44-CA92289342DB.root',
+#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C722A73C-E67C-E445-BC9D-F287C2C962D1.root'
 
 
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/FAAFF59A-2340-4641-88E0-8C468D6F56AD.root',
@@ -36,7 +43,7 @@ process.source = cms.Source("PoolSource",
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0496411-475D-9345-9A07-41BD1DD19F6D.root',
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F002BB55-D805-9B49-8A68-EFEB41E223EB.root',
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EF575753-1880-D047-92BC-DC8FFB908595.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EE195096-4700-6149-AE6F-56BC9150D4E5.root',
+'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EE195096-4700-6149-AE6F-56BC9150D4E5.root'
 
 #'/store/data/Run2017F/JetHT/MINIAOD/09Aug2019_UL2017-v1/130000/3CD3E778-D5BF-394E-9D46-98D77A3CB58D.root'
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FC03A7B5-7FC0-E811-99BA-B496910A9A2C.root',
@@ -48,23 +55,28 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F640A4A9-55C7-E811-A17E-0025901AA5AE.root',
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6072CD4-40C7-E811-9E08-0CC47AD24CF8.root'
 #'/store/mc/RunIIAutumn18MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat_13TeV_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15_ext1-v1/110000/EC1F3053-63C3-6245-814E-74759808D0C7.root'
-'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/323B80E2-C415-694A-9A24-3E0F68A170D7.root',
-'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BAD0ABF-DB86-9B4C-BD26-D5DED96E54B2.root',
-'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BE12E39-1ADB-F444-ABE2-08E9F3765A11.root'
 
 
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3D5E16C8-1B56-5C43-88E0-85F4349F394D.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3C713B35-1710-0347-9BA7-2E11AD7EB3CF.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B7DEEF3-20AE-1941-AB0E-CE55B5643252.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B636F20-F177-D44E-900C-2BA4F105AA48.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3B38B71B-EF67-224A-B37C-3A69AAA9DF85.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3A0E2E61-49DE-724D-A41B-F251A4B2AB81.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/3939D168-46DC-7B4D-9B77-8619868D592F.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368CAA2A-EA8E-A843-89DD-0B643A326FDD.root',
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/50000/368194CF-569B-6442-9168-67935A4D045A.root'
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/323B80E2-C415-694A-9A24-3E0F68A170D7.root',
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BAD0ABF-DB86-9B4C-BD26-D5DED96E54B2.root',
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BE12E39-1ADB-F444-ABE2-08E9F3765A11.root'
+#'file:/user/lathomas/GamGamToLLStudy/CMSSW_10_6_13/src/output_met200_partial.root'
+
+
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/000C0A31-7750-7A4D-A883-4676E3204108.root',
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/EDBBDDF4-C086-6E4C-AEC1-F95894C26521.root',
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/ED4BB7A9-8CCA-2848-AED9-071C95A97161.root',
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/945B5A22-C9E6-3D4E-A998-322431FD8759.root',
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/94007307-8399-1F4E-B59A-B32C70FC6375.root',
+#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/92BE7189-3636-3149-BFCD-91ED2498573C.root'
+
+
+#'file:pickevents_ZeynepVBF.root'
         )
                             )
 
+#process.TFileService = cms.Service("TFileService", fileName = cms.string("outputQCDHT1000to1500_puppiv16_200kevts.root") )
+#process.TFileService = cms.Service("TFileService", fileName = cms.string("outputQCDHT1000to1500_puppiv16_23374evts.root") )
 process.TFileService = cms.Service("TFileService", fileName = cms.string("output.root") )
 
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
@@ -79,8 +91,9 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 
 
 ISMC=False
-#runEra="DataUL2017F"
-runEra="MCUL2017F"
+
+runEra="DataUL2017F"
+#runEra="MCUL2017F"
 UseSQLiteFiles=True
 
 
@@ -92,7 +105,7 @@ EleVetoWP=''
 EleTightWP=''
 PhotonTightWP=''
 #Rochester corrections folder: 
-RochesterCorrectionFile="JetMETStudies/JMEAnalyzer/python/RochesterCorrections/"
+RochesterCorrectionFile="RochesterCorrections/"
 
 
 if "Data2018" in runEra:
@@ -173,7 +186,8 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      pileupJetIdDiscriminantUpdate2018 = cms.InputTag('pileupJetIdUpdate2018:fullDiscriminant'),
                                      pileupJetIdVariablesUpdate = cms.InputTag('pileupJetIdUpdate'),
                                      QuarkGluonLikelihood = cms.InputTag('QGTagger:qgLikelihood'),
-                                     PFCandCollection=cms.InputTag("packedPFCandidates"),
+                                     PFCandidates=cms.InputTag("packedPFCandidates"),
+                                     PuppiWeights=cms.InputTag("puppi"),
                                      PULabel = cms.InputTag("slimmedAddPileupInfo"),
                                      Triggers = cms.InputTag("TriggerResults::HLT"),
                                      l1GtSrc = cms.InputTag("gtStage2Digis"),
@@ -184,6 +198,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      GenJetMatchCHS= cms.InputTag("patJetGenJetMatchUpdate"),
                                      GenJetWithNuMatchCHS= cms.InputTag("patJetGenWithNuJetMatchUpdate"),
                                      GenJetMatchPuppi= cms.InputTag("patJetGenJetMatchUpdatePuppi"),
+                                     GenJetWithNuMatchPuppi= cms.InputTag("patJetGenWithNuJetMatchUpdatePuppi"),
                                      PFMet=cms.InputTag("slimmedMETs"),
                                      PuppiMet=cms.InputTag("slimmedMETsPuppi"),
                                      Electrons=cms.InputTag("slimmedElectrons"),
@@ -197,7 +212,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      RochCorrFile=cms.string(RochesterCorrectionFile),
                                      PhotonPtCut=cms.double(20),
                                      PhotonTightWorkingPoint=cms.string(PhotonTightWP),
-                                     PFCandPtCut=cms.double(1000),
+                                     PFCandPtCut=cms.double(1),
                                      SaveTree=cms.bool(True),
                                      IsMC=cms.bool(ISMC),
                                      SavePUIDVariables=cms.bool(True),
@@ -277,10 +292,23 @@ process.BadChargedCandidateFilterUpdate=BadChargedCandidateFilter.clone(
 import FWCore.PythonUtilities.LumiList as LumiList
 import FWCore.ParameterSet.Types as CfgTypes
 process.source.lumisToProcess = CfgTypes.untracked(CfgTypes.VLuminosityBlockRange())
-JSONfile = 'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'
-myLumis = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
-#process.source.lumisToProcess.extend(myLumis)
 
+
+JSONfile =''
+
+if "DataUL2017" in runEra:
+    JSONfile = 'Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt'
+if "Data2018" in runEra:
+    JSONfile = 'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'
+if "Data2017" in runEra:
+    JSONfile = 'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'
+if "Data2016" in runEra:
+    JSONfile = 'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt'
+myLumis = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
+if not ISMC:
+    process.source.lumisToProcess.extend(myLumis)
+print "json" 
+print JSONfile 
 
 #Updating JECs
 JECsVersion=""
@@ -290,6 +318,8 @@ if "MC2017" in runEra:
     JECsVersion='Fall17_17Nov2017_V32_102X_MC'
 if "MC2016" in runEra:
     JECsVersion='Summer16_07Aug2017_V11_MC'
+if "MCUL2017" in runEra:
+    JECsVersion='Summer19UL17_V5_MC'
 
 if "Data2018" in runEra:
     JECsVersion='Autumn18_RunABCD_V19_DATA'
@@ -298,10 +328,6 @@ if "Data2017" in runEra:
 if "Data2016" in runEra:
     JECsVersion='Summer16_07Aug2017All_V11_DATA'
 
-
-
-if "MCUL2017" in runEra:
-    JECsVersion='Summer19UL17_V5_MC'
 if "DataUL2017B" in runEra:
     JECsVersion='Summer19UL17_RunB_V5_DATA'
 if "DataUL2017C" in runEra:
@@ -444,14 +470,18 @@ src         = cms.InputTag("updatedPatJetsUpdatedJEC"),
 matched     = cms.InputTag("ak4GenJetsNoNuNEW")
 )
 process.patJetGenJetMatchUpdatePuppi = patJetGenJetMatch.clone(
-src         = cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
+src         = cms.InputTag("slimmedJetsPuppi"),
 matched     = cms.InputTag("ak4GenJetsNoNuNEW")
 )
 process.patJetGenWithNuJetMatchUpdate = patJetGenJetMatch.clone(
 src         = cms.InputTag("updatedPatJetsUpdatedJEC"),
 matched     = cms.InputTag("ak4GenJetsWithNuNEW")
 )
-#N.B. at some point will also need to add the equivalent for PUPPI jets (but these are currently not implemented)
+process.patJetGenWithNuJetMatchUpdatePuppi = patJetGenJetMatch.clone(
+src         = cms.InputTag("slimmedJetsPuppi"),
+matched     = cms.InputTag("ak4GenJetsWithNuNEW")
+)
+
 
 
 
@@ -562,14 +592,12 @@ if "UL2017" in runEra or "UL2018" in runEra:
 
 process.applyjecs =  cms.Path( process.jecSequence )
 if ISMC: 
-    process.reclustergenjets = cms.Path(process.packedGenParticlesForJetsNoNuNEW * process.packedGenParticlesForJetsWithNuNEW *process.ak4GenJetsNoNuNEW * process.ak4GenJetsWithNuNEW * process.patJetGenJetMatchUpdate *process.patJetGenJetMatchUpdatePuppi  * process.patJetGenWithNuJetMatchUpdate)
+    process.reclustergenjets = cms.Path(process.packedGenParticlesForJetsNoNuNEW * process.packedGenParticlesForJetsWithNuNEW *process.ak4GenJetsNoNuNEW * process.ak4GenJetsWithNuNEW * process.patJetGenJetMatchUpdate *process.patJetGenJetMatchUpdatePuppi  * process.patJetGenWithNuJetMatchUpdate  * process.patJetGenWithNuJetMatchUpdatePuppi)
 
 
 #You may want to comment out some of the following lines to speed things up
 process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
-process.computepuppimet = cms.Path( process.puppiMETSequence  )
-process.computepfmetanduncties = cms.Path( process.fullPatMetSequence )
-process.computepuppimetanduncties = cms.Path( process.fullPatMetSequencePuppi)
+
 process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
 process.computepuid = cms.Path(process.pileupJetIdUpdate )
 process.computeqgl = cms.Path(process.QGTagger)

@@ -114,6 +114,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   virtual bool GetIdxFilterDecision(int it);
   virtual TString GetIdxFilterName(int it);
   virtual void InitandClearStuff();
+  virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll);
   
  
   // ----------member data ---------------------------
@@ -136,8 +137,9 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<edm::ValueMap<StoredPileupJetIdentifier> > pileupJetIdVariablesUpdateToken_;
   edm::EDGetTokenT<edm::ValueMap<float> > qgLToken_;
 
-  edm::EDGetTokenT<pat::PackedCandidateCollection> pfcandsToken_;
-  
+  edm::EDGetTokenT<std::vector< pat::PackedCandidate>> pfcandsToken_;
+  edm::EDGetTokenT<edm::ValueMap<float> > puppiweightsToken_;
+ 
   edm::EDGetTokenT<std::vector< pat::MET> > metToken_;
   edm::EDGetTokenT<std::vector< pat::MET> > puppimetToken_;
   edm::EDGetTokenT<std::vector< pat::Electron> > electronToken_;
@@ -152,7 +154,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetAssocCHSToken_;
   edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetWithNuAssocCHSToken_;
   edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetAssocPuppiToken_;
-
+  edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetWithNuAssocPuppiToken_;
 
   edm::EDGetTokenT<vector<PileupSummaryInfo> > puInfoToken_;
 
@@ -248,9 +250,6 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector<Float_t> _jetDeepJet_g;
   vector<Float_t> _jetQuarkGluonLikelihood;
 
-  
-
-
   vector<Float_t>  _jet_beta ;
   vector<Float_t>  _jet_dR2Mean ;
   vector<Float_t>  _jet_majW ;
@@ -267,6 +266,13 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector<int>  _jet_nParticles ;
   vector<int>  _jet_nCharged ;
 
+  //Puppi jet
+  vector<Float_t>  _puppijetEta;
+  vector<Float_t>  _puppijetPhi;
+  vector<Float_t>  _puppijetPt;
+  vector <Float_t>  _puppijetPtGen;
+  vector <Float_t>  _puppijetPtGenWithNu;
+
 
   //Leptons
   vector<Float_t>  _lEta;
@@ -282,6 +288,16 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector<Float_t>  _lgenPt;
   vector<int> _lgenpdgId;
   
+  Float_t _mll;
+  Float_t _ptll;
+  Float_t _pzll;
+  Float_t _yll;
+  Float_t _dphill;
+  Float_t _costhCSll;
+  
+  //Nb of electrons in vtx fit
+  int _n_PFele_fromvtxfit;
+  int _n_PFmu_fromvtxfit;
 
   //Photons
   vector<Float_t>  _phEta;
@@ -301,16 +317,29 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector <Float_t> _PFcand_phi;
   vector <int> _PFcand_pdgId;
   vector <int> _PFcand_fromPV;
-
+  vector <Float_t> _PFcand_dz;
+  vector <int> _PFcand_PVfitidx;
+  vector <Float_t> _PFcand_puppiweight;
   //Nb of CH in PV fit and corresponding HT, for different pt cuts
   int _n_CH_fromvtxfit[6];
   Float_t _HT_CH_fromvtxfit[6];
+  vector <Float_t> _METCH_PV;
+  vector <Float_t> _METPhiCH_PV;
+  vector <Float_t> _SumPT2CH_PV;
+  vector <Float_t> _DztoLV_PV;
+
 
   //MET
   Float_t _met;
   Float_t _met_phi;
   Float_t _puppimet;
   Float_t _puppimet_phi;
+
+  Float_t _rawmet;
+  Float_t _rawmet_phi;
+  Float_t _puppirawmet;
+  Float_t _puppirawmet_phi;
+
 
   Float_t _genmet;
   Float_t _genmet_phi;
@@ -384,7 +413,8 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   pileupJetIdDiscriminantUpdate2018Token_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate2018"))),
   pileupJetIdVariablesUpdateToken_(consumes<edm::ValueMap<StoredPileupJetIdentifier> >(iConfig.getParameter<edm::InputTag>("pileupJetIdVariablesUpdate"))),
   qgLToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("QuarkGluonLikelihood"))),
-  pfcandsToken_(consumes<pat::PackedCandidateCollection>(iConfig.getParameter<edm::InputTag>("PFCandCollection"))),
+  pfcandsToken_(consumes<std::vector< pat::PackedCandidate>>(iConfig.getParameter<edm::InputTag>("PFCandidates"))),
+  puppiweightsToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("PuppiWeights"))),
   metToken_(consumes<std::vector<pat::MET> > (iConfig.getParameter<edm::InputTag>("PFMet"))),
   puppimetToken_(consumes<std::vector<pat::MET> > (iConfig.getParameter<edm::InputTag>("PuppiMet"))),
   electronToken_(consumes< std::vector< pat::Electron> >(iConfig.getParameter<edm::InputTag>("Electrons"))),
@@ -397,6 +427,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   genJetAssocCHSToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetMatchCHS"))),
   genJetWithNuAssocCHSToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetWithNuMatchCHS"))),
   genJetAssocPuppiToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetMatchPuppi"))),
+  genJetWithNuAssocPuppiToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetWithNuMatchPuppi"))),
   puInfoToken_(consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("PULabel"))),
   trgresultsToken_(consumes<TriggerResults>(iConfig.getParameter<edm::InputTag>("Triggers"))),
   l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
@@ -427,8 +458,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   outputTree = fs->make<TTree>("tree","tree");
 
   
-  rc.init(edm::FileInPath(RochCorrFile_).fullPath()); 
-  
+  rc.init(RochCorrFile_);
   
 }
 
@@ -463,7 +493,20 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle<std::vector<Vertex> > theVertices;
   iEvent.getByToken(verticesToken_,theVertices) ;
   _n_PV = theVertices->size();
+
+  const Vertex* LVtx = &((*theVertices)[0]);
   
+  vector <TVector2 > metPV;
+  for(unsigned int i = 0;i < theVertices->size(); i++){
+    const Vertex* PVtx = &((*theVertices)[i]);
+    TVector2 dummyT2V(0.,0.);
+    metPV.push_back(dummyT2V);
+    _METCH_PV.push_back(-99.);
+    _METPhiCH_PV.push_back(-99.);
+    _SumPT2CH_PV.push_back(0.);
+    _DztoLV_PV.push_back( PVtx->z()- LVtx->z());
+  }
+
   //Rho
   edm::Handle<double> rhoJets;
   iEvent.getByToken(rhoJetsToken_,rhoJets);
@@ -640,7 +683,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
   Float_t leadjetpt (0.);
-
+  bool useupdategenjets = true;
   if(theJets.isValid()){
     for( std::vector<pat::Jet>::const_iterator jet = (*theJets).begin(); jet != (*theJets).end(); jet++ ) {
       edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>( theJets , jet -theJets->begin()));
@@ -648,8 +691,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //The gen jets are defined excluding neutrinos. 
       //In order to decrease this pt cut and/or include neutrinos, one needs to recluster gen jets. 
       //Boolean to use the updated gen jet collection or the default one. Should probably be made configurable at some point.
-      bool useupdategenjets = true;
-      
 
       const reco::GenJet * updatedgenjet =0;
       const reco::GenJet * updatedgenjetwithnu =0; 
@@ -761,6 +802,49 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
   else if(Debug_){cout << "Invalid jet collection"<<endl;}
   
+
+
+  //Now PUPPI jets
+  
+  edm::Handle< std::vector< pat::Jet> > thePuppiJets;
+  iEvent.getByToken(jetPuppiToken_,thePuppiJets );
+
+  //  Accessing the matching with an updated gen collection
+  edm::Handle<edm::Association<reco::GenJetCollection>> genJetMatchPuppi;
+  iEvent.getByToken(genJetAssocPuppiToken_, genJetMatchPuppi);
+   
+  edm::Handle<edm::Association<reco::GenJetCollection>> genJetWithNuMatchPuppi;
+  iEvent.getByToken(genJetWithNuAssocPuppiToken_, genJetWithNuMatchPuppi);
+
+  if(thePuppiJets.isValid()){
+    for( std::vector<pat::Jet>::const_iterator jet = (*thePuppiJets).begin(); jet != (*thePuppiJets).end(); jet++ ) {
+      edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>( thePuppiJets , jet -thePuppiJets->begin()));
+      
+      const reco::GenJet * updatedgenjet =0;
+      const reco::GenJet * updatedgenjetwithnu =0;
+      if(genJetMatchPuppi.isValid() && genJetWithNuMatchPuppi.isValid() && useupdategenjets){
+        updatedgenjet = ( (*genJetMatchPuppi)[jetRef].isNonnull() && (*genJetMatchPuppi)[jetRef].isAvailable()) ? &*(*genJetMatchPuppi)[jetRef] : 0;
+        updatedgenjetwithnu = ( (*genJetWithNuMatchPuppi)[jetRef].isNonnull() && (*genJetWithNuMatchPuppi)[jetRef].isAvailable()) ? &*(*genJetWithNuMatchPuppi)[jetRef] : 0;
+      }
+      const reco::GenJet * genjet = useupdategenjets?updatedgenjet: (&*jet) ->genJet()  ;
+      if((&*jet)->pt()<JetPtCut_) continue;
+      _puppijetEta.push_back((&*jet)->eta());
+      _puppijetPhi.push_back((&*jet)->phi());
+      _puppijetPt.push_back((&*jet)->pt());
+      Float_t jetptgen(-99.);//, jetetagen(-99.),jetphigen(-99.);
+      Float_t jetptgenwithnu(-99.);
+      
+      if( genjet !=0 ){
+        jetptgen= genjet->pt() ;
+	//        jetetagen= genjet->eta() ;
+        //jetphigen= genjet->phi() ;
+      }
+      if(updatedgenjetwithnu !=0) jetptgenwithnu = updatedgenjetwithnu->pt() ;
+      _puppijetPtGen.push_back(jetptgen);
+      _puppijetPtGenWithNu.push_back(jetptgenwithnu);
+    }
+  }
+  
   //Type 1 PFMET
   edm::Handle< vector<pat::MET> > ThePFMET;
   iEvent.getByToken(metToken_, ThePFMET);
@@ -769,7 +853,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   pfmet = &(pfmetcol->front());
   _met = pfmet->pt();
   _met_phi = pfmet->phi();
-
+  _rawmet =  pfmet->uncorPt();
+  _rawmet_phi =  pfmet->uncorPhi();
 
   //PUPPI MET
   edm::Handle< vector<pat::MET> > ThePUPPIMET;
@@ -779,16 +864,57 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   puppimet = &(puppimetcol->front());
   _puppimet = puppimet->pt();
   _puppimet_phi = puppimet->phi();
+  _puppirawmet = puppimet->uncorPt();
+  _puppirawmet_phi = puppimet->uncorPhi();
 
+  
+  _n_PFele_fromvtxfit=0;
+  _n_PFmu_fromvtxfit=0;
 
   //PF candidates
-  edm::Handle<pat::PackedCandidateCollection> pfcands;
+  edm::Handle<std::vector< pat::PackedCandidate>> pfcands;
   iEvent.getByToken(pfcandsToken_ ,pfcands);
   for(int i = 0; i< 6; i++){
     _n_CH_fromvtxfit[i] = 0;
     _HT_CH_fromvtxfit[i] = 0;
   }
-  for(pat::PackedCandidateCollection::const_reverse_iterator p = pfcands->rbegin() ; p != pfcands->rend() ; p++ ) {
+
+
+  //Accessing the puppi weights !
+  edm::Handle<edm::ValueMap<float> > puppiweights;
+  iEvent.getByToken(puppiweightsToken_, puppiweights);
+  
+
+  
+  /*
+    To map vertex idx with vertex ref
+    https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/interface/PackedCandidate.h#L705-L706
+    I need to check that the vertex idx used in fromPV is equivalent to the vertex position in the vertex collection
+    
+  */
+  //  for(pat::PackedCandidateCollection::const_reverse_iterator p = pfcands->rbegin() ; p != pfcands->rend() ; p++ ) {
+  for( std::vector<pat::PackedCandidate>::const_iterator p = (*pfcands).begin(); p != (*pfcands).end(); p++ ) {
+
+    
+    int idxrefvtx= (p->vertexRef().isNonnull()) ?  p->vertexRef().key() : -1;
+    //cout << "idxrefvtx, vtx size  " << idxrefvtx << ", " << _n_PV <<endl;
+    edm::RefToBase<pat::PackedCandidate> pfcandRef (edm::Ref<pat::PackedCandidateCollection>( pfcands , p  - pfcands->begin()));
+
+    //    edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>( thePuppiJets , jet -thePuppiJets->begin()));
+    /*
+    cout << "PFCH cand pt, eta, phi, pdgid: " << p->pt() <<", "<<p->eta()<<", " << p->phi() <<", "<<p->pdgId() <<endl;
+    cout << "PFCH idxrefvtx, fromPV(idxrefvtx), fromPV(0):  " << idxrefvtx<<", "<< p->fromPV(idxrefvtx)<< ", "<<p->fromPV()<<endl; 
+    cout << "the puppi weight is " <<   (*puppiweights)[pfcandRef]  <<endl; 
+    */
+  if( idxrefvtx >=0 && p->fromPV(idxrefvtx) >=2 && fabs(p->pdgId())  == 211 ){
+      TVector2 ptandphi;
+      ptandphi.SetMagPhi(p->pt(),p->phi());
+      metPV[idxrefvtx] -= ptandphi;
+      _SumPT2CH_PV[idxrefvtx] += p->pt()*p->pt();
+    }
+    
+    if(fabs(p->pdgId())  == 11&& p->fromPV(0)==3 &&p->pt()>10) _n_PFele_fromvtxfit ++; 
+    if(fabs(p->pdgId())  == 13&& p->fromPV(0)==3 &&p->pt()>10) _n_PFmu_fromvtxfit ++;
     if(fabs(p->pdgId())  == 211&& p->fromPV(0)==3 ){
       for(int i = 0; i< 6; i++){
 	if(p->pt()>_PtCutPFforMultiplicity[i]){
@@ -804,8 +930,14 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _PFcand_phi.push_back(p->phi());
     _PFcand_pdgId.push_back(p->pdgId());
     _PFcand_fromPV.push_back(p->fromPV(0));//See https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2017#Packed_ParticleFlow_Candidates
+    _PFcand_dz.push_back(p->dz(0));
+    _PFcand_PVfitidx.push_back(idxrefvtx);
+    _PFcand_puppiweight.push_back((*puppiweights)[pfcandRef]);
   }
-  
+  //Now computing the met from CH for each PV
+  for(unsigned int i = 0;i<theVertices->size() ; i++) {_METCH_PV[i] = metPV[i].Mod(); _METPhiCH_PV[i] = metPV[i].Phi(); }
+
+
   //Gen particle info
   edm::Handle<GenParticleCollection> TheGenParticles;
   iEvent.getByToken(genpartToken_, TheGenParticles);
@@ -1059,6 +1191,11 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jet_nCharged",&_jet_nCharged);
   }
   
+  outputTree->Branch("_puppijetEta",&_puppijetEta);
+  outputTree->Branch("_puppijetPhi",&_puppijetPhi);
+  outputTree->Branch("_puppijetPt",&_puppijetPt);
+  outputTree->Branch("_puppijetPtGen",&_puppijetPtGen);
+  outputTree->Branch("_puppijetPtGenWithNu",&_puppijetPtGenWithNu);
   
   outputTree->Branch("_lEta",&_lEta);
   outputTree->Branch("_lPhi",&_lPhi);
@@ -1067,6 +1204,18 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lpdgId",&_lpdgId);
   outputTree->Branch("_nEles", &_nEles, "_nEles/I");
   outputTree->Branch("_nMus", &_nMus, "_nMus/I");
+  
+  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton"){
+    outputTree->Branch("_mll", &_mll, "_mll/f");
+    outputTree->Branch("_ptll", &_ptll, "_ptll/f");
+    outputTree->Branch("_pzll", &_pzll, "_pzll/f");
+    outputTree->Branch("_yll", &_yll, "_yll/f");
+    outputTree->Branch("_dphill", &_dphill, "_dphill/f");
+    outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/f");
+  }
+  outputTree->Branch("_n_PFele_fromvtxfit",&_n_PFele_fromvtxfit,"_n_PFele_fromvtxfit/I");
+  outputTree->Branch("_n_PFmu_fromvtxfit",&_n_PFmu_fromvtxfit,"_n_PFmu_fromvtxfit/I");
+
 
   if(IsMC_){
     outputTree->Branch("_lgenEta",&_lgenEta);
@@ -1093,8 +1242,18 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_PFcand_phi",&_PFcand_phi);
   outputTree->Branch("_PFcand_pdgId",&_PFcand_pdgId);
   outputTree->Branch("_PFcand_fromPV",&_PFcand_fromPV);
+  outputTree->Branch("_PFcand_dz",&_PFcand_dz);
+  outputTree->Branch("_PFcand_PVfitidx",&_PFcand_PVfitidx);
+  outputTree->Branch("_PFcand_puppiweight",&_PFcand_puppiweight);
   outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
   outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
+  
+  
+  outputTree->Branch("_METCH_PV",&_METCH_PV);
+  outputTree->Branch("_METPhiCH_PV",&_METPhiCH_PV);
+  outputTree->Branch("_SumPT2CH_PV",&_SumPT2CH_PV);
+  outputTree->Branch("_DztoLV_PV",&_DztoLV_PV);
+
 
   if(IsMC_){
   outputTree->Branch("_genmet", &_genmet, "_genmet/f");
@@ -1105,6 +1264,11 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
   outputTree->Branch("_puppimet", &_puppimet, "_puppimet/f");
   outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/f");
+
+  outputTree->Branch("_rawmet", &_rawmet, "_rawmet/f");
+  outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/f");
+  outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/f");
+  outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/f");
   
 
   outputTree->Branch("HLT_Photon110EB_TightID_TightIso",&HLT_Photon110EB_TightID_TightIso,"HLT_Photon110EB_TightID_TightIso/O");
@@ -1223,6 +1387,12 @@ TString JMEAnalyzer::GetIdxFilterName(int it){
 
 
 void JMEAnalyzer::InitandClearStuff(){
+  _mll=0;
+  _ptll=0;
+  _pzll=0;
+  _yll=0;
+  _dphill=0;
+  _costhCSll=0;
 
   if(!IsMC_) DropUnmatchedJets_=false;
 
@@ -1297,6 +1467,11 @@ void JMEAnalyzer::InitandClearStuff(){
   _jet_nParticles.clear();
   _jet_nCharged.clear();
 
+  _puppijetEta.clear();
+  _puppijetPhi.clear();
+  _puppijetPt.clear(); 
+  _puppijetPtGen.clear();
+  _puppijetPtGenWithNu.clear();
 
 
   _lEta.clear();
@@ -1329,6 +1504,15 @@ void JMEAnalyzer::InitandClearStuff(){
   _PFcand_phi.clear();
   _PFcand_pdgId.clear();
   _PFcand_fromPV.clear();
+  _PFcand_dz.clear();
+  _PFcand_PVfitidx.clear();
+  _PFcand_puppiweight.clear();
+
+  _METCH_PV.clear();
+  _METPhiCH_PV.clear();
+  _SumPT2CH_PV.clear();
+  _DztoLV_PV.clear();
+
 
 
 
@@ -1369,25 +1553,26 @@ void JMEAnalyzer::InitandClearStuff(){
 
 bool JMEAnalyzer::PassSkim(){
   
-  
-  if(Skim_=="ZToEEorMuMu"){
-    
-    TLorentzVector l1, l2;
-    Float_t mass(0.);
+  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton"){
+
+    Float_t mll(0),ptll(0),pzll(0),yll(0),dphill(0),costhCSll(0);
+
     for(unsigned int i = 0; i < _lPt.size(); i++){
+      if(_lPt.size() !=2) return false;
       if(_lPt[i]<20) continue;
       if(!_lPassTightID[i])  continue;
       if(fabs(_lpdgId[i]) !=11 && fabs(_lpdgId[i])!=13 ) continue;
       for(unsigned int j = 0; j < i; j++){
-	if(_lPt[j]<20) continue;
-	if(!_lPassTightID[j])  continue;
-	if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
-	if( _lpdgId[i] != -_lpdgId[j]  ) continue;
-	l1.SetPtEtaPhiM(_lPt[i],_lEta[i],_lPhi[i],0);
-	l2.SetPtEtaPhiM(_lPt[j],_lEta[j],_lPhi[j],0);
-	mass=(l1+l2).Mag();
-	if(mass>70&&mass<110) return true;
-	
+        if(_lPt[j]<20) continue;
+        if(!_lPassTightID[j])  continue;
+        if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
+        if( _lpdgId[i] != -_lpdgId[j]  ) continue;
+
+        CalcDileptonInfo(i,j, mll,ptll,pzll,yll,dphill,costhCSll);
+        _mll= mll; _ptll=ptll; _pzll=pzll; _yll=yll; _dphill=dphill; _costhCSll=costhCSll;
+        if(_mll>20&&Skim_=="Dilepton")  return true;
+        if(_mll>70&&_mll<110) return true;
+
       }
     }
     return false;
@@ -1405,13 +1590,39 @@ bool JMEAnalyzer::PassSkim(){
   }
   else if(Skim_=="MET100"&&_met<100) return false;
   else if(Skim_=="MET100"&&_met>100) return true;
-   
-
-
   
   return true; 
 
 }
+
+void
+JMEAnalyzer::CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll){
+
+  TLorentzVector lep1;
+  TLorentzVector lep2;
+
+  Float_t et1 = (_lPt)[i];
+  Float_t et2 = (_lPt)[j];
+  lep1.SetPtEtaPhiE(et1, (_lEta)[i], (_lPhi)[i], (et1 * cosh((_lEta)[i])));
+  lep2.SetPtEtaPhiE(et2, (_lEta)[j], (_lPhi)[j], (et2 * cosh((_lEta)[j])));
+
+  themass = (lep1+lep2).Mag() ;
+  theptll = (lep1+lep2).Pt() ;
+  thedphill = fabs(acos(cos(lep1.Phi()- lep2.Phi())));
+  thepzll = (lep1+lep2).Pz() ;
+  theyll= (lep1+lep2).Rapidity();
+
+  Float_t leppz = ((_lpdgId)[i]>0)?   lep1.Pz(): lep2.Pz();
+  Float_t posipz = ((_lpdgId)[i]<0)?  lep1.Pz(): lep2.Pz();
+  Float_t lepenergy = ((_lpdgId)[i]>0)? lep1.E(): lep2.E();
+  Float_t posienergy = ((_lpdgId)[i]<0)? lep1.E(): lep2.E();
+
+  thecosthll = thepzll/fabs(thepzll)*2/themass/sqrt(themass*themass+theptll*theptll)*(leppz*posienergy-posipz*lepenergy) ;
+
+
+}
+
+
 
 //define this as a plug-in
 DEFINE_FWK_MODULE(JMEAnalyzer);
