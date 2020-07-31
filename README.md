@@ -23,3 +23,10 @@ scram b -j 8
 
 Make sure you adapt the **runEra** string and the **UseSQLiteFiles** boolean in JMEanalysis.py. 
 In general, when available, global tag should be preferred to SQLite files. For UL17, however, no global tag is currently available so one needs to rely on .db files. 
+
+You can make test with a local input file currently on lxplus: 
+
+For that file, please set
+```
+runEra=MCUL2017
+```
