@@ -131,6 +131,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
 
   edm::EDGetTokenT<std::vector< pat::Jet> > jetToken_;
   edm::EDGetTokenT<std::vector< pat::Jet> > jetPuppiToken_;
+  edm::EDGetTokenT<std::vector< pat::Jet> > jetPuppiAK8Token_;
   edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdateToken_;
   edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2017Token_;
   edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2018Token_;
@@ -162,6 +163,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   edm::EDGetTokenT<BXVector<GlobalAlgBlk>> l1GtToken_;
 
   Float_t JetPtCut_;
+  Float_t AK8JetPtCut_;
   Float_t ElectronPtCut_;
   string ElectronVetoWP_, ElectronTightWP_;
   Float_t MuonPtCut_;
@@ -170,7 +172,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   string PhotonTightWP_;
   Float_t PFCandPtCut_;
 
-  Bool_t SaveTree_, IsMC_, SavePUIDVariables_,DropUnmatchedJets_, DropBadJets_, ApplyPhotonID_;
+  Bool_t SaveTree_, IsMC_, SavePUIDVariables_, SaveAK8Jets_, DropUnmatchedJets_, DropBadJets_, ApplyPhotonID_;
   string Skim_;
   Bool_t Debug_;
 
@@ -272,6 +274,12 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   vector<Float_t>  _puppijetPt;
   vector <Float_t>  _puppijetPtGen;
   vector <Float_t>  _puppijetPtGenWithNu;
+
+  vector<Float_t>  _puppiak8jetEta ;
+  vector<Float_t>  _puppiak8jetPt ;
+  vector<Float_t>  _puppiak8jet_tau1 ;
+  vector<Float_t>  _puppiak8jet_tau2 ;
+  vector<Float_t>  _puppiak8jet_tau3 ;
 
 
   //Leptons
@@ -408,6 +416,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   rhoJetsNCToken_(consumes<double>(edm::InputTag("fixedGridRhoFastjetCentralNeutral",""))),
   jetToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("Jets"))),
   jetPuppiToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsPuppi"))),
+  jetPuppiAK8Token_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsPuppiAK8"))),
   pileupJetIdDiscriminantUpdateToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate"))),
   pileupJetIdDiscriminantUpdate2017Token_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate2017"))),
   pileupJetIdDiscriminantUpdate2018Token_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate2018"))),
@@ -432,6 +441,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   trgresultsToken_(consumes<TriggerResults>(iConfig.getParameter<edm::InputTag>("Triggers"))),
   l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
+  AK8JetPtCut_(iConfig.getParameter<double>("AK8JetPtCut")),
   ElectronPtCut_(iConfig.getParameter<double>("ElectronPtCut")),
   ElectronVetoWP_(iConfig.getParameter<string>("ElectronVetoWorkingPoint")),
   ElectronTightWP_(iConfig.getParameter<string>("ElectronTightWorkingPoint")),
@@ -443,6 +453,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   SaveTree_(iConfig.getParameter<bool>("SaveTree")), 
   IsMC_(iConfig.getParameter<bool>("IsMC")),
   SavePUIDVariables_(iConfig.getParameter<bool>("SavePUIDVariables")),
+  SaveAK8Jets_(iConfig.getParameter<bool>("SaveAK8Jets")),
   DropUnmatchedJets_(iConfig.getParameter<bool>("DropUnmatchedJets")),
   DropBadJets_(iConfig.getParameter<bool>("DropBadJets")),
   ApplyPhotonID_(iConfig.getParameter<bool>("ApplyPhotonID")),
@@ -488,6 +499,63 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _eventNb = iEvent.id().event();
   _lumiBlock = iEvent.luminosityBlock();
   _bx=iEvent.bunchCrossing();
+
+
+
+  //Triggers 
+  edm::Handle<TriggerResults> trigResults;
+  iEvent.getByToken(trgresultsToken_, trigResults);
+  if( !trigResults.failedToGet() ) {
+    int N_Triggers = trigResults->size();
+    const edm::TriggerNames & trigName = iEvent.triggerNames(*trigResults);
+    for( int i_Trig = 0; i_Trig < N_Triggers; ++i_Trig ) {
+      if (trigResults.product()->accept(i_Trig)) {
+	TString TrigPath =trigName.triggerName(i_Trig);
+	if(TrigPath.Contains("HLT_Photon110EB_TightID_TightIso_v"))HLT_Photon110EB_TightID_TightIso =true;
+	if(TrigPath.Contains("HLT_Photon165_R9Id90_HE10_IsoM_v"))HLT_Photon165_R9Id90_HE10_IsoM =true;
+	if(TrigPath.Contains("HLT_Photon120_R9Id90_HE10_IsoM_v"))HLT_Photon120_R9Id90_HE10_IsoM =true;
+	if(TrigPath.Contains("HLT_Photon90_R9Id90_HE10_IsoM_v"))HLT_Photon90_R9Id90_HE10_IsoM =true;
+	if(TrigPath.Contains("HLT_Photon75_R9Id90_HE10_IsoM_v"))HLT_Photon75_R9Id90_HE10_IsoM =true;
+	if(TrigPath.Contains("HLT_Photon50_R9Id90_HE10_IsoM_v"))HLT_Photon50_R9Id90_HE10_IsoM =true;
+	if(TrigPath.Contains("HLT_Photon200_v"))HLT_Photon200 =true;
+	if(TrigPath.Contains("HLT_Photon175_v"))HLT_Photon175 =true;
+	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 =true;
+	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight =true;
+	if(TrigPath.Contains("HLT_PFMET120_PFMHT120_IDTight_PFHT60_v"))HLT_PFMET120_PFMHT120_IDTight_PFHT60 =true;
+	if(TrigPath.Contains("HLT_PFMET120_PFMHT120_IDTight_v"))HLT_PFMET120_PFMHT120_IDTight =true;
+	if(TrigPath.Contains("HLT_PFHT1050_v"))HLT_PFHT1050 =true;
+	if(TrigPath.Contains("HLT_PFHT900_v"))HLT_PFHT900 =true;
+	if(TrigPath.Contains("HLT_PFJet500_v"))HLT_PFJet500 =true;
+	if(TrigPath.Contains("HLT_AK8PFJet500_v"))HLT_AK8PFJet500 =true;
+	if(TrigPath.Contains("HLT_Ele35_WPTight_Gsf_v"))HLT_Ele35_WPTight_Gsf =true;
+	if(TrigPath.Contains("HLT_Ele32_WPTight_Gsf_v"))HLT_Ele32_WPTight_Gsf =true;
+	if(TrigPath.Contains("HLT_Ele27_WPTight_Gsf_v"))HLT_Ele27_WPTight_Gsf =true;
+	if(TrigPath.Contains("HLT_IsoMu27_v"))HLT_IsoMu27 =true;
+	if(TrigPath.Contains("HLT_IsoMu24_v"))HLT_IsoMu24 =true;
+	if(TrigPath.Contains("HLT_IsoTkMu24_v"))HLT_IsoTkMu24 =true;
+	if(TrigPath.Contains("HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ_v"))HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ =true;
+	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ_v"))HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ =true;
+	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_v"))HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL =true;
+	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_v"))HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ =true;
+	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v"))HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 =true;
+	if(TrigPath.Contains("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v"))HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL =true;
+	if(TrigPath.Contains("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v"))HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ =true;
+	if(TrigPath.Contains("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v"))HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ =true;
+	if(TrigPath.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v"))HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ =true;
+	if(TrigPath.Contains("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v"))HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL =true;
+	if(TrigPath.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v"))HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL =true;
+      }
+    }
+  }
+
+  //Prefiring, see: https://github.com/nsmith-/PrefireAnalysis/#usage
+  edm::Handle<BXVector<GlobalAlgBlk>> l1GtHandle;
+  iEvent.getByToken(l1GtToken_, l1GtHandle);
+  _l1prefire= false;
+  if(!IsMC_)_l1prefire = l1GtHandle->begin(-1)->getFinalOR();
+
+
+
   
   //Vertices
   edm::Handle<std::vector<Vertex> > theVertices;
@@ -845,6 +913,22 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
   }
   
+
+  //AK8                                                                                                                                                                                                                     
+  edm::Handle< std::vector< pat::Jet> > thePuppiAK8Jets;
+  iEvent.getByToken(jetPuppiAK8Token_,thePuppiAK8Jets );
+  if(thePuppiAK8Jets.isValid()){
+    for( std::vector<pat::Jet>::const_iterator jet = (*thePuppiAK8Jets).begin(); jet != (*thePuppiAK8Jets).end(); jet++ ) {
+      if((&*jet)->pt()<AK8JetPtCut_) continue;
+      if(fabs((&*jet)->eta())>2.4) continue;
+      _puppiak8jetEta.push_back((&*jet)->eta());
+      _puppiak8jetPt.push_back((&*jet)->pt());
+      _puppiak8jet_tau1.push_back((&*jet)->userFloat("NjettinessAK8Puppi:tau1"));
+      _puppiak8jet_tau2.push_back((&*jet)->userFloat("NjettinessAK8Puppi:tau2"));
+      _puppiak8jet_tau3.push_back((&*jet)->userFloat("NjettinessAK8Puppi:tau3"));
+    }
+  }
+
   //Type 1 PFMET
   edm::Handle< vector<pat::MET> > ThePFMET;
   iEvent.getByToken(metToken_, ThePFMET);
@@ -1042,57 +1126,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   else trueNVtx = -1.;
 
 
-  //Triggers 
-  edm::Handle<TriggerResults> trigResults;
-  iEvent.getByToken(trgresultsToken_, trigResults);
-  if( !trigResults.failedToGet() ) {
-    int N_Triggers = trigResults->size();
-    const edm::TriggerNames & trigName = iEvent.triggerNames(*trigResults);
-    for( int i_Trig = 0; i_Trig < N_Triggers; ++i_Trig ) {
-      if (trigResults.product()->accept(i_Trig)) {
-	TString TrigPath =trigName.triggerName(i_Trig);
-	if(TrigPath.Contains("HLT_Photon110EB_TightID_TightIso_v"))HLT_Photon110EB_TightID_TightIso =true;
-	if(TrigPath.Contains("HLT_Photon165_R9Id90_HE10_IsoM_v"))HLT_Photon165_R9Id90_HE10_IsoM =true;
-	if(TrigPath.Contains("HLT_Photon120_R9Id90_HE10_IsoM_v"))HLT_Photon120_R9Id90_HE10_IsoM =true;
-	if(TrigPath.Contains("HLT_Photon90_R9Id90_HE10_IsoM_v"))HLT_Photon90_R9Id90_HE10_IsoM =true;
-	if(TrigPath.Contains("HLT_Photon75_R9Id90_HE10_IsoM_v"))HLT_Photon75_R9Id90_HE10_IsoM =true;
-	if(TrigPath.Contains("HLT_Photon50_R9Id90_HE10_IsoM_v"))HLT_Photon50_R9Id90_HE10_IsoM =true;
-	if(TrigPath.Contains("HLT_Photon200_v"))HLT_Photon200 =true;
-	if(TrigPath.Contains("HLT_Photon175_v"))HLT_Photon175 =true;
-	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 =true;
-	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight =true;
-	if(TrigPath.Contains("HLT_PFMET120_PFMHT120_IDTight_PFHT60_v"))HLT_PFMET120_PFMHT120_IDTight_PFHT60 =true;
-	if(TrigPath.Contains("HLT_PFMET120_PFMHT120_IDTight_v"))HLT_PFMET120_PFMHT120_IDTight =true;
-	if(TrigPath.Contains("HLT_PFHT1050_v"))HLT_PFHT1050 =true;
-	if(TrigPath.Contains("HLT_PFHT900_v"))HLT_PFHT900 =true;
-	if(TrigPath.Contains("HLT_PFJet500_v"))HLT_PFJet500 =true;
-	if(TrigPath.Contains("HLT_AK8PFJet500_v"))HLT_AK8PFJet500 =true;
-	if(TrigPath.Contains("HLT_Ele35_WPTight_Gsf_v"))HLT_Ele35_WPTight_Gsf =true;
-	if(TrigPath.Contains("HLT_Ele32_WPTight_Gsf_v"))HLT_Ele32_WPTight_Gsf =true;
-	if(TrigPath.Contains("HLT_Ele27_WPTight_Gsf_v"))HLT_Ele27_WPTight_Gsf =true;
-	if(TrigPath.Contains("HLT_IsoMu27_v"))HLT_IsoMu27 =true;
-	if(TrigPath.Contains("HLT_IsoMu24_v"))HLT_IsoMu24 =true;
-	if(TrigPath.Contains("HLT_IsoTkMu24_v"))HLT_IsoTkMu24 =true;
-	if(TrigPath.Contains("HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ_v"))HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ =true;
-	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ_v"))HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ =true;
-	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_v"))HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL =true;
-	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_v"))HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ =true;
-	if(TrigPath.Contains("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8_v"))HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 =true;
-	if(TrigPath.Contains("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_v"))HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL =true;
-	if(TrigPath.Contains("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v"))HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ =true;
-	if(TrigPath.Contains("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ_v"))HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_DZ =true;
-	if(TrigPath.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v"))HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ =true;
-	if(TrigPath.Contains("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v"))HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL =true;
-	if(TrigPath.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v"))HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL =true;
-      }
-    }
-  }
-
-  //Prefiring, see: https://github.com/nsmith-/PrefireAnalysis/#usage
-  edm::Handle<BXVector<GlobalAlgBlk>> l1GtHandle;
-  iEvent.getByToken(l1GtToken_, l1GtHandle);
-  _l1prefire= false;
-  if(!IsMC_)_l1prefire = l1GtHandle->begin(-1)->getFinalOR();
 
   //Filling trees and histos   
   if(PassSkim()){
@@ -1196,6 +1229,15 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_puppijetPt",&_puppijetPt);
   outputTree->Branch("_puppijetPtGen",&_puppijetPtGen);
   outputTree->Branch("_puppijetPtGenWithNu",&_puppijetPtGenWithNu);
+
+  if(SaveAK8Jets_){
+  outputTree->Branch("_puppiak8jetEta",&_puppiak8jetEta);
+  outputTree->Branch("_puppiak8jetPt",&_puppiak8jetPt);
+  outputTree->Branch("_puppiak8jet_tau1",&_puppiak8jet_tau1);
+  outputTree->Branch("_puppiak8jet_tau2",&_puppiak8jet_tau2);
+  outputTree->Branch("_puppiak8jet_tau3",&_puppiak8jet_tau3);
+  }
+
   
   outputTree->Branch("_lEta",&_lEta);
   outputTree->Branch("_lPhi",&_lPhi);
@@ -1473,6 +1515,12 @@ void JMEAnalyzer::InitandClearStuff(){
   _puppijetPtGen.clear();
   _puppijetPtGenWithNu.clear();
 
+  _puppiak8jetEta.clear();
+  _puppiak8jetPt.clear();
+  _puppiak8jet_tau1.clear();
+  _puppiak8jet_tau2.clear();
+  _puppiak8jet_tau3.clear();
+
 
   _lEta.clear();
   _lPhi.clear();
@@ -1590,7 +1638,7 @@ bool JMEAnalyzer::PassSkim(){
   }
   else if(Skim_=="MET100"&&_met<100) return false;
   else if(Skim_=="MET100"&&_met>100) return true;
-  
+  else if(Skim_=="HighHT") return (HLT_PFHT1050 || HLT_PFHT900 || HLT_PFJet500 || HLT_AK8PFJet500) ; 
   return true; 
 
 }

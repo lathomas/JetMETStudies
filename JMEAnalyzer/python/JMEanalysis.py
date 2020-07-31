@@ -43,9 +43,9 @@ process.source = cms.Source("PoolSource",
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0496411-475D-9345-9A07-41BD1DD19F6D.root',
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F002BB55-D805-9B49-8A68-EFEB41E223EB.root',
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EF575753-1880-D047-92BC-DC8FFB908595.root',
-'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EE195096-4700-6149-AE6F-56BC9150D4E5.root'
+#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EE195096-4700-6149-AE6F-56BC9150D4E5.root'
 
-#'/store/data/Run2017F/JetHT/MINIAOD/09Aug2019_UL2017-v1/130000/3CD3E778-D5BF-394E-9D46-98D77A3CB58D.root'
+'/store/data/Run2017F/JetHT/MINIAOD/09Aug2019_UL2017-v1/130000/3CD3E778-D5BF-394E-9D46-98D77A3CB58D.root'
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FC03A7B5-7FC0-E811-99BA-B496910A9A2C.root',
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FADA5029-2CC7-E811-BECD-0025907D1D6C.root',
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F855E2C9-30C7-E811-A621-0025901AC0F8.root',
@@ -62,7 +62,8 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BE12E39-1ADB-F444-ABE2-08E9F3765A11.root'
 #'file:/user/lathomas/GamGamToLLStudy/CMSSW_10_6_13/src/output_met200_partial.root'
 
-
+#'file:qcdht1000to1500_1.root',
+#'file:qcdht1000to1500_2.root'
 #'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/000C0A31-7750-7A4D-A883-4676E3204108.root',
 #'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/EDBBDDF4-C086-6E4C-AEC1-F95894C26521.root',
 #'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/ED4BB7A9-8CCA-2848-AED9-071C95A97161.root',
@@ -77,7 +78,7 @@ process.source = cms.Source("PoolSource",
 
 #process.TFileService = cms.Service("TFileService", fileName = cms.string("outputQCDHT1000to1500_puppiv16_200kevts.root") )
 #process.TFileService = cms.Service("TFileService", fileName = cms.string("outputQCDHT1000to1500_puppiv16_23374evts.root") )
-process.TFileService = cms.Service("TFileService", fileName = cms.string("output.root") )
+process.TFileService = cms.Service("TFileService", fileName = cms.string("outputjetht_bl.root") )
 
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 process.GlobalTag.globaltag="102X_dataRun2_v8"
@@ -181,6 +182,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      Jets=cms.InputTag("updatedPatJetsUpdatedJEC"),
 #                                     JetsPuppi=cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
                                      JetsPuppi=cms.InputTag("slimmedJetsPuppi"),
+                                     JetsPuppiAK8=cms.InputTag("slimmedJetsAK8"),
                                      pileupJetIdDiscriminantUpdate = cms.InputTag('pileupJetIdUpdate:fullDiscriminant'),
                                      pileupJetIdDiscriminantUpdate2017 = cms.InputTag('pileupJetIdUpdate2017:fullDiscriminant'),
                                      pileupJetIdDiscriminantUpdate2018 = cms.InputTag('pileupJetIdUpdate2018:fullDiscriminant'),
@@ -205,6 +207,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      Muons=cms.InputTag("slimmedMuons"),
                                      Photons=cms.InputTag("slimmedPhotons"),
                                      JetPtCut=cms.double(20),
+                                     AK8JetPtCut=cms.double(200),
                                      ElectronPtCut=cms.double(20),
                                      ElectronVetoWorkingPoint=cms.string(EleVetoWP),
                                      ElectronTightWorkingPoint=cms.string(EleTightWP),
@@ -216,11 +219,13 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      SaveTree=cms.bool(True),
                                      IsMC=cms.bool(ISMC),
                                      SavePUIDVariables=cms.bool(True),
+                                     SaveAK8Jets=cms.bool(True),
                                      DropUnmatchedJets=cms.bool(False),
                                      DropBadJets=cms.bool(False),
                                      ApplyPhotonID=cms.bool(False),
 #                                     Skim=cms.string("ZToEEorMuMu"),
                                      Skim=cms.string(""),
+#                                     Skim=cms.string("HighHT"),
                                      Debug=cms.bool(False)
                               )
 
@@ -599,7 +604,7 @@ if ISMC:
 process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
 
 process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
-process.computepuid = cms.Path(process.pileupJetIdUpdate )
+process.computepuid = cms.Path(process.pileupJetIdUpdate  * process.pileupJetIdUpdate2017 * process.pileupJetIdUpdate2018)
 process.computeqgl = cms.Path(process.QGTagger)
 
 #This one obviously shouldn't be commented out
