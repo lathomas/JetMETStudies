@@ -73,12 +73,15 @@ process.source = cms.Source("PoolSource",
 
 
 #'file:pickevents_ZeynepVBF.root'
+
+#Here's a MINIAOD file on lxplus in case you want to use a local sample
+#'file:/afs/cern.ch/work/l/lathomas/public/qcdht1000to1500_1.root'
         )
                             )
 
 #process.TFileService = cms.Service("TFileService", fileName = cms.string("outputQCDHT1000to1500_puppiv16_200kevts.root") )
 #process.TFileService = cms.Service("TFileService", fileName = cms.string("outputQCDHT1000to1500_puppiv16_23374evts.root") )
-process.TFileService = cms.Service("TFileService", fileName = cms.string("outputjetht_bl.root") )
+process.TFileService = cms.Service("TFileService", fileName = cms.string("output.root") )
 
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 process.GlobalTag.globaltag="102X_dataRun2_v8"
