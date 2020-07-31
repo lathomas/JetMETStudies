@@ -25,6 +25,7 @@ Make sure you adapt the **runEra** string and the **UseSQLiteFiles** boolean in 
 In general, when available, global tag should be preferred to SQLite files. For UL17, however, no global tag is currently available so one needs to rely on .db files. 
 
 You can make test with a local input file currently on lxplus: 
+'file:/afs/cern.ch/work/l/lathomas/public/qcdht1000to1500_1.root'
 
 For that file, please set
 ```
