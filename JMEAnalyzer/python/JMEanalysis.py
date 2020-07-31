@@ -97,7 +97,7 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 ISMC=False
 
 runEra="DataUL2017F"
-#runEra="MCUL2017F"
+#runEra="MCUL2017"
 UseSQLiteFiles=True
 
 
