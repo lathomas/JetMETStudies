@@ -1,7 +1,7 @@
-from CRABClient.UserUtilities import config, getUsernameFromSiteDB
+from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = 'dy2016_correct'
+config.General.requestName = 'yourrequest'
 config.General.workArea = 'crabworkarea'
 config.General.transferOutputs = True
 config.General.transferLogs = True
@@ -15,23 +15,24 @@ config.JobType.maxMemoryMB = 2500
 config.JobType.inputFiles = [
 'Summer16_07Aug2017_V11_MC.db','Summer16_07Aug2017All_V11_DATA.db','Summer16_25nsV1b_MC.db','Summer16_25nsV1b_DATA.db',
 'Fall17_17Nov2017_V32_102X_MC.db','Fall17_17Nov2017_V32_102X_DATA.db','Fall17_V3b_MC.db','Fall17_V3b_DATA.db',
-'Autumn18_V19_MC.db','Autumn18_RunABCD_V19_DATA.db','Autumn18_V7b_MC.db','Autumn18_V7b_DATA.db'
+'Autumn18_V19_MC.db','Autumn18_RunABCD_V19_DATA.db','Autumn18_V7b_MC.db','Autumn18_V7b_DATA.db',
+'Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt',
+'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt',
+'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt',
+'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt'
 ]
-#config.JobType.inputFiles = ['Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt']
-
+#Make sure all the needed files are included. For example, running on UL, you should add files such as Summer19UL17_JRV2_DATA.db Summer19UL17_RunF_V5_DATA.db
 config.Data.inputDataset = '/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/MINIAODSIM'
-#config.Data.inputDataset = '/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIFall17MiniAODv2-PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v1/MINIAODSIM'
-#config.Data.inputDataset = '/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIIAutumn18MiniAOD-102X_upgrade2018_realistic_v15_ext2-v1/MINIAODSIM'
+
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'FileBased'
 config.Data.unitsPerJob = 1
 
 
-config.Data.outLFNDirBase = '/store/user/%s/' % (getUsernameFromSiteDB())
+
 config.Data.publication = True
 config.Data.outputDatasetTag = 'RunIISummer16MiniAODv3_PUMoriond17_94X_mcRun2_asymptotic_v3_ext2_v1'
-#config.Data.outputDatasetTag = 'RunIIFall17MiniAODv2_PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1_v1'
-#config.Data.outputDatasetTag = 'RunIIAutumn18MiniAOD_102X_upgrade2018_realistic_v15_ext2_v1'
+
 
 config.Site.storageSite = 'T2_BE_IIHE'
 config.Site.blacklist = ['T2_US_Vanderbilt','T1_IT_CNAF']

@@ -97,7 +97,7 @@ using namespace reco;
 using namespace tools;
 
 
-class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
+class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::one::WatchRuns>  {
    public:
       explicit JMEAnalyzer(const edm::ParameterSet&);
       ~JMEAnalyzer();
@@ -109,6 +109,9 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   virtual void beginJob() override;
   virtual void analyze(const edm::Event&, const edm::EventSetup&) override;
   virtual void endJob() override;
+  virtual void beginRun(const edm::Run&, const edm::EventSetup&);
+  virtual void endRun(const edm::Run&, const edm::EventSetup&);
+
   virtual bool PassSkim();
   virtual bool GetMETFilterDecision(const edm::Event& iEvent, edm::Handle<TriggerResults> METFilterResults, TString studiedfilter);
   virtual bool GetIdxFilterDecision(int it);
@@ -389,6 +392,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources>  {
   bool _l1prefire;
 
   RoccoR rc; 
+  JetCorrectionUncertainty *jecUnc; 
 };
 
 //
@@ -486,6 +490,28 @@ JMEAnalyzer::~JMEAnalyzer()
 //
 // member functions
 //
+
+void JMEAnalyzer::beginRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
+{
+  //JES uncties: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetCorUncertainties
+
+  edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
+  iSetup.get<JetCorrectionsRecord>().get("AK4PFchs",JetCorParColl);
+
+  if(JetCorParColl.isValid()){
+  JetCorrectorParameters const & JetCorPar = (*JetCorParColl)["Uncertainty"];
+  jecUnc = new JetCorrectionUncertainty(JetCorPar);
+  }
+  else jecUnc = 0;
+
+}
+
+
+void JMEAnalyzer::endRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
+{
+
+  delete jecUnc;
+}
 
 // ------------ method called for each event  ------------
 void
@@ -723,11 +749,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector< pat::Jet> > theJets;
   iEvent.getByToken(jetToken_,theJets );
 
-  //JES uncties: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetCorUncertainties
-  edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
-  iSetup.get<JetCorrectionsRecord>().get("AK4PFchs",JetCorParColl); 
-  JetCorrectorParameters const & JetCorPar = (*JetCorParColl)["Uncertainty"];
-  JetCorrectionUncertainty *jecUnc = new JetCorrectionUncertainty(JetCorPar);
+
+
   
   //Value map for the recalculated PU ID
   edm::Handle<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate;
@@ -849,10 +872,12 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() ); 
       _jet_corrjecs.push_back((&*jet)->pt() / (&*jet)->correctedP4("Uncorrected").Pt() );
       //Accessing uncertainties
-      jecUnc->setJetEta((&*jet)->eta());
-      jecUnc->setJetPt((&*jet)->pt());
-      _jetJECuncty.push_back( jecUnc->getUncertainty(true) );
-      
+      //      if(jecUnc ==0) _jetJECuncty.push_back( -99.);
+      //else{
+	jecUnc->setJetEta((&*jet)->eta());
+	jecUnc->setJetPt((&*jet)->pt());
+	_jetJECuncty.push_back( jecUnc->getUncertainty(true) );
+	//}
       Float_t jetptgen(-99.), jetetagen(-99.),jetphigen(-99.);
       Float_t jetptgenwithnu(-99.);
       if( genjet !=0 ){
@@ -1355,6 +1380,10 @@ void
 JMEAnalyzer::endJob()
 {
 }
+
+
+
+
 
 // ------------ method fills 'descriptions' with the allowed parameters for the module  ------------
 void
