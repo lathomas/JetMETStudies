@@ -542,10 +542,10 @@ addJetCollection(process,labelName = 'Puppi', jetSource = cms.InputTag('ak4Puppi
 process.patJetsPuppi.addGenPartonMatch = cms.bool(ISMC)
 process.patJetsPuppi.addGenJetMatch = cms.bool(ISMC)
 
-from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV14
+from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV15
 
 patAlgosToolsTask.add(process.ak4PuppiJets)
-UpdatePuppiTuneV14(process,ISMC)
+UpdatePuppiTuneV15(process,ISMC)
 
 
 

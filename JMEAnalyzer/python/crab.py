@@ -19,7 +19,8 @@ config.JobType.inputFiles = [
 'Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt',
 'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt',
 'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt',
-'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt'
+'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt',
+'RochesterCorrections'
 ]
 #Make sure all the needed files are included. For example, running on UL, you should add files such as Summer19UL17_JRV2_DATA.db Summer19UL17_RunF_V5_DATA.db
 config.Data.inputDataset = '/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/RunIISummer16MiniAODv3-PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/MINIAODSIM'

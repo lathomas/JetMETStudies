@@ -1,22 +1,21 @@
 # JetMETStudies
 
 ```
-cmsrel CMSSW_10_6_13
-cd CMSSW_10_6_13/src
+cmsrel CMSSW_10_6_17_patch1
+cd CMSSW_10_6_17_patch1/src
 git cms-addpkg RecoMET/METFilters
 git clone https://github.com/lathomas/JetMETStudies.git 
 scram b -j4
-cd JetMETStudies/JMEAnalyzer/python/
-cmsRun JMEanalysis.py
 ```
 
 To get the EGM scaling/smearing correction (enabled by default), the following is also needed, as instructed in: <br>
 https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
 ```
-git cms-merge-topic jainshilpi:ULV1_backport106X_forUsers
+git cms-merge-topic jainshilpi:ULV1_backport10616_forUsers
 git clone https://github.com/jainshilpi/EgammaPostRecoTools.git -b ULV0  
 mv EgammaPostRecoTools/python/EgammaPostRecoTools.py RecoEgamma/EgammaTools/python/.
 git clone https://github.com/jainshilpi/EgammaAnalysis-ElectronTools.git -b UL2017SSV2 EgammaAnalysis/ElectronTools/data/
+git-cms-addpkg EgammaAnalysis/ElectronTools
 scram b -j 8
 ```
 
