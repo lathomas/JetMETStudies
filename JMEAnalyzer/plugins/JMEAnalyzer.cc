@@ -118,6 +118,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   virtual TString GetIdxFilterName(int it);
   virtual void InitandClearStuff();
   virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll);
+  virtual void CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll);
   
  
   // ----------member data ---------------------------
@@ -305,6 +306,15 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t _yll;
   Float_t _dphill;
   Float_t _costhCSll;
+
+
+  Float_t _mll_gen;
+  Float_t _ptll_gen;
+  Float_t _pzll_gen;
+  Float_t _yll_gen;
+  Float_t _dphill_gen;
+  Float_t _costhCSll_gen;
+
   
   //Nb of electrons in vtx fit
   int _n_PFele_fromvtxfit;
@@ -741,6 +751,25 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     
   }
   
+  
+  //Compute dilepton variables
+  Float_t mll(0),ptll(0),pzll(0),yll(0),dphill(0),costhCSll(0);
+  for(unsigned int i = 0; i < _lPt.size(); i++){
+    if(_lPt.size() !=2) continue;
+    if(_lPt[i]<20) continue;
+      if(!_lPassTightID[i])  continue;
+      if(fabs(_lpdgId[i]) !=11 && fabs(_lpdgId[i])!=13 ) continue;
+      for(unsigned int j = 0; j < i; j++){
+        if(_lPt[j]<20) continue;
+        if(!_lPassTightID[j])  continue;
+        if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
+        if( _lpdgId[i] != -_lpdgId[j]  ) continue;
+        CalcDileptonInfo(i,j, mll,ptll,pzll,yll,dphill,costhCSll);
+        _mll= mll; _ptll=ptll; _pzll=pzll; _yll=yll; _dphill=dphill; _costhCSll=costhCSll;
+      }
+  }
+    
+
   if(!PassSkim()) return;
 
     
@@ -1092,6 +1121,24 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	
       }
     }
+
+
+    //Compute dilepton variables
+    Float_t mll_gen(0),ptll_gen(0),pzll_gen(0),yll_gen(0),dphill_gen(0),costhCSll_gen(0);
+    if(_lgenPt.size() >=2){
+
+      for(unsigned int i =0; i < _lgenPt.size(); i++){
+	if (fabs(_lgenpdgId[i]) !=11 && fabs(_lgenpdgId[i])!=13 ) continue;
+	for(unsigned int j =0; j < i; j++){
+	  if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
+	  if( _lgenpdgId[i] != -_lgenpdgId[j]  ) continue;
+	  CalcDileptonInfoGen(i,j, mll_gen,ptll_gen,pzll_gen,yll_gen,dphill_gen,costhCSll_gen);
+	  _mll_gen= mll_gen; _ptll_gen=ptll_gen; _pzll_gen=pzll_gen; _yll_gen=yll_gen; _dphill_gen=dphill_gen; _costhCSll_gen=costhCSll_gen;
+	}
+      }
+    }
+
+
   }
   if (Gen0.E()!=0) {
     _genmet = Gen0.Pt();
@@ -1272,13 +1319,21 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_nEles", &_nEles, "_nEles/I");
   outputTree->Branch("_nMus", &_nMus, "_nMus/I");
   
-  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton"){
+  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton" || Skim_=="DileptonInfo" ){
     outputTree->Branch("_mll", &_mll, "_mll/f");
     outputTree->Branch("_ptll", &_ptll, "_ptll/f");
     outputTree->Branch("_pzll", &_pzll, "_pzll/f");
     outputTree->Branch("_yll", &_yll, "_yll/f");
     outputTree->Branch("_dphill", &_dphill, "_dphill/f");
     outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/f");
+
+    outputTree->Branch("_mll_gen", &_mll_gen, "_mll_gen/f");
+    outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/f");
+    outputTree->Branch("_pzll_gen", &_pzll_gen, "_pzll_gen/f");
+    outputTree->Branch("_yll_gen", &_yll_gen, "_yll_gen/f");
+    outputTree->Branch("_dphill_gen", &_dphill_gen, "_dphill_gen/f");
+    outputTree->Branch("_costhCSll_gen", &_costhCSll_gen, "_costhCSll_gen/f");
+
   }
   outputTree->Branch("_n_PFele_fromvtxfit",&_n_PFele_fromvtxfit,"_n_PFele_fromvtxfit/I");
   outputTree->Branch("_n_PFmu_fromvtxfit",&_n_PFmu_fromvtxfit,"_n_PFmu_fromvtxfit/I");
@@ -1316,11 +1371,12 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
   
   
+  if(Skim_=="VtxInfo" ){
   outputTree->Branch("_METCH_PV",&_METCH_PV);
   outputTree->Branch("_METPhiCH_PV",&_METPhiCH_PV);
   outputTree->Branch("_SumPT2CH_PV",&_SumPT2CH_PV);
   outputTree->Branch("_DztoLV_PV",&_DztoLV_PV);
-
+  }
 
   if(IsMC_){
   outputTree->Branch("_genmet", &_genmet, "_genmet/f");
@@ -1464,6 +1520,14 @@ void JMEAnalyzer::InitandClearStuff(){
   _yll=0;
   _dphill=0;
   _costhCSll=0;
+
+  _mll_gen=0;
+  _ptll_gen=0;
+  _pzll_gen=0;
+  _yll_gen=0;
+  _dphill_gen=0;
+  _costhCSll_gen=0;
+
 
   if(!IsMC_) DropUnmatchedJets_=false;
 
@@ -1632,26 +1696,9 @@ bool JMEAnalyzer::PassSkim(){
   
   if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton"){
 
-    Float_t mll(0),ptll(0),pzll(0),yll(0),dphill(0),costhCSll(0);
 
-    for(unsigned int i = 0; i < _lPt.size(); i++){
-      if(_lPt.size() !=2) return false;
-      if(_lPt[i]<20) continue;
-      if(!_lPassTightID[i])  continue;
-      if(fabs(_lpdgId[i]) !=11 && fabs(_lpdgId[i])!=13 ) continue;
-      for(unsigned int j = 0; j < i; j++){
-        if(_lPt[j]<20) continue;
-        if(!_lPassTightID[j])  continue;
-        if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
-        if( _lpdgId[i] != -_lpdgId[j]  ) continue;
-
-        CalcDileptonInfo(i,j, mll,ptll,pzll,yll,dphill,costhCSll);
-        _mll= mll; _ptll=ptll; _pzll=pzll; _yll=yll; _dphill=dphill; _costhCSll=costhCSll;
-        if(_mll>20&&Skim_=="Dilepton")  return true;
-        if(_mll>70&&_mll<110) return true;
-
-      }
-    }
+    if(_mll>20&&Skim_=="Dilepton")  return true;
+    if(_mll>70&&_mll<110) return true;
     return false;
   }
   else if(Skim_=="Photon"){
@@ -1698,6 +1745,36 @@ JMEAnalyzer::CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Flo
 
 
 }
+
+
+
+void
+JMEAnalyzer::CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll){
+
+  TLorentzVector lep1;
+  TLorentzVector lep2;
+
+  Float_t et1 = (_lgenPt)[i];
+  Float_t et2 = (_lgenPt)[j];
+  lep1.SetPtEtaPhiE(et1, (_lgenEta)[i], (_lgenPhi)[i], (et1 * cosh((_lgenEta)[i])));
+  lep2.SetPtEtaPhiE(et2, (_lgenEta)[j], (_lgenPhi)[j], (et2 * cosh((_lgenEta)[j])));
+
+  themass = (lep1+lep2).Mag() ;
+  theptll = (lep1+lep2).Pt() ;
+  thedphill = fabs(acos(cos(lep1.Phi()- lep2.Phi())));
+  thepzll = (lep1+lep2).Pz() ;
+  theyll= (lep1+lep2).Rapidity();
+
+  Float_t leppz = ((_lgenpdgId)[i]>0)?   lep1.Pz(): lep2.Pz();
+  Float_t posipz = ((_lgenpdgId)[i]<0)?  lep1.Pz(): lep2.Pz();
+  Float_t lepenergy = ((_lgenpdgId)[i]>0)? lep1.E(): lep2.E();
+  Float_t posienergy = ((_lgenpdgId)[i]<0)? lep1.E(): lep2.E();
+
+  thecosthll = thepzll/fabs(thepzll)*2/themass/sqrt(themass*themass+theptll*theptll)*(leppz*posienergy-posipz*lepenergy) ;
+
+
+}
+
 
 
 
