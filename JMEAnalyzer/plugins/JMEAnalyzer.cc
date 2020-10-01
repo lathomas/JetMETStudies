@@ -184,6 +184,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
   //Some histos to be saved for simple checks 
   TH1F *h_PFMet, *h_PuppiMet, *h_nvtx;
+
+  //These two histos are used to count the nb of events processed and the simulated PU distribution
+  //They should be filled before any skim is applied 
+  TH1D *h_Counter, *h_trueNVtx;
+
   //The output TTree
   TTree* outputTree;
 
@@ -479,6 +484,8 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   h_nvtx  = fs->make<TH1F>("h_nvtx" , "Number of reco vertices;N_{vtx};Events"  ,    100, 0., 100.);
   h_PFMet  = fs->make<TH1F>("h_PFMet" , "Type 1 PFMET (GeV);Type 1 PFMET (GeV);Events"  ,    1000, 0., 5000.);
   h_PuppiMet  = fs->make<TH1F>("h_PuppiMet" , "PUPPI MET (GeV);PUPPI MET (GeV);Events"  ,    1000, 0., 5000.);
+  h_Counter = fs->make<TH1D>("h_Counter", "Events counter", 5,0,5);
+  h_trueNVtx = fs->make<TH1D>("h_trueNVtx", "Nb of generated vertices", 200,0,200);
 
   outputTree = fs->make<TTree>("tree","tree");
 
@@ -536,7 +543,27 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _lumiBlock = iEvent.luminosityBlock();
   _bx=iEvent.bunchCrossing();
 
+  
+  //Gen info, needed pre skim !! 
+  edm::Handle<GenEventInfoProduct> GenInfoHandle;
+  iEvent.getByToken(geninfoToken_, GenInfoHandle);
+  if(GenInfoHandle.isValid())_weight=GenInfoHandle->weight();
+  else _weight = 0;
+  h_Counter->Fill(0.,_weight);
+  /*for(unsigned int a =0; a< (GenInfoHandle->binningValues()).size();a++){
+    double thebinning = GenInfoHandle->hasBinningValues() ? (GenInfoHandle->binningValues())[a] : 0.0 ;
+    }*/
 
+  Handle<std::vector<PileupSummaryInfo> > puInfo;
+  iEvent.getByToken(puInfoToken_, puInfo);
+  if(puInfo.isValid()){
+  vector<PileupSummaryInfo>::const_iterator pvi;
+  for (pvi = puInfo->begin(); pvi != puInfo->end(); ++pvi) {
+    if (pvi->getBunchCrossing() == 0) trueNVtx = pvi->getTrueNumInteractions();
+  }
+  }
+  else trueNVtx = -1.;
+  h_trueNVtx->Fill(trueNVtx);
 
   //Triggers 
   edm::Handle<TriggerResults> trigResults;
@@ -1150,13 +1177,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
 
-  edm::Handle<GenEventInfoProduct> GenInfoHandle;
-  iEvent.getByToken(geninfoToken_, GenInfoHandle);
-  if(GenInfoHandle.isValid())_weight=GenInfoHandle->weight();
-  else _weight = 0;
-  /*for(unsigned int a =0; a< (GenInfoHandle->binningValues()).size();a++){
-    double thebinning = GenInfoHandle->hasBinningValues() ? (GenInfoHandle->binningValues())[a] : 0.0 ;
-    }*/
 
   edm::Handle<LHEEventProduct> lhe_handle;
   iEvent.getByToken(lheEventToken_, lhe_handle);
@@ -1187,15 +1207,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   //Tested with QCD/photon jets/DY with madgraphm
 
 
-  Handle<std::vector<PileupSummaryInfo> > puInfo;
-  iEvent.getByToken(puInfoToken_, puInfo);
-  if(puInfo.isValid()){
-  vector<PileupSummaryInfo>::const_iterator pvi;
-  for (pvi = puInfo->begin(); pvi != puInfo->end(); ++pvi) {
-    if (pvi->getBunchCrossing() == 0) trueNVtx = pvi->getTrueNumInteractions();
-  }
-  }
-  else trueNVtx = -1.;
 
 
 
