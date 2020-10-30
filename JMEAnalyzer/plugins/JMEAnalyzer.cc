@@ -1157,7 +1157,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       for(unsigned int i =0; i < _lgenPt.size(); i++){
 	if (fabs(_lgenpdgId[i]) !=11 && fabs(_lgenpdgId[i])!=13 ) continue;
 	for(unsigned int j =0; j < i; j++){
-	  if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
+	  if(fabs(_lgenpdgId[j]) !=11 && fabs(_lgenpdgId[j])!=13 ) continue;
 	  if( _lgenpdgId[i] != -_lgenpdgId[j]  ) continue;
 	  CalcDileptonInfoGen(i,j, mll_gen,ptll_gen,pzll_gen,yll_gen,dphill_gen,costhCSll_gen);
 	  _mll_gen= mll_gen; _ptll_gen=ptll_gen; _pzll_gen=pzll_gen; _yll_gen=yll_gen; _dphill_gen=dphill_gen; _costhCSll_gen=costhCSll_gen;
