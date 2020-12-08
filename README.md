@@ -1,8 +1,8 @@
 # JetMETStudies
 
 ```
-cmsrel CMSSW_10_6_17_patch1
-cd CMSSW_10_6_17_patch1/src
+cmsrel CMSSW_10_6_19_patch2
+cd CMSSW_10_6_19_patch2/src
 git cms-addpkg RecoMET/METFilters
 git clone https://github.com/lathomas/JetMETStudies.git 
 scram b -j4
@@ -12,13 +12,12 @@ To get the EGM scaling/smearing correction (enabled by default), the following i
 https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
 ```
 git cms-merge-topic jainshilpi:ULV1_backport10616_forUsers
-git clone https://github.com/jainshilpi/EgammaPostRecoTools.git -b ULV0  
+git clone https://github.com/cms-egamma/EgammaPostRecoTools.git
 mv EgammaPostRecoTools/python/EgammaPostRecoTools.py RecoEgamma/EgammaTools/python/.
-git clone https://github.com/jainshilpi/EgammaAnalysis-ElectronTools.git -b UL2017SSV2 EgammaAnalysis/ElectronTools/data/
-git-cms-addpkg EgammaAnalysis/ElectronTools
-scram b -j 8
+git clone https://github.com/jainshilpi/EgammaAnalysis-ElectronTools.git -b UL2018 EgammaAnalysis/ElectronTools/data/
+git cms-addpkg EgammaAnalysis/ElectronTools
 ```
-
+N.B. You will get a conflict when trying to merge jainshilpi:ULV1_backport10616_forUsers but it is easy to solve.
 
 Make sure you adapt the **runEra** string and the **UseSQLiteFiles** boolean in JMEanalysis.py. 
 In general, when available, global tag should be preferred to SQLite files. For UL17, however, no global tag is currently available so one needs to rely on .db files. 
