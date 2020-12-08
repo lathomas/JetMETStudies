@@ -22,6 +22,10 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIIAutumn18MiniAOD/GJets_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/20000/435256CF-C2B1-4646-B28A-EE1A23DFD4DC.root'
 #'/store/mc/RunIIAutumn18MiniAOD/TTJets_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/10000/014F2D77-CD31-8348-B6CC-B09134F7E8E4.root'
 #'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/70000/FCBBCC59-954C-3143-9634-DF8825F76369.root'
+#'/store/mc/RunIISummer19UL18MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/100000/00556E5A-E6CD-6C4B-83BA-0B5C00C0A5E4.root'
+#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/270000/527C5A3A-7C09-4F42-B9DA-A84871504EBF.root'
+'/store/data/Run2018A/DoubleMuon/MINIAOD/12Nov2019_UL2018-v2/270000/F0CC36DA-D61E-0F4B-BAF4-1FF8913DBB78.root'
+
 #'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/280000/114CE0B4-5CA0-FA47-BCE6-C13EE15A7191.root'
 
 #'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/CD375D55-3419-BD44-891D-0B3396DC9183.root',
@@ -45,7 +49,7 @@ process.source = cms.Source("PoolSource",
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EF575753-1880-D047-92BC-DC8FFB908595.root',
 #'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EE195096-4700-6149-AE6F-56BC9150D4E5.root'
 
-'/store/data/Run2017F/JetHT/MINIAOD/09Aug2019_UL2017-v1/130000/3CD3E778-D5BF-394E-9D46-98D77A3CB58D.root'
+#'/store/data/Run2017F/JetHT/MINIAOD/09Aug2019_UL2017-v1/130000/3CD3E778-D5BF-394E-9D46-98D77A3CB58D.root'
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FC03A7B5-7FC0-E811-99BA-B496910A9A2C.root',
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FADA5029-2CC7-E811-BECD-0025907D1D6C.root',
 #'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F855E2C9-30C7-E811-A621-0025901AC0F8.root',
@@ -96,9 +100,10 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 
 ISMC=False
 
-runEra="DataUL2017F"
-#runEra="MCUL2017"
-UseSQLiteFiles=True
+#runEra="DataUL2017F"
+#runEra="MCUL2018"
+runEra="DataUL2018A"
+UseSQLiteFiles=False
 
 
 if "MC" in runEra:
@@ -117,59 +122,74 @@ if "Data2018" in runEra:
         process.GlobalTag.globaltag="102X_dataRun2_Prompt_v16" #2018D
     else:
         process.GlobalTag.globaltag="102X_dataRun2_v13" #2018ABC
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2018.txt"
 
 if "Data2017" in runEra:
     process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2017.txt"
 
 if "DataUL2017" in runEra:
-    process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2017      
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2017UL.txt"
 
+if "DataUL2018" in runEra:
+    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2018      
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2017UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet
+
 if "Data2016" in runEra:
     process.GlobalTag.globaltag="102X_dataRun2_v13" #2016
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2016.txt"
 
 if "MC2018" in runEra:
     process.GlobalTag.globaltag="102X_upgrade2018_realistic_v21" #2018     
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2018.txt"
 
 if "MC2017" in runEra:
     process.GlobalTag.globaltag="102X_mc2017_realistic_v8" #2017
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2017.txt"
 
 if "MC2016" in runEra:
     process.GlobalTag.globaltag="102X_mcRun2_asymptotic_v8" #2016
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2016.txt"
 
 if "MCUL2017" in runEra:
-    process.GlobalTag.globaltag="102X_mc2017_realistic_v8" #2017
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V1-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V1-wp90'
+    process.GlobalTag.globaltag="106X_mc2017_realistic_v8" #UL2017
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2017UL.txt"
+
+if "MCUL2018" in runEra:
+    process.GlobalTag.globaltag="106X_upgrade2018_realistic_v15" #UL2018
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2017UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet   
+
 
 print "Roch corr file: " 
 print RochesterCorrectionFile
@@ -225,6 +245,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      SaveAK8Jets=cms.bool(True),
                                      DropUnmatchedJets=cms.bool(False),
                                      DropBadJets=cms.bool(False),
+                                     SavePFinJets=cms.bool(False),
                                      ApplyPhotonID=cms.bool(False),
 #                                     Skim=cms.string("ZToEEorMuMu"),
                                      Skim=cms.string(""),
@@ -292,6 +313,7 @@ from RecoMET.METFilters.BadChargedCandidateFilter_cfi import BadChargedCandidate
 process.BadChargedCandidateFilterUpdate=BadChargedCandidateFilter.clone(
     muons = cms.InputTag("slimmedMuons"),
     PFCandidates = cms.InputTag("packedPFCandidates"),
+    vtx = cms.InputTag("offlineSlimmedPrimaryVertices"),
     taggingMode    = cms.bool(True)
 )
 
@@ -306,12 +328,13 @@ JSONfile =''
 
 if "DataUL2017" in runEra:
     JSONfile = 'Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt'
-if "Data2018" in runEra:
+if "Data2018" or "DataUL2018" in runEra:
     JSONfile = 'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'
 if "Data2017" in runEra:
     JSONfile = 'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'
 if "Data2016" in runEra:
     JSONfile = 'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt'
+
 myLumis = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
 if not ISMC:
     process.source.lumisToProcess.extend(myLumis)
@@ -326,8 +349,11 @@ if "MC2017" in runEra:
     JECsVersion='Fall17_17Nov2017_V32_102X_MC'
 if "MC2016" in runEra:
     JECsVersion='Summer16_07Aug2017_V11_MC'
+
 if "MCUL2017" in runEra:
     JECsVersion='Summer19UL17_V5_MC'
+if "MCUL2018" in runEra:
+    JECsVersion='Summer19UL18_V2_MC'
 
 if "Data2018" in runEra:
     JECsVersion='Autumn18_RunABCD_V19_DATA'
@@ -346,6 +372,16 @@ if "DataUL2017E" in runEra:
     JECsVersion='Summer19UL17_RunE_V5_DATA'
 if "DataUL2017F" in runEra:
     JECsVersion='Summer19UL17_RunF_V5_DATA'
+
+if "DataUL2018A" in runEra:
+    JECsVersion='Summer19UL18_RunA_V4_DATA'
+if "DataUL2018B" in runEra:
+    JECsVersion='Summer19UL18_RunB_V4_DATA'
+if "DataUL2018C" in runEra:
+    JECsVersion='Summer19UL18_RunC_V4_DATA'
+if "DataUL2018D" in runEra:
+    JECsVersion='Summer19UL18_RunD_V4_DATA'
+
 
 
 
@@ -401,6 +437,11 @@ if "MCUL2017" in runEra:
     JERVersion='Summer19UL17_JRV2_MC'
 if "DataUL2017" in runEra:
     JERVersion='Summer19UL17_JRV2_DATA'
+
+if "MCUL2018" in runEra:
+    JERVersion='Summer19UL18_JRV1_MC'
+if "DataUL2018" in runEra:
+    JERVersion='Summer19UL18_JRV1_MC'
 
 
 SQLiteFileJER='sqlite:'+JERVersion+'.db'

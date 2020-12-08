@@ -117,8 +117,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   virtual bool GetIdxFilterDecision(int it);
   virtual TString GetIdxFilterName(int it);
   virtual void InitandClearStuff();
-  virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll);
-  virtual void CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll);
+  virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
+  virtual void CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
   
  
   // ----------member data ---------------------------
@@ -176,7 +176,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   string PhotonTightWP_;
   Float_t PFCandPtCut_;
 
-  Bool_t SaveTree_, IsMC_, SavePUIDVariables_, SaveAK8Jets_, DropUnmatchedJets_, DropBadJets_, ApplyPhotonID_;
+  Bool_t SaveTree_, IsMC_, SavePUIDVariables_, SaveAK8Jets_, DropUnmatchedJets_, DropBadJets_, SavePFinJets_, ApplyPhotonID_;
   string Skim_;
   Bool_t Debug_;
 
@@ -191,7 +191,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
   //The output TTree
   TTree* outputTree;
-
+  TTree* jetPFTree;
+  
   //Variables associated to leaves of the TTree
 
   unsigned long _eventNb;
@@ -201,6 +202,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
   //Nb of primary vertices
   int _n_PV;
+  Float_t _LV_z;
   int trueNVtx;
   //Rho and RhoNC;
   Float_t _rho, _rhoNC;
@@ -310,16 +312,19 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t _pzll;
   Float_t _yll;
   Float_t _dphill;
+  Float_t _phill;
   Float_t _costhCSll;
-
+  Int_t _nElesll ;
 
   Float_t _mll_gen;
   Float_t _ptll_gen;
   Float_t _pzll_gen;
   Float_t _yll_gen;
   Float_t _dphill_gen;
+  Float_t _phill_gen;
   Float_t _costhCSll_gen;
-
+  
+  Int_t _ngenElesll ;
   
   //Nb of electrons in vtx fit
   int _n_PFele_fromvtxfit;
@@ -344,6 +349,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector <int> _PFcand_pdgId;
   vector <int> _PFcand_fromPV;
   vector <Float_t> _PFcand_dz;
+  vector <Float_t> _PFcand_hcalFraction;
   vector <int> _PFcand_PVfitidx;
   vector <Float_t> _PFcand_puppiweight;
   //Nb of CH in PV fit and corresponding HT, for different pt cuts
@@ -405,6 +411,21 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL;
   bool HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL;
   bool _l1prefire;
+
+
+  vector <Float_t> _Jet_PFcand_pt;
+  vector <Float_t> _Jet_PFcand_eta;
+  vector <Float_t> _Jet_PFcand_phi;
+  vector <int> _Jet_PFcand_pdgId;
+  vector <int> _Jet_PFcand_fromPV;
+  vector <Float_t> _Jet_PFcand_dz;
+  vector <Float_t> _Jet_PFcand_dzError;
+  Float_t _Jet_Pt;
+  Float_t _Jet_PtGen;
+  Float_t _Jet_Eta;
+  Float_t _Jet_EtaGen;
+  Float_t _Jet_Phi;
+  Float_t _Jet_PhiGen;
 
   RoccoR rc; 
   JetCorrectionUncertainty *jecUnc; 
@@ -475,6 +496,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   SaveAK8Jets_(iConfig.getParameter<bool>("SaveAK8Jets")),
   DropUnmatchedJets_(iConfig.getParameter<bool>("DropUnmatchedJets")),
   DropBadJets_(iConfig.getParameter<bool>("DropBadJets")),
+  SavePFinJets_(iConfig.getParameter<bool>("SavePFinJets")),
   ApplyPhotonID_(iConfig.getParameter<bool>("ApplyPhotonID")),
   Skim_(iConfig.getParameter<string>("Skim")),
   Debug_(iConfig.getParameter<bool>("Debug"))
@@ -488,6 +510,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   h_trueNVtx = fs->make<TH1D>("h_trueNVtx", "Nb of generated vertices", 200,0,200);
 
   outputTree = fs->make<TTree>("tree","tree");
+  if(SavePFinJets_) jetPFTree = fs->make<TTree>("jetPFtree","tree");
 
   
   rc.init(RochCorrFile_);
@@ -626,6 +649,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _n_PV = theVertices->size();
 
   const Vertex* LVtx = &((*theVertices)[0]);
+  _LV_z = LVtx->z();
   
   vector <TVector2 > metPV;
   for(unsigned int i = 0;i < theVertices->size(); i++){
@@ -780,7 +804,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   
   
   //Compute dilepton variables
-  Float_t mll(0),ptll(0),pzll(0),yll(0),dphill(0),costhCSll(0);
+  Float_t mll(0),ptll(0),pzll(0),yll(0),phill(0),dphill(0),costhCSll(0);
   for(unsigned int i = 0; i < _lPt.size(); i++){
     if(_lPt.size() !=2) continue;
     if(_lPt[i]<20) continue;
@@ -790,9 +814,12 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         if(_lPt[j]<20) continue;
         if(!_lPassTightID[j])  continue;
         if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
-        if( _lpdgId[i] != -_lpdgId[j]  ) continue;
-        CalcDileptonInfo(i,j, mll,ptll,pzll,yll,dphill,costhCSll);
-        _mll= mll; _ptll=ptll; _pzll=pzll; _yll=yll; _dphill=dphill; _costhCSll=costhCSll;
+        //if( _lpdgId[i] != -_lpdgId[j]  ) continue;
+        CalcDileptonInfo(i,j, mll,ptll,pzll,yll,phill,dphill,costhCSll);
+	_mll= mll; _ptll=ptll; _pzll=pzll; _yll=yll; _phill=phill; _dphill=dphill; _costhCSll=costhCSll;
+	if(fabs(_lpdgId[j]) ==11 && fabs(_lpdgId[j])  ==11) _nElesll =2 ;
+	else if(fabs(_lpdgId[j]) ==13 && fabs(_lpdgId[j])  ==13) _nElesll =0 ;
+	else _nElesll = 1;
       }
   }
     
@@ -869,7 +896,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetArea.push_back((&*jet)->jetArea());
       _jetPassID.push_back(passid);
       //Accessing the default PU ID stored in MINIAOD https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
-      _jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
+      if((&*jet)->hasUserFloat("pileupJetId:fullDiscriminant") )_jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
+      else _jetPUMVA.push_back(-99.);
       //Accessing the recomputed PU ID. This must be done with a value map. 
       iEvent.getByToken(pileupJetIdDiscriminantUpdateToken_,pileupJetIdDiscriminantUpdate);
       if(pileupJetIdDiscriminantUpdate.isValid()) _jetPUMVAUpdate.push_back((*pileupJetIdDiscriminantUpdate)[jetRef] );
@@ -946,6 +974,37 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetEtaGen.push_back(jetetagen);
       _jetPhiGen.push_back(jetphigen);
       _jetPtGenWithNu.push_back(jetptgenwithnu);
+    
+      for (unsigned i = 0; i < jet->numberOfSourceCandidatePtrs(); ++i) {
+	//const pat::PackedCandidate * icand = jet->sourceCandidatePtr(i).get();
+	const reco::Candidate* icand = jet->sourceCandidatePtr(i).get();
+	const pat::PackedCandidate* lPack = dynamic_cast<const pat::PackedCandidate*>(icand);
+	_Jet_PFcand_pt.push_back(lPack->pt());
+	_Jet_PFcand_eta.push_back(lPack->eta());
+	_Jet_PFcand_phi.push_back(lPack->phi());
+	_Jet_PFcand_pdgId.push_back(lPack->pdgId());
+	_Jet_PFcand_fromPV.push_back(lPack->fromPV());
+	_Jet_PFcand_dz.push_back(lPack->dz());
+	if(lPack-> hasTrackDetails())   _Jet_PFcand_dzError.push_back(lPack->dzError());
+	else  _Jet_PFcand_dzError.push_back(-99);
+      }
+      
+      _Jet_Pt = (&*jet)->pt();
+      _Jet_Eta = (&*jet)->eta();
+      _Jet_Phi = (&*jet)->phi();
+      _Jet_PtGen = jetptgen;
+      _Jet_EtaGen = jetetagen;
+      _Jet_PhiGen = jetphigen;
+      
+      if(SavePFinJets_)jetPFTree->Fill();
+      _Jet_PFcand_pt.clear();
+      _Jet_PFcand_eta.clear();
+      _Jet_PFcand_phi.clear();
+      _Jet_PFcand_pdgId.clear();
+      _Jet_PFcand_fromPV.clear();
+      _Jet_PFcand_dz.clear();
+      _Jet_PFcand_dzError.clear();
+      
       
     }
   }
@@ -1096,6 +1155,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _PFcand_pdgId.push_back(p->pdgId());
     _PFcand_fromPV.push_back(p->fromPV(0));//See https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2017#Packed_ParticleFlow_Candidates
     _PFcand_dz.push_back(p->dz(0));
+    _PFcand_hcalFraction.push_back(p->hcalFraction());
     _PFcand_PVfitidx.push_back(idxrefvtx);
     _PFcand_puppiweight.push_back((*puppiweights)[pfcandRef]);
   }
@@ -1151,16 +1211,20 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
     //Compute dilepton variables
-    Float_t mll_gen(0),ptll_gen(0),pzll_gen(0),yll_gen(0),dphill_gen(0),costhCSll_gen(0);
+    Float_t mll_gen(0),ptll_gen(0),pzll_gen(0),yll_gen(0),phill_gen(0),dphill_gen(0),costhCSll_gen(0);
     if(_lgenPt.size() >=2){
 
       for(unsigned int i =0; i < _lgenPt.size(); i++){
 	if (fabs(_lgenpdgId[i]) !=11 && fabs(_lgenpdgId[i])!=13 ) continue;
 	for(unsigned int j =0; j < i; j++){
 	  if(fabs(_lgenpdgId[j]) !=11 && fabs(_lgenpdgId[j])!=13 ) continue;
-	  if( _lgenpdgId[i] != -_lgenpdgId[j]  ) continue;
-	  CalcDileptonInfoGen(i,j, mll_gen,ptll_gen,pzll_gen,yll_gen,dphill_gen,costhCSll_gen);
-	  _mll_gen= mll_gen; _ptll_gen=ptll_gen; _pzll_gen=pzll_gen; _yll_gen=yll_gen; _dphill_gen=dphill_gen; _costhCSll_gen=costhCSll_gen;
+	  if( _lgenpdgId[i] * _lgenpdgId[j] >0 ) continue;
+	  CalcDileptonInfoGen(i,j, mll_gen,ptll_gen,pzll_gen,yll_gen,phill_gen,dphill_gen,costhCSll_gen);
+	  _mll_gen= mll_gen; _ptll_gen=ptll_gen; _pzll_gen=pzll_gen; _yll_gen=yll_gen;  _phill_gen = phill_gen; _dphill_gen=dphill_gen; _costhCSll_gen=costhCSll_gen;
+	  if(fabs(_lgenpdgId[j]) ==11 && fabs(_lgenpdgId[j])  ==11) _ngenElesll =2 ;
+	  else if(fabs(_lgenpdgId[j]) ==13 && fabs(_lgenpdgId[j])  ==13) _ngenElesll =0 ;
+	  else _ngenElesll = 1;
+	  
 	}
       }
     }
@@ -1230,6 +1294,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
   outputTree->Branch("_bx", &_bx, "_bx/l");
   outputTree->Branch("_n_PV", &_n_PV, "_n_PV/I");
+  outputTree->Branch("_LV_z", &_LV_z, "_LV_z/f");
   outputTree->Branch("_rho", &_rho, "_rho/f");
   outputTree->Branch("_rhoNC", &_rhoNC, "_rhoNC/f");
   
@@ -1327,6 +1392,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lPt",&_lPt);
   outputTree->Branch("_lPtcorr",&_lPtcorr);
   outputTree->Branch("_lpdgId",&_lpdgId);
+  outputTree->Branch("_lPassTightID",&_lPassTightID);
   outputTree->Branch("_nEles", &_nEles, "_nEles/I");
   outputTree->Branch("_nMus", &_nMus, "_nMus/I");
   
@@ -1336,15 +1402,18 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_pzll", &_pzll, "_pzll/f");
     outputTree->Branch("_yll", &_yll, "_yll/f");
     outputTree->Branch("_dphill", &_dphill, "_dphill/f");
+    outputTree->Branch("_phill", &_phill, "_phill/f");
     outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/f");
-
+    outputTree->Branch("_nElesll",&_nElesll,"_nElesll/I");
+    
     outputTree->Branch("_mll_gen", &_mll_gen, "_mll_gen/f");
     outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/f");
     outputTree->Branch("_pzll_gen", &_pzll_gen, "_pzll_gen/f");
     outputTree->Branch("_yll_gen", &_yll_gen, "_yll_gen/f");
     outputTree->Branch("_dphill_gen", &_dphill_gen, "_dphill_gen/f");
+    outputTree->Branch("_phill_gen", &_phill_gen, "_phill_gen/f");
     outputTree->Branch("_costhCSll_gen", &_costhCSll_gen, "_costhCSll_gen/f");
-
+    outputTree->Branch("_ngenElesll",&_ngenElesll,"_ngenElesll/I");
   }
   outputTree->Branch("_n_PFele_fromvtxfit",&_n_PFele_fromvtxfit,"_n_PFele_fromvtxfit/I");
   outputTree->Branch("_n_PFmu_fromvtxfit",&_n_PFmu_fromvtxfit,"_n_PFmu_fromvtxfit/I");
@@ -1364,23 +1433,25 @@ JMEAnalyzer::beginJob()
 
   }
   
-
+  if(PhotonPtCut_<1000){
   outputTree->Branch("_phEta",&_phEta);
   outputTree->Branch("_phPhi",&_phPhi);
   outputTree->Branch("_phPt",&_phPt);
   outputTree->Branch("_phPtcorr",&_phPtcorr);
-  
+  }
+  if(PFCandPtCut_<1000){
   outputTree->Branch("_PFcand_pt",&_PFcand_pt);
   outputTree->Branch("_PFcand_eta",&_PFcand_eta);
   outputTree->Branch("_PFcand_phi",&_PFcand_phi);
   outputTree->Branch("_PFcand_pdgId",&_PFcand_pdgId);
   outputTree->Branch("_PFcand_fromPV",&_PFcand_fromPV);
   outputTree->Branch("_PFcand_dz",&_PFcand_dz);
+  outputTree->Branch("_PFcand_hcalFraction",&_PFcand_hcalFraction);
   outputTree->Branch("_PFcand_PVfitidx",&_PFcand_PVfitidx);
   outputTree->Branch("_PFcand_puppiweight",&_PFcand_puppiweight);
   outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
   outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
-  
+  }
   
   if(Skim_=="VtxInfo" ){
   outputTree->Branch("_METCH_PV",&_METCH_PV);
@@ -1439,6 +1510,24 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",&HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL,"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL/O");
   outputTree->Branch("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",&HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL,"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL/O");
   if(!IsMC_)outputTree->Branch("_l1prefire",&_l1prefire,"_l1prefire/O");
+
+  if(SavePFinJets_){
+    jetPFTree->Branch("_Jet_Pt", &_Jet_Pt,"_Jet_Pt/f");
+    jetPFTree->Branch("_Jet_Eta", &_Jet_Eta,"_Jet_Eta/f");
+    jetPFTree->Branch("_Jet_Phi", &_Jet_Phi,"_Jet_Phi/f");
+    jetPFTree->Branch("_Jet_PtGen", &_Jet_PtGen,"_Jet_PtGen/f");
+    jetPFTree->Branch("_Jet_EtaGen", &_Jet_EtaGen,"_Jet_EtaGen/f");
+    jetPFTree->Branch("_Jet_PhiGen", &_Jet_PhiGen,"_Jet_PhiGen/f");
+
+    jetPFTree->Branch("_PFcand_pt",&_Jet_PFcand_pt);
+    jetPFTree->Branch("_PFcand_eta",&_Jet_PFcand_eta);
+    jetPFTree->Branch("_PFcand_phi",&_Jet_PFcand_phi);
+    jetPFTree->Branch("_PFcand_pdgId",&_Jet_PFcand_pdgId);
+    jetPFTree->Branch("_PFcand_fromPV",&_Jet_PFcand_fromPV);
+    jetPFTree->Branch("_PFcand_dz",&_Jet_PFcand_dz);
+    jetPFTree->Branch("_PFcand_dzError",&_Jet_PFcand_dzError);
+  }
+
   
 }
 
@@ -1530,16 +1619,19 @@ void JMEAnalyzer::InitandClearStuff(){
   _pzll=0;
   _yll=0;
   _dphill=0;
+  _phill=0;
   _costhCSll=0;
-
+  _nElesll =0;
+  
   _mll_gen=0;
   _ptll_gen=0;
   _pzll_gen=0;
   _yll_gen=0;
   _dphill_gen=0;
   _costhCSll_gen=0;
-
-
+  _phill_gen=0;
+  _ngenElesll =0;
+  
   if(!IsMC_) DropUnmatchedJets_=false;
 
   Flag_goodVertices=false;
@@ -1657,8 +1749,20 @@ void JMEAnalyzer::InitandClearStuff(){
   _PFcand_pdgId.clear();
   _PFcand_fromPV.clear();
   _PFcand_dz.clear();
+  _PFcand_hcalFraction.clear();
   _PFcand_PVfitidx.clear();
   _PFcand_puppiweight.clear();
+
+
+  _Jet_PFcand_pt.clear();
+  _Jet_PFcand_eta.clear();
+  _Jet_PFcand_phi.clear();
+  _Jet_PFcand_pdgId.clear();
+  _Jet_PFcand_fromPV.clear();
+  _Jet_PFcand_dz.clear();
+  _Jet_PFcand_dzError.clear();
+  
+
 
   _METCH_PV.clear();
   _METPhiCH_PV.clear();
@@ -1731,7 +1835,7 @@ bool JMEAnalyzer::PassSkim(){
 }
 
 void
-JMEAnalyzer::CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll){
+JMEAnalyzer::CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll){
 
   TLorentzVector lep1;
   TLorentzVector lep2;
@@ -1744,6 +1848,7 @@ JMEAnalyzer::CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Flo
   themass = (lep1+lep2).Mag() ;
   theptll = (lep1+lep2).Pt() ;
   thedphill = fabs(acos(cos(lep1.Phi()- lep2.Phi())));
+  thephill =  (lep1+lep2).Phi();
   thepzll = (lep1+lep2).Pz() ;
   theyll= (lep1+lep2).Rapidity();
 
@@ -1760,7 +1865,7 @@ JMEAnalyzer::CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Flo
 
 
 void
-JMEAnalyzer::CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thedphill, Float_t & thecosthll){
+JMEAnalyzer::CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll,Float_t & thephill,  Float_t & thedphill, Float_t & thecosthll){
 
   TLorentzVector lep1;
   TLorentzVector lep2;
@@ -1773,6 +1878,7 @@ JMEAnalyzer::CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, 
   themass = (lep1+lep2).Mag() ;
   theptll = (lep1+lep2).Pt() ;
   thedphill = fabs(acos(cos(lep1.Phi()- lep2.Phi())));
+  thephill = (lep1+lep2).Phi() ;
   thepzll = (lep1+lep2).Pz() ;
   theyll= (lep1+lep2).Rapidity();
 
