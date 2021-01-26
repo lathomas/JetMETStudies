@@ -6,6 +6,10 @@
 
 // system include files
 #include <memory>
+#include <iostream>
+#include <fstream>
+#include <string>
+
 
 
 // user include files
@@ -62,7 +66,7 @@
 
 //#include "JetMETStudies/JMEAnalyzer/python/RochesterCorrections/RoccoR.h"
 #include "JetMETStudies/JMEAnalyzer/interface/RoccoR.h"
-const int  N_METFilters=16;
+const int  N_METFilters=18;
 enum METFilterIndex{
   idx_Flag_goodVertices,
   idx_Flag_globalTightHalo2016Filter,
@@ -71,6 +75,8 @@ enum METFilterIndex{
   idx_Flag_HBHENoiseIsoFilter,
   idx_Flag_EcalDeadCellTriggerPrimitiveFilter,
   idx_Flag_BadPFMuonFilter,
+  idx_Flag_BadPFMuonDzFilter,
+  idx_Flag_hfNoisyHitsFilter,
   idx_Flag_BadChargedCandidateFilter,
   idx_Flag_eeBadScFilter,
   idx_Flag_ecalBadCalibFilter,
@@ -120,6 +126,19 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
   virtual void CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
   
+  bool PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Muon *muonit, const edm::Event&);
+  bool PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Electron *eleit, const edm::Event&);
+  bool PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Photon *photonit, const edm::Event&);
+  bool PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Jet *jetit, const edm::Event&);
+
+
+  bool PassTriggerLeg(std::string triggerlegstring, const pat::Muon *muonit, const edm::Event& theevent){return PassTriggerLeg(triggerlegstring,"Noalttrigger",muonit,theevent);};
+  bool PassTriggerLeg(std::string triggerlegstring, const pat::Electron *eleit, const edm::Event& theevent){ return PassTriggerLeg(triggerlegstring,"Noalttrigger",eleit,theevent);};
+  bool PassTriggerLeg(std::string triggerlegstring, const pat::Photon *photonit, const edm::Event& theevent){ return PassTriggerLeg(triggerlegstring,"Noalttrigger",photonit,theevent);};
+  bool PassTriggerLeg(std::string triggerlegstring, const pat::Jet *jetit, const edm::Event& theevent){ return PassTriggerLeg(triggerlegstring,"Noalttrigger",jetit,theevent);};
+
+
+
  
   // ----------member data ---------------------------
   edm::EDGetTokenT<TriggerResults> metfilterspatToken_; 
@@ -164,6 +183,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<vector<PileupSummaryInfo> > puInfoToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> trgresultsToken_;
+  edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> trigobjectToken_;
   edm::EDGetTokenT<BXVector<GlobalAlgBlk>> l1GtToken_;
 
   Float_t JetPtCut_;
@@ -193,6 +213,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   TTree* outputTree;
   TTree* jetPFTree;
   
+  ifstream myfile_unprefevts;
   //Variables associated to leaves of the TTree
 
   unsigned long _eventNb;
@@ -202,7 +223,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
   //Nb of primary vertices
   int _n_PV;
-  Float_t _LV_z;
+  Float_t _LV_x,_LV_y,_LV_z;
+  Float_t _PUV1_x,_PUV1_y,_PUV1_z;
   int trueNVtx;
   //Rho and RhoNC;
   Float_t _rho, _rhoNC;
@@ -221,6 +243,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool Flag_ecalLaserCorrFilter; 
   bool Flag_EcalDeadCellBoundaryEnergyFilter;
 
+  bool Flag_BadPFMuonDzFilter;
+  bool Flag_hfNoisyHitsFilter;
   //Decision obtained rerunning the filters on top of MINIAOD
   bool PassecalBadCalibFilter_Update;
   bool PassecalLaserCorrFilter_Update;  
@@ -243,6 +267,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector <int>  _jet_NM;
   vector <Float_t>  _jetArea;
   vector <bool> _jetPassID;
+  vector <Float_t>  _jethfsigmaEtaEta;
+  vector <Float_t>  _jethfsigmaPhiPhi;
+  vector <Int_t> _jethfcentralEtaStripSize;
+  vector <Int_t> _jethfadjacentEtaStripsSize;
+  
   vector <Float_t>  _jetPtGen;
   vector <Float_t>  _jetEtaGen;
   vector <Float_t>  _jetPhiGen;
@@ -258,6 +287,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<int> _jetpartonFlavour;
   
   vector<Float_t> _jetDeepJet_b;
+  vector<Float_t> _jetParticleNet_b;
   vector<Float_t> _jetDeepJet_c;
   vector<Float_t> _jetDeepJet_uds;
   vector<Float_t> _jetDeepJet_g;
@@ -299,6 +329,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<Float_t>  _lPt;
   vector<Float_t>  _lPtcorr;
   vector<Float_t>  _lPassTightID;
+
   vector<int> _lpdgId;
   int _nEles, _nMus;
 
@@ -334,7 +365,9 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<Float_t>  _phEta;
   vector<Float_t>  _phPhi;
   vector<Float_t>  _phPt;
+  vector<Bool_t>  _phPassIso;
   vector<Float_t>  _phPtcorr;
+  vector<Bool_t>  _phPassTightID;
   
   vector<Float_t>  _phgenEta;
   vector<Float_t>  _phgenPhi;
@@ -427,6 +460,41 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t _Jet_Phi;
   Float_t _Jet_PhiGen;
 
+
+
+
+  vector < bool >hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09;
+  vector < bool >hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09;
+  vector < bool >hltEle27WPTightGsfTrackIsoFilter; 
+  vector < bool >hltEle35noerWPTightGsfTrackIsoFilter; 
+  vector < bool >hltEle32WPTightGsfTrackIsoFilter; 
+  vector < bool >hltEG175HEFilter; 
+  vector < bool >hltEG200HEFilter; 
+  vector < bool >hltEG165R9Id90HE10IsoMTrackIsoFilter; 
+  vector < bool >hltEG120R9Id90HE10IsoMTrackIsoFilter; 
+  vector < bool >hltEG90R9Id90HE10IsoMTrackIsoFilter; 
+  vector < bool >hltEG75R9Id90HE10IsoMTrackIsoFilter; 
+  vector < bool >hltEG50R9Id90HE10IsoMTrackIsoFilter; 
+  vector < bool >hltSinglePFJet60; 
+  vector < bool >hltSinglePFJet80; 
+  vector < bool >hltSinglePFJet140 ;
+  vector < bool >hltSinglePFJet200; 
+  vector < bool >hltSinglePFJet260; 
+  vector < bool >hltSinglePFJet320; 
+  vector < bool >hltSinglePFJet400; 
+  vector < bool >hltSinglePFJet450; 
+  vector < bool >hltSinglePFJet500; 
+
+
+  vector<bool> hltHIPhoton40Eta3p1;
+  vector<bool> hltEle17WPLoose1GsfTrackIsoFilterForHI;
+  vector<bool> hltEle15WPLoose1GsfTrackIsoFilterForHI;
+  vector<bool> hltL3fL1sMu10lqL1f0L2f10L3Filtered12;
+  vector<bool> hltL3fL1sMu10lqL1f0L2f10L3Filtered15;
+
+
+
+
   RoccoR rc; 
   JetCorrectionUncertainty *jecUnc; 
 };
@@ -479,6 +547,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   genJetWithNuAssocPuppiToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetWithNuMatchPuppi"))),
   puInfoToken_(consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("PULabel"))),
   trgresultsToken_(consumes<TriggerResults>(iConfig.getParameter<edm::InputTag>("Triggers"))),
+  trigobjectToken_(consumes<pat::TriggerObjectStandAloneCollection>(edm::InputTag("slimmedPatTrigger"))),
   l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
   AK8JetPtCut_(iConfig.getParameter<double>("AK8JetPtCut")),
@@ -544,12 +613,17 @@ void JMEAnalyzer::beginRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
   }
   else jecUnc = 0;
 
+  int runnb = iRun.id().run();
+  TString str_runnb =Form("%d", runnb) ; 
+  myfile_unprefevts.open("UnprefireableEventList/run_"+str_runnb+".txt");
+  cout << "Run is " <<str_runnb <<endl;
 }
 
 
 void JMEAnalyzer::endRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
 {
 
+  myfile_unprefevts.close();
   delete jecUnc;
 }
 
@@ -649,8 +723,20 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _n_PV = theVertices->size();
 
   const Vertex* LVtx = &((*theVertices)[0]);
+  _LV_x = LVtx->x();
+  _LV_y = LVtx->y();
   _LV_z = LVtx->z();
+  _PUV1_x = 0;
+  _PUV1_y = 0;
+  _PUV1_z = 0;
   
+
+  if(_n_PV>=2) {
+    _PUV1_x = ((*theVertices)[1]).x();
+    _PUV1_y = ((*theVertices)[1]).y();
+    _PUV1_z = ((*theVertices)[1]).z();
+  }
+
   vector <TVector2 > metPV;
   for(unsigned int i = 0;i < theVertices->size(); i++){
     const Vertex* PVtx = &((*theVertices)[i]);
@@ -686,12 +772,13 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Flag_HBHENoiseIsoFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_HBHENoiseIsoFilter");
   Flag_EcalDeadCellTriggerPrimitiveFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_EcalDeadCellTriggerPrimitiveFilter");
   Flag_BadPFMuonFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_BadPFMuonFilter");
+  Flag_BadPFMuonDzFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_BadPFMuonDzFilter");
   Flag_BadChargedCandidateFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_BadChargedCandidateFilter");
   Flag_eeBadScFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_eeBadScFilter");
   Flag_ecalBadCalibFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_ecalBadCalibFilter");
   Flag_EcalDeadCellBoundaryEnergyFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_EcalDeadCellBoundaryEnergyFilter");
   Flag_ecalLaserCorrFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_ecalLaserCorrFilter");
-  
+  Flag_hfNoisyHitsFilter = GetMETFilterDecision(iEvent,METFilterResults,"Flag_hfNoisyHitsFilter");
 
   //Now accessing the decisions of some filters that we reran on top of MINIAOD
   edm::Handle<bool> handle_PassecalBadCalibFilter_Update ;
@@ -735,6 +822,11 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     //Implementing smearing/scaling EGM corrections
     //See here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaMiniAODV2#Applying_the_Energy_Scale_and_sm and here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
     double ptelecorr = (&*electron)->pt();
+    if(ptelecorr<-10){
+      cout << "ele pt, eta, phi: " << (&*electron)->pt()<<", " << (&*electron)->eta()<<", " <<(&*electron)->phi()<<endl; 
+      cout << "passveto, passtight " << (&*electron)->electronID(ElectronVetoWP_)<<", " <<  (&*electron)->electronID(ElectronTightWP_)<<endl; 
+      cout << "ele dxy, dz: " << (&*electron)->gsfTrack()->dxy(LVtx->position())<<", " << (&*electron)->gsfTrack()->dz(LVtx->position())<<endl;
+    }
     if((&*electron)->hasUserFloat("ecalEnergyPostCorr") ){
          ptelecorr = ptelecorr * (&*electron)->userFloat("ecalTrkEnergyPostCorr") /  (&*electron)->energy() ;
 	 //   cout << "Electron energy, Precorr, PostCorr, pt*cosh(eta) " << (&*electron)->energy() <<", "<<(&*electron)->userFloat("ecalEnergyPreCorr") <<", "<< (&*electron)->userFloat("ecalEnergyPostCorr") << ", "<<(&*electron)->pt() *cosh((&*electron)->eta()) <<endl; 
@@ -750,7 +842,20 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lPtcorr.push_back(ptelecorr );
     _lpdgId.push_back(-11*(&*electron)->charge());
     _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
+
+
+    hltEle27WPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle27WPTightGsfTrackIsoFilter",&*electron,iEvent));
+    hltEle35noerWPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle35noerWPTightGsfTrackIsoFilter",&*electron,iEvent));
+    hltEle32WPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle32WPTightGsfTrackIsoFilter",&*electron,iEvent));
+    hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.push_back(false);
+    hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.push_back(false);
+
+    hltL3fL1sMu10lqL1f0L2f10L3Filtered12.push_back(false);
+    hltL3fL1sMu10lqL1f0L2f10L3Filtered15.push_back(false);
     
+    hltHIPhoton40Eta3p1.push_back(PassTriggerLeg("hltHIPhoton40Eta3p1",&*electron,iEvent));
+    hltEle17WPLoose1GsfTrackIsoFilterForHI.push_back(PassTriggerLeg("hltEle17WPLoose1GsfTrackIsoFilterForHI",&*electron,iEvent));
+    hltEle15WPLoose1GsfTrackIsoFilterForHI.push_back(PassTriggerLeg("hltEle15WPLoose1GsfTrackIsoFilterForHI",&*electron,iEvent));  
   }
 
   edm::Handle< std::vector<pat::Muon> > thePatMuons;
@@ -778,6 +883,19 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lPtcorr.push_back( ptmuoncorr );
     _lpdgId.push_back(-13*(&*muon)->charge());
     _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
+
+    hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09","hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p07",&*muon,iEvent));
+    hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09","hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07",&*muon,iEvent));
+    hltEle27WPTightGsfTrackIsoFilter.push_back(false);
+    hltEle35noerWPTightGsfTrackIsoFilter.push_back(false);
+    hltEle32WPTightGsfTrackIsoFilter.push_back(false);
+
+    hltL3fL1sMu10lqL1f0L2f10L3Filtered12.push_back(PassTriggerLeg("hltL3fL1sMu10lqL1f0L2f10L3Filtered12",&*muon,iEvent));
+    hltL3fL1sMu10lqL1f0L2f10L3Filtered15.push_back(PassTriggerLeg("hltL3fL1sMu10lqL1f0L2f10L3Filtered15",&*muon,iEvent));
+    hltHIPhoton40Eta3p1.push_back(false);
+    hltEle17WPLoose1GsfTrackIsoFilterForHI.push_back(false);
+    hltEle15WPLoose1GsfTrackIsoFilterForHI.push_back(false);
+
   }
 
   edm::Handle< std::vector<pat::Photon> > thePatPhotons;
@@ -799,7 +917,63 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _phPhi.push_back((&*photon)->phi());
     _phPt.push_back( (&*photon)->pt());
     _phPtcorr.push_back( ptphotoncorr);
+    _phPassTightID.push_back(passtightid);
+    //_phIso.push_back(0.);
+    bool passmediumiso =false;
+    // bool passmediumid =false; 
+
+    double eta=(&*photon)->superCluster()->eta();
+    double pt=(&*photon)->pt();
+
+    float chIso = (&*photon)->chargedHadronIso();
+
+    float nhIso = (&*photon)->neutralHadronIso();
+
+    float gIso = (&*photon)->photonIso();
+
+    bool barrel = (fabs(eta) <= 1.479);
+    bool endcap = (!barrel && fabs(eta) < 32.5);
+
+    float sigmaIetaIeta = (&*photon)->full5x5_sigmaIetaIeta();
+    float hoe = (&*photon)->hadTowOverEm();
+
+    float chArea(0.),nhArea(0.),gArea(0.);
+    if(fabs(eta)<1.0){ chArea = 0.0385;nhArea= 0.0636 ;gArea=0.1240;}
+    else if(fabs(eta)<1.479){ chArea = 0.0468 ;nhArea=0.1103 ;gArea=0.1093;}
+    else if(fabs(eta)<2.0){ chArea = 0.0435 ;nhArea=0.0759 ;gArea=0.0631;}
+    else if(fabs(eta) < 2.2){ chArea = 0.0378 ;nhArea=0.0236 ;gArea=0.0779;}
+    else if(fabs(eta) < 2.3){ chArea = 0.0338 ;nhArea=0.0151 ;gArea=0.0999;}
+
+
+    else if(fabs(eta) < 2.4){ chArea = 0.0314 ;nhArea=0.00007 ;gArea=0.1155;}
+    else { chArea =0.0269 ;nhArea=0.0132 ;gArea=0.1373 ;}
+
+    /*    if ( barrel
+             && hoe < 0.035
+	     && sigmaIetaIeta < 0.0103)  passmediumid = true;*/
+    if ( barrel
+	 && TMath::Max(chIso-chArea*_rho,0.0) < 1.416
+	 && TMath::Max(nhIso-nhArea*_rho,0.0) < 2.491 + 0.0126*pt + 0.000026*pt*pt
+	 && TMath::Max(gIso-gArea*_rho, 0.0) < 2.952 + 0.0035*pt ) passmediumiso = true;
+    /*    if ( endcap
+             && hoe <  0.027
+	     && sigmaIetaIeta < 0.0271) passmediumid = true;*/
+    if ( endcap
+	 && TMath::Max(chIso-chArea*_rho,0.0) < 1.012
+	 && TMath::Max(nhIso-nhArea*_rho,0.0) <  9.131 + 0.0119* pt+ 0.000025*pt*pt
+	 && TMath::Max(gIso-gArea*_rho, 0.0) < 4.095 + 0.0040*pt ) passmediumiso = true;
     
+    _phPassIso.push_back(passmediumiso);
+    
+
+    hltEG175HEFilter.push_back(PassTriggerLeg("hltEG175HEFilter",&*photon,iEvent));
+    hltEG200HEFilter.push_back(PassTriggerLeg("hltEG200HEFilter",&*photon,iEvent));
+    hltEG165R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG165R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
+    hltEG120R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG120R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
+    hltEG90R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG90R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
+    hltEG75R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG75R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
+    hltEG50R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG50R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
+
   }
   
   
@@ -896,6 +1070,10 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetArea.push_back((&*jet)->jetArea());
       _jetPassID.push_back(passid);
       //Accessing the default PU ID stored in MINIAOD https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
+      if((&*jet)->hasUserFloat("hfJetShowerShape:sigmaEtaEta")) _jethfsigmaEtaEta.push_back((&*jet)->userFloat("hfJetShowerShape:sigmaEtaEta"));
+      if((&*jet)->hasUserFloat("hfJetShowerShape:sigmaPhiPhi")) _jethfsigmaPhiPhi.push_back((&*jet)->userFloat("hfJetShowerShape:sigmaPhiPhi"));
+      if((&*jet)->hasUserFloat("hfJetShowerShape:centralEtaStripSize")) _jethfcentralEtaStripSize.push_back((&*jet)->userFloat("hfJetShowerShape:centralEtaStripSize"));
+      if((&*jet)->hasUserFloat("hfJetShowerShape:adjacentEtaStripsSize")) _jethfadjacentEtaStripsSize.push_back((&*jet)->userFloat("hfJetShowerShape:adjacentEtaStripsSize"));
       if((&*jet)->hasUserFloat("pileupJetId:fullDiscriminant") )_jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
       else _jetPUMVA.push_back(-99.);
       //Accessing the recomputed PU ID. This must be done with a value map. 
@@ -945,7 +1123,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetDeepJet_c.push_back( (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probc") );
       _jetDeepJet_uds.push_back( (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probuds")  );
       _jetDeepJet_g.push_back(  (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probg")  );
-
+      _jetParticleNet_b.push_back(  (&*jet)->bDiscriminator("pfParticleNetAK4JetTags:probb")+ (&*jet)->bDiscriminator("pfParticleNetAK4JetTags:probbb"));
       //Quark Gluon likelihood  https://twiki.cern.ch/twiki/bin/viewauth/CMS/QuarkGluonLikelihood
       iEvent.getByToken(qgLToken_, quarkgluonlikelihood);
       if(quarkgluonlikelihood.isValid() )_jetQuarkGluonLikelihood.push_back( (*quarkgluonlikelihood)[jetRef] );
@@ -1005,7 +1183,17 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _Jet_PFcand_dz.clear();
       _Jet_PFcand_dzError.clear();
       
-      
+     
+      hltSinglePFJet60.push_back(PassTriggerLeg("hltSinglePFJet60",&*jet,iEvent));
+      hltSinglePFJet80.push_back(PassTriggerLeg("hltSinglePFJet80",&*jet,iEvent));
+      hltSinglePFJet140.push_back(PassTriggerLeg("hltSinglePFJet140",&*jet,iEvent));
+      hltSinglePFJet200.push_back(PassTriggerLeg("hltSinglePFJet200",&*jet,iEvent));
+      hltSinglePFJet260.push_back(PassTriggerLeg("hltSinglePFJet260",&*jet,iEvent));
+      hltSinglePFJet320.push_back(PassTriggerLeg("hltSinglePFJet320",&*jet,iEvent));
+      hltSinglePFJet400.push_back(PassTriggerLeg("hltSinglePFJet400",&*jet,iEvent));
+      hltSinglePFJet450.push_back(PassTriggerLeg("hltSinglePFJet450",&*jet,iEvent));
+      hltSinglePFJet500.push_back(PassTriggerLeg("hltSinglePFJet500",&*jet,iEvent));
+ 
     }
   }
   else if(Debug_){cout << "Invalid jet collection"<<endl;}
@@ -1157,7 +1345,10 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _PFcand_dz.push_back(p->dz(0));
     _PFcand_hcalFraction.push_back(p->hcalFraction());
     _PFcand_PVfitidx.push_back(idxrefvtx);
-    _PFcand_puppiweight.push_back((*puppiweights)[pfcandRef]);
+    // _PFcand_puppiweight.push_back((*puppiweights)[pfcandRef]);
+    //    cout<< "reaching that point " <<endl;
+    if(puppiweights.isValid())_PFcand_puppiweight.push_back((*puppiweights)[pfcandRef]);
+    else _PFcand_puppiweight.push_back(0.);
   }
   //Now computing the met from CH for each PV
   for(unsigned int i = 0;i<theVertices->size() ; i++) {_METCH_PV[i] = metPV[i].Mod(); _METPhiCH_PV[i] = metPV[i].Phi(); }
@@ -1294,7 +1485,13 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
   outputTree->Branch("_bx", &_bx, "_bx/l");
   outputTree->Branch("_n_PV", &_n_PV, "_n_PV/I");
+  outputTree->Branch("_LV_x", &_LV_x, "_LV_x/f");
+  outputTree->Branch("_LV_y", &_LV_y, "_LV_y/f");
   outputTree->Branch("_LV_z", &_LV_z, "_LV_z/f");
+  outputTree->Branch("_PUV1_x", &_PUV1_x, "_PUV1_x/f");
+  outputTree->Branch("_PUV1_y", &_PUV1_y, "_PUV1_y/f");
+  outputTree->Branch("_PUV1_z", &_PUV1_z, "_PUV1_z/f");
+
   outputTree->Branch("_rho", &_rho, "_rho/f");
   outputTree->Branch("_rhoNC", &_rhoNC, "_rhoNC/f");
   
@@ -1306,6 +1503,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("Flag_HBHENoiseIsoFilter",&Flag_HBHENoiseIsoFilter,"Flag_HBHENoiseIsoFilter/O");
   outputTree->Branch("Flag_EcalDeadCellTriggerPrimitiveFilter",&Flag_EcalDeadCellTriggerPrimitiveFilter,"Flag_EcalDeadCellTriggerPrimitiveFilter/O");
   outputTree->Branch("Flag_BadPFMuonFilter",&Flag_BadPFMuonFilter,"Flag_BadPFMuonFilter/O");
+  outputTree->Branch("Flag_BadPFMuonDzFilter",&Flag_BadPFMuonDzFilter,"Flag_BadPFMuonDzFilter/O");
+  outputTree->Branch("Flag_hfNoisyHitsFilter",&Flag_hfNoisyHitsFilter,"Flag_hfNoisyHitsFilter/O");
   outputTree->Branch("Flag_BadChargedCandidateFilter",&Flag_BadChargedCandidateFilter,"Flag_BadChargedCandidateFilter/O");
   outputTree->Branch("Flag_eeBadScFilter",&Flag_eeBadScFilter,"Flag_eeBadScFilter/O");
   outputTree->Branch("Flag_ecalBadCalibFilter",&Flag_ecalBadCalibFilter,"Flag_ecalBadCalibFilter/O");
@@ -1333,11 +1532,17 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jet_NM",&_jet_NM);
   outputTree->Branch("_jetArea",&_jetArea);
   outputTree->Branch("_jetPassID",&_jetPassID);
+  outputTree->Branch("_jethfsigmaEtaEta",&_jethfsigmaEtaEta);
+  outputTree->Branch("_jethfsigmaPhiPhi",&_jethfsigmaPhiPhi);
+  outputTree->Branch("_jethfcentralEtaStripSize",&_jethfcentralEtaStripSize);
+  outputTree->Branch("_jethfadjacentEtaStripsSize",&_jethfadjacentEtaStripsSize);
 
+  if(IsMC_){
   outputTree->Branch("_jetPtGen",&_jetPtGen);
   outputTree->Branch("_jetEtaGen",&_jetEtaGen);
   outputTree->Branch("_jetPhiGen",&_jetPhiGen);
   outputTree->Branch("_jetPtGenWithNu",&_jetPtGenWithNu);
+  }
   outputTree->Branch("_jetJECuncty",&_jetJECuncty);
   outputTree->Branch("_jetPUMVA",&_jetPUMVA);
   outputTree->Branch("_jetPUMVAUpdate",&_jetPUMVAUpdate);
@@ -1345,9 +1550,10 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetPUMVAUpdate2018",&_jetPUMVAUpdate2018);
   outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
   outputTree->Branch("_jet_corrjecs",&_jet_corrjecs);
-  outputTree->Branch("_jethadronFlavour",&_jethadronFlavour);
-  outputTree->Branch("_jetpartonFlavour",&_jetpartonFlavour);
+  if(IsMC_)outputTree->Branch("_jethadronFlavour",&_jethadronFlavour);
+  if(IsMC_)outputTree->Branch("_jetpartonFlavour",&_jetpartonFlavour);
   outputTree->Branch("_jetDeepJet_b",&_jetDeepJet_b);
+  outputTree->Branch("_jetParticleNet_b",&_jetParticleNet_b);
   outputTree->Branch("_jetDeepJet_c",&_jetDeepJet_c);
   outputTree->Branch("_jetDeepJet_uds",&_jetDeepJet_uds);
   outputTree->Branch("_jetDeepJet_g",&_jetDeepJet_g);
@@ -1438,6 +1644,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_phPhi",&_phPhi);
   outputTree->Branch("_phPt",&_phPt);
   outputTree->Branch("_phPtcorr",&_phPtcorr);
+  outputTree->Branch("_phPassTightID",&_phPassTightID);
+  outputTree->Branch("_phPassIso",&_phPassIso);
   }
   if(PFCandPtCut_<1000){
   outputTree->Branch("_PFcand_pt",&_PFcand_pt);
@@ -1528,7 +1736,39 @@ JMEAnalyzer::beginJob()
     jetPFTree->Branch("_PFcand_dzError",&_Jet_PFcand_dzError);
   }
 
+
   
+  outputTree->Branch("hltEle27WPTightGsfTrackIsoFilter",&hltEle27WPTightGsfTrackIsoFilter);
+  outputTree->Branch("hltEle35noerWPTightGsfTrackIsoFilter",&hltEle35noerWPTightGsfTrackIsoFilter);
+  outputTree->Branch("hltEle32WPTightGsfTrackIsoFilter",&hltEle32WPTightGsfTrackIsoFilter);
+
+  outputTree->Branch("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09",&hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09);
+  outputTree->Branch("hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09",&hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09);
+
+  outputTree->Branch("hltEG175HEFilter",&hltEG175HEFilter );
+  outputTree->Branch("hltEG200HEFilter",&hltEG200HEFilter );
+  outputTree->Branch("hltEG165R9Id90HE10IsoMTrackIsoFilter",&hltEG165R9Id90HE10IsoMTrackIsoFilter );
+  outputTree->Branch("hltEG120R9Id90HE10IsoMTrackIsoFilter",&hltEG120R9Id90HE10IsoMTrackIsoFilter );
+  outputTree->Branch("hltEG90R9Id90HE10IsoMTrackIsoFilter",&hltEG90R9Id90HE10IsoMTrackIsoFilter );
+  outputTree->Branch("hltEG75R9Id90HE10IsoMTrackIsoFilter",&hltEG75R9Id90HE10IsoMTrackIsoFilter );
+  outputTree->Branch("hltEG50R9Id90HE10IsoMTrackIsoFilter",&hltEG50R9Id90HE10IsoMTrackIsoFilter );
+
+  outputTree->Branch("hltEle17WPLoose1GsfTrackIsoFilterForHI",&hltEle17WPLoose1GsfTrackIsoFilterForHI);
+  outputTree->Branch("hltHIPhoton40Eta3p1",&hltHIPhoton40Eta3p1);
+  outputTree->Branch("hltL3fL1sMu10lqL1f0L2f10L3Filtered12",&hltL3fL1sMu10lqL1f0L2f10L3Filtered12);
+  outputTree->Branch("hltL3fL1sMu10lqL1f0L2f10L3Filtered15",&hltL3fL1sMu10lqL1f0L2f10L3Filtered15);
+  outputTree->Branch("hltEle15WPLoose1GsfTrackIsoFilterForHI",&hltEle15WPLoose1GsfTrackIsoFilterForHI);
+
+  outputTree->Branch("hltSinglePFJet60",&hltSinglePFJet60);
+  outputTree->Branch("hltSinglePFJet80",&hltSinglePFJet80);
+  outputTree->Branch("hltSinglePFJet140",&hltSinglePFJet140);
+  outputTree->Branch("hltSinglePFJet200",&hltSinglePFJet200);
+  outputTree->Branch("hltSinglePFJet260",&hltSinglePFJet260);
+  outputTree->Branch("hltSinglePFJet320",&hltSinglePFJet320);
+  outputTree->Branch("hltSinglePFJet400",&hltSinglePFJet400);
+  outputTree->Branch("hltSinglePFJet450",&hltSinglePFJet450);
+  outputTree->Branch("hltSinglePFJet500",&hltSinglePFJet500);
+
 }
 
 // ------------ method called once each job just after ending the event loop  ------------
@@ -1564,8 +1804,9 @@ bool JMEAnalyzer::GetMETFilterDecision(const edm::Event& iEvent,edm::Handle<Trig
     const edm::TriggerNames & metfilterName = iEvent.triggerNames(*METFilterResults);
     for( int i_Metfilter = 0; i_Metfilter < N_MetFilters; ++i_Metfilter ) {
       TString MetfilterPath =metfilterName.triggerName(i_Metfilter);
+      //      cout << MetfilterPath<<endl;
       if(MetfilterPath.Index(studiedfilter) >=0)  return METFilterResults.product()->accept(i_Metfilter);
-      
+
     }
   }
    return true; 
@@ -1580,6 +1821,8 @@ bool JMEAnalyzer::GetIdxFilterDecision(int it){
   else if(it==  idx_Flag_HBHENoiseIsoFilter)return   Flag_HBHENoiseIsoFilter;
   else if(it==  idx_Flag_EcalDeadCellTriggerPrimitiveFilter)return   Flag_EcalDeadCellTriggerPrimitiveFilter;
   else if(it==  idx_Flag_BadPFMuonFilter)return   Flag_BadPFMuonFilter;
+  else if(it==  idx_Flag_BadPFMuonDzFilter)return   Flag_BadPFMuonDzFilter;
+  else if(it==  idx_Flag_hfNoisyHitsFilter)return   Flag_hfNoisyHitsFilter;
   else if(it==  idx_Flag_BadChargedCandidateFilter)return   Flag_BadChargedCandidateFilter;
   else if(it==  idx_Flag_eeBadScFilter)return   Flag_eeBadScFilter;
   else if(it==  idx_Flag_ecalBadCalibFilter)return   Flag_ecalBadCalibFilter;
@@ -1600,6 +1843,8 @@ TString JMEAnalyzer::GetIdxFilterName(int it){
   else if(it== idx_Flag_HBHENoiseIsoFilter)return "Flag_HBHENoiseIsoFilter";
   else if(it== idx_Flag_EcalDeadCellTriggerPrimitiveFilter)return "Flag_EcalDeadCellTriggerPrimitiveFilter";
   else if(it== idx_Flag_BadPFMuonFilter)return "Flag_BadPFMuonFilter";
+  else if(it== idx_Flag_BadPFMuonDzFilter)return "Flag_BadPFMuonDzFilter";
+  else if(it== idx_Flag_hfNoisyHitsFilter)return "Flag_hfNoisyHitsFilter";
   else if(it== idx_Flag_BadChargedCandidateFilter)return "Flag_BadChargedCandidateFilter";
   else if(it== idx_Flag_eeBadScFilter)return "Flag_eeBadScFilter";
   else if(it== idx_Flag_ecalBadCalibFilter)return "Flag_ecalBadCalibFilter";
@@ -1641,6 +1886,8 @@ void JMEAnalyzer::InitandClearStuff(){
   Flag_HBHENoiseIsoFilter=false;
   Flag_EcalDeadCellTriggerPrimitiveFilter=false;
   Flag_BadPFMuonFilter=false;
+  Flag_BadPFMuonDzFilter=false;
+  Flag_hfNoisyHitsFilter=false;
   Flag_BadChargedCandidateFilter=false;
   Flag_eeBadScFilter=false;
   Flag_ecalBadCalibFilter=false;
@@ -1666,6 +1913,10 @@ void JMEAnalyzer::InitandClearStuff(){
   _jet_NM.clear();
   _jetArea.clear();
   _jetPassID.clear();
+  _jethfsigmaEtaEta.clear();
+  _jethfsigmaPhiPhi.clear();
+  _jethfcentralEtaStripSize.clear();
+  _jethfadjacentEtaStripsSize.clear();
   _jetPtGen.clear();
   _jetEtaGen.clear();
   _jetPhiGen.clear();
@@ -1681,6 +1932,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _jetpartonFlavour.clear();
   _jethadronFlavour.clear();
   _jetDeepJet_b.clear();
+  _jetParticleNet_b.clear();
   _jetDeepJet_c.clear();
   _jetDeepJet_uds.clear();
   _jetDeepJet_g.clear();
@@ -1737,7 +1989,8 @@ void JMEAnalyzer::InitandClearStuff(){
   _phPhi.clear();
   _phPt.clear();
   _phPtcorr.clear();
-
+  _phPassTightID.clear();
+  _phPassIso.clear();
   _phgenEta.clear();
   _phgenPhi.clear();
   _phgenPt.clear();
@@ -1805,6 +2058,38 @@ void JMEAnalyzer::InitandClearStuff(){
   HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ=false;
   HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL=false;
   HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL=false;  
+
+
+  
+  hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.clear();
+  hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.clear();
+  hltEle27WPTightGsfTrackIsoFilter.clear(); 
+  hltEle35noerWPTightGsfTrackIsoFilter.clear(); 
+  hltEle32WPTightGsfTrackIsoFilter.clear(); 
+  hltEG175HEFilter.clear(); 
+  hltEG200HEFilter.clear(); 
+  hltEG165R9Id90HE10IsoMTrackIsoFilter.clear(); 
+  hltEG120R9Id90HE10IsoMTrackIsoFilter.clear(); 
+  hltEG90R9Id90HE10IsoMTrackIsoFilter.clear(); 
+  hltEG75R9Id90HE10IsoMTrackIsoFilter.clear(); 
+  hltEG50R9Id90HE10IsoMTrackIsoFilter.clear(); 
+  hltSinglePFJet60.clear(); 
+  hltSinglePFJet80.clear(); 
+  hltSinglePFJet140.clear();
+  hltSinglePFJet200.clear(); 
+  hltSinglePFJet260.clear(); 
+  hltSinglePFJet320.clear(); 
+  hltSinglePFJet400.clear(); 
+  hltSinglePFJet450.clear(); 
+  hltSinglePFJet500.clear(); 
+
+
+  hltEle17WPLoose1GsfTrackIsoFilterForHI.clear();
+  hltHIPhoton40Eta3p1.clear();
+  hltL3fL1sMu10lqL1f0L2f10L3Filtered12.clear();
+  hltL3fL1sMu10lqL1f0L2f10L3Filtered15.clear();
+  hltEle15WPLoose1GsfTrackIsoFilterForHI.clear();
+
 }
 
 bool JMEAnalyzer::PassSkim(){
@@ -1830,8 +2115,40 @@ bool JMEAnalyzer::PassSkim(){
   else if(Skim_=="MET100"&&_met<100) return false;
   else if(Skim_=="MET100"&&_met>100) return true;
   else if(Skim_=="HighHT") return (HLT_PFHT1050 || HLT_PFHT900 || HLT_PFJet500 || HLT_AK8PFJet500) ; 
-  return true; 
+  else if(Skim_=="L1Unprefirable" ){
+    std::string str_run = std::to_string(_runNb);
+    std::string str_lumi = std::to_string(_lumiBlock);
+    std::string str_event = std::to_string(_eventNb);
+    string line;
 
+    if(_runNb == 305064 && _lumiBlock == 128 && _eventNb==202006565) cout << _runNb<<", " <<_lumiBlock <<", " <<_eventNb <<endl;
+    myfile_unprefevts.clear();
+    myfile_unprefevts.seekg(0);
+    std::string stringtosearch = "run:"+str_run+":"+str_lumi+":"+str_event;
+    //    cout << stringtosearch<<endl;
+    //if(_runNb == 305248&& _lumiBlock == 640 && _eventNb== 1141243194)  cout <<" _runNb == 305248&& _lumiBlock == 640 && _eventNb== 1141243194 "<<endl;
+    if (myfile_unprefevts.is_open()) {
+      
+      while ( getline (myfile_unprefevts,line) ) {
+	//cout << "line in file is " <<endl;
+	//cout << line<<endl;
+	
+	//	if(_runNb == 305248&& _lumiBlock == 640 && _eventNb== 1141243194)  cout <<"in line " <<line <<endl;
+	if(line.find(stringtosearch) != string::npos) {
+	  myfile_unprefevts.clear();
+	  //cout << line<<endl;
+	  return true; 
+	}
+      }
+      
+    }
+    //    else cout << "myfile_unprefevts.is_open() = false " << endl;
+
+
+    return false;   
+  }
+
+  return true; 
 }
 
 void
@@ -1890,6 +2207,119 @@ JMEAnalyzer::CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, 
   thecosthll = thepzll/fabs(thepzll)*2/themass/sqrt(themass*themass+theptll*theptll)*(leppz*posienergy-posipz*lepenergy) ;
 
 
+}
+
+
+
+
+
+
+
+
+bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,  const pat::Muon *muonit, const edm::Event& iEvent ){
+
+  edm::Handle<edm::TriggerResults> triggerBits;
+  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
+  edm::InputTag triggerBits_("TriggerResults","","HLT");
+  edm::InputTag  triggerObjects_("slimmedPatTrigger");
+  iEvent.getByToken(trigobjectToken_, triggerObjects);
+  iEvent.getByToken(trgresultsToken_, triggerBits);
+  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
+  for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
+    obj.unpackNamesAndLabels(iEvent,*triggerBits);                                                                                                                                                           
+    for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
+      string myfillabl=obj.filterLabels()[h];
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& deltaR(muonit->eta(),muonit->phi(), obj.eta(),obj.phi())<0.4 ) return true;
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& myfillabl.find("hltL1s")!=string::npos &&deltaR(muonit->eta(),muonit->phi(), obj.eta(),obj.phi())<0.5 ) return true; 
+    }
+  }
+  return false;
+}
+
+
+bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Electron *eleit, const edm::Event& iEvent ){
+
+  edm::Handle<edm::TriggerResults> triggerBits;
+  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
+  edm::InputTag triggerBits_("TriggerResults","","HLT");
+  edm::InputTag  triggerObjects_("slimmedPatTrigger");
+  iEvent.getByToken(trigobjectToken_, triggerObjects);
+
+  iEvent.getByToken(trgresultsToken_, triggerBits);
+
+  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
+
+                                                                                                                                                                            
+  for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
+    obj.unpackNamesAndLabels(iEvent,*triggerBits);
+    for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
+
+      string myfillabl=obj.filterLabels()[h];
+                                                                                                                                                                    
+
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& deltaR(eleit->eta(),eleit->phi(), obj.eta(),obj.phi())<0.4 ) return true;
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& myfillabl.find("L1sL1")!=string::npos &&deltaR(eleit->eta(),eleit->phi(), obj.eta(),
+																				  obj.phi())<0.5 ) return true; 
+      if(triggerlegstring =="hltDoubleEle8Mass8Filter" && myfillabl.find(triggerlegstring)!=string::npos )return true;
+
+ 
+    }
+  }
+  return false;
+}
+
+
+bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Photon *photonit, const edm::Event& iEvent ){
+
+  edm::Handle<edm::TriggerResults> triggerBits;
+  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
+  edm::InputTag triggerBits_("TriggerResults","","HLT");
+  edm::InputTag  triggerObjects_("slimmedPatTrigger");
+  iEvent.getByToken(trigobjectToken_, triggerObjects);
+
+  iEvent.getByToken(trgresultsToken_, triggerBits);
+
+  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
+  for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
+    obj.unpackNamesAndLabels(iEvent,*triggerBits);
+    for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
+
+      string myfillabl=obj.filterLabels()[h];
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& deltaR(photonit->eta(),photonit->phi(), obj.eta(),obj.phi())<0.4 ) return true;
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& myfillabl.find("L1sL1")!=string::npos &&deltaR(photonit->eta(),photonit->phi(), 
+																				  obj.eta(),obj.phi())<0.5 ) return true; 
+
+    }
+  }
+  return false;
+}
+
+
+
+bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Jet *jetit, const edm::Event& iEvent ){
+
+  edm::Handle<edm::TriggerResults> triggerBits;
+  edm::Handle<pat::TriggerObjectStandAloneCollection> triggerObjects;
+  edm::InputTag triggerBits_("TriggerResults","","HLT");
+  edm::InputTag  triggerObjects_("slimmedPatTrigger");
+  iEvent.getByToken(trigobjectToken_, triggerObjects);
+
+  iEvent.getByToken(trgresultsToken_, triggerBits);
+
+  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
+
+  for (pat::TriggerObjectStandAlone obj : *triggerObjects) {                                                                               
+    obj.unpackNamesAndLabels(iEvent,*triggerBits);
+    for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
+
+      string myfillabl=obj.filterLabels()[h];
+ 
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& deltaR(jetit->eta(),jetit->phi(), obj.eta(),obj.phi())<0.4 ) return true;
+      if( (myfillabl.find(triggerlegstring)!=string::npos  || myfillabl.find(triggerlegstringalt)!=string::npos)&& myfillabl.find("L1sL1")!=string::npos &&deltaR(jetit->eta(),jetit->phi(), 
+																				  obj.eta(),obj.phi())<0.5 ) return true;
+    }
+  }
+  return false;
 }
 
 

@@ -24,10 +24,86 @@ process.source = cms.Source("PoolSource",
 #'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/70000/FCBBCC59-954C-3143-9634-DF8825F76369.root'
 #'/store/mc/RunIISummer19UL18MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/100000/00556E5A-E6CD-6C4B-83BA-0B5C00C0A5E4.root'
 #'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/270000/527C5A3A-7C09-4F42-B9DA-A84871504EBF.root'
-'/store/data/Run2018A/DoubleMuon/MINIAOD/12Nov2019_UL2018-v2/270000/F0CC36DA-D61E-0F4B-BAF4-1FF8913DBB78.root'
+#'/store/data/Run2018A/DoubleMuon/MINIAOD/12Nov2019_UL2018-v2/270000/F0CC36DA-D61E-0F4B-BAF4-1FF8913DBB78.root'
 
+#'/store/mc/RunIISummer20UL16MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/00000/011B6125-7815-DA41-8156-3AE937358B20.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/00000/013A68E4-E6F1-864F-A7C5-720F65EEC95D.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/00000/02543440-A080-B74F-BE85-4B8B5FBD8F0F.root'
+
+
+#QCD non APV Summer 19
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/5AB17A4C-2E3A-4942-AA05-BC6BF6BB0236.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/5FA474AC-A54F-0F4F-BFDC-6904FB5093A7.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/6239DF88-2AE9-6D40-8014-2E745231F4BC.root'
+
+
+#QCD APV Summer 19
+#'/store/mc/RunIISummer19UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_preVFP_v8_ext1-v2/270000/061DD1C3-7020-394B-93EC-950D7DFFED38.root',
+#'/store/mc/RunIISummer19UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_preVFP_v8_ext1-v2/270000/06E7F5EC-7ACB-6946-817E-A5EB2958D927.root',
+#'/store/mc/RunIISummer19UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_preVFP_v8_ext1-v2/270000/08C2A679-31AF-1348-883A-8EA52EFA06C6.root',
+#'/store/mc/RunIISummer19UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_preVFP_v8_ext1-v2/270000/093940CD-38F2-BC46-9D6E-A4E49CE3BFCE.root'
+
+#'/store/mc/RunIISummer19UL16MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/110000/0024E881-BBEF-9E40-830F-F19ECDC138B4.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/110000/01332B79-6400-2646-809A-3974B6D5ADE8.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/TTTo2L2Nu_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/110000/01534B43-BE82-0947-A85E-5A5059DAFA83.root'
+
+
+#'/store/data/Run2017C/JetHT/MINIAOD/UL2017_MiniAODv2_pilot1-v1/280000/9469B647-9233-0F44-B952-E5F6902E8747.root'
+#QCD non APV Summer20 
+#'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/032811FE-9F2C-9C43-AC44-7E3CB3A36BF2.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/0D4E813A-64F5-674C-A3B6-AD8BB222A047.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/1DE43F87-8C67-0449-AAF8-4F000299F6DB.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/212FD818-875C-1044-891E-1339B3EBA9B8.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/2858CEC4-C9EC-9A43-87BC-5D8DA9906911.root'
+
+
+#'/store/mc/RunIISummer20UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to75_106X_mcRun2_asymptotic_preVFP_v8-v2/280000/00255B8A-4AED-634C-8EF8-FEBF23341852.root',
+#'/store/mc/RunIISummer20UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to75_106X_mcRun2_asymptotic_preVFP_v8-v2/280000/026ECF85-4316-CD40-B00A-C89924AF91DB.root',
+#'/store/mc/RunIISummer20UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to75_106X_mcRun2_asymptotic_preVFP_v8-v2/280000/0496EAE8-0F78-D746-A94C-F748D6A11868.root',
+#'/store/mc/RunIISummer20UL16MiniAODAPV/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to75_106X_mcRun2_asymptotic_preVFP_v8-v2/280000/06C3F754-A24C-4B42-9048-245750B5E9AA.root'
+
+'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/032811FE-9F2C-9C43-AC44-7E3CB3A36BF2.root',
+'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/5E163602-009E-E449-9735-190D57BB5374.root',
+'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/63CB8255-4354-394B-BEA6-E8EE450E4DC8.root',
+'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/72B65A38-1B48-E046-AB88-5823DF8E2335.root'
+
+
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/08821C9B-49AB-D34B-9735-7DD132C321A2.root'
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/0DAB44EA-6328-BE48-A858-8DECFAC2F2B3.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/1160357B-559E-D04D-A001-71F53942085E.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/1B5C5781-9B4E-A946-8BD9-C73339575CFF.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/1BAF87C9-C842-7747-AF5D-6762CA003BB0.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/1DB6C50F-457C-9743-ACD1-A796249C2846.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/23D220B6-6DC7-AF48-B765-E3B66DB4F4A9.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/24FB48D3-7B7B-BA42-8B46-4DDF20D09628.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/2DC429E1-88D8-2845-B570-8291D651FCE0.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/3A7494EE-01E9-744B-AAD8-8A35F7B3BE81.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/3DA882CE-9569-F04A-9BB5-1CD811C80863.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/3FFAB487-A7AC-AE4F-9294-9E4251FAA9FF.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/472ED21B-3D9A-8D49-96A3-B4F4CD744B0F.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v2/100000/4791A001-5EF9-DA40-B19A-BE9C7C650120.root'
+
+
+#'/store/mc/RunIISummer19UL16MiniAOD/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/240000/003A7263-466A-E844-99E0-2C52D07D0F26.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/240000/00446651-A017-A742-8FC0-CA283AE4E3E6.root',
+#'/store/mc/RunIISummer19UL16MiniAOD/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/240000/00F0BB84-F9C9-2946-8091-FF5A6F827A13.root'
+
+#'/store/mc/RunIISummer20UL16MiniAOD/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/00000/066F138E-9058-A34A-8A15-20791BD77D30.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/00000/0681F3E0-9883-6346-A78D-EDDDA4D015DA.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/00000/074A35EB-8AC8-F74E-ADD9-32D7316324C9.root',
+#'/store/mc/RunIISummer20UL16MiniAOD/TTToHadronic_TuneCP5_13TeV-powheg-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/00000/07A4FF2B-7338-C74E-8CFF-93C8E3469F77.root'
+
+#'/store/mc/RunIISummer20UL16MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/00000/878B57AD-CEB4-1F43-B34F-718B04680E85.root'
 #'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/280000/114CE0B4-5CA0-FA47-BCE6-C13EE15A7191.root'
-
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/01856EE9-56C6-7240-A7BE-1D5DB9C26309.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/019F7BB0-0604-DA43-91E1-1C7ED270C434.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/01F852E5-0A2C-BD49-8FDD-AD4727172284.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/021C12B1-A951-7C41-80B2-64C05C9B8B36.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/02416733-BDD8-8A49-8A7A-CC4E81441F81.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/027F534D-235F-A44B-80F0-C4F76C809628.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/03AE91F5-BDC3-514E-8B19-E45032A06A70.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/03B7EAF6-5670-7D44-983B-D2E50EDDB3B4.root',
+#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/0459255D-273E-C643-950C-A75722A0D7D9.root'
 #'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/CD375D55-3419-BD44-891D-0B3396DC9183.root',
 #'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/CAA1C836-1A53-1140-8DAE-C3C428EDB304.root',
 #'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C93984AD-C2B3-084D-8735-FE533D3FC735.root',
@@ -101,8 +177,8 @@ process.load('Configuration.StandardSequences.Reconstruction_cff')
 ISMC=False
 
 #runEra="DataUL2017F"
-#runEra="MCUL2018"
-runEra="DataUL2018A"
+runEra="MCUL2016"
+#runEra="DataUL2018A"
 UseSQLiteFiles=False
 
 
@@ -190,6 +266,13 @@ if "MCUL2018" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2017UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet   
 
+if "MCUL2016" in runEra:
+    process.GlobalTag.globaltag="102X_mcRun2_asymptotic_v8" #2016 
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2016.txt"
+
 
 print "Roch corr file: " 
 print RochesterCorrectionFile
@@ -229,26 +312,27 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      Electrons=cms.InputTag("slimmedElectrons"),
                                      Muons=cms.InputTag("slimmedMuons"),
                                      Photons=cms.InputTag("slimmedPhotons"),
-                                     JetPtCut=cms.double(20),
-                                     AK8JetPtCut=cms.double(200),
+                                     JetPtCut=cms.double(50),
+                                     AK8JetPtCut=cms.double(20000),
                                      ElectronPtCut=cms.double(20),
                                      ElectronVetoWorkingPoint=cms.string(EleVetoWP),
                                      ElectronTightWorkingPoint=cms.string(EleTightWP),
                                      MuonPtCut=cms.double(20),
                                      RochCorrFile=cms.string(RochesterCorrectionFile),
-                                     PhotonPtCut=cms.double(20),
+                                     PhotonPtCut=cms.double(15000),
                                      PhotonTightWorkingPoint=cms.string(PhotonTightWP),
-                                     PFCandPtCut=cms.double(1000),
+                                     PFCandPtCut=cms.double(10000),
                                      SaveTree=cms.bool(True),
                                      IsMC=cms.bool(ISMC),
-                                     SavePUIDVariables=cms.bool(True),
-                                     SaveAK8Jets=cms.bool(True),
+                                     SavePUIDVariables=cms.bool(False),
+                                     SaveAK8Jets=cms.bool(False),
                                      DropUnmatchedJets=cms.bool(False),
                                      DropBadJets=cms.bool(False),
                                      SavePFinJets=cms.bool(False),
                                      ApplyPhotonID=cms.bool(False),
-#                                     Skim=cms.string("ZToEEorMuMu"),
+#                                     Skim=cms.string(""),
                                      Skim=cms.string(""),
+#                                     Skim=cms.string("L1Unprefirable"),
 #                                     Skim=cms.string("HighHT"),
                                      Debug=cms.bool(False)
                               )
@@ -328,7 +412,7 @@ JSONfile =''
 
 if "DataUL2017" in runEra:
     JSONfile = 'Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt'
-if "Data2018" or "DataUL2018" in runEra:
+if "Data2018" in runEra or "DataUL2018" in runEra:
     JSONfile = 'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt'
 if "Data2017" in runEra:
     JSONfile = 'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'
@@ -348,6 +432,8 @@ if "MC2018" in runEra:
 if "MC2017" in runEra:
     JECsVersion='Fall17_17Nov2017_V32_102X_MC'
 if "MC2016" in runEra:
+    JECsVersion='Summer16_07Aug2017_V11_MC'
+if "MCUL2016" in runEra:
     JECsVersion='Summer16_07Aug2017_V11_MC'
 
 if "MCUL2017" in runEra:
@@ -424,6 +510,8 @@ if "MC2018" in runEra:
 if "MC2017" in runEra:
     JERVersion='Fall17_V3b_MC'
 if "MC2016" in runEra:
+    JERVersion='Summer16_25nsV1b_MC'
+if "MCUL2016" in runEra:
     JERVersion='Summer16_25nsV1b_MC'
 
 if "Data2018" in runEra:
@@ -540,11 +628,12 @@ matched     = cms.InputTag("ak4GenJetsWithNuNEW")
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 
 #Recompute PFMET (with updated JECs)
+'''
 runMetCorAndUncFromMiniAOD (
     process,
     isData = not ISMC
 )
-
+'''
 
 
 '''
@@ -583,10 +672,10 @@ addJetCollection(process,labelName = 'Puppi', jetSource = cms.InputTag('ak4Puppi
 process.patJetsPuppi.addGenPartonMatch = cms.bool(ISMC)
 process.patJetsPuppi.addGenJetMatch = cms.bool(ISMC)
 
-from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV15
+#from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV15
 
-patAlgosToolsTask.add(process.ak4PuppiJets)
-UpdatePuppiTuneV15(process,ISMC)
+#patAlgosToolsTask.add(process.ak4PuppiJets)
+#UpdatePuppiTuneV15(process,ISMC)
 
 
 
@@ -645,11 +734,11 @@ if ISMC:
 
 
 #You may want to comment out some of the following lines to speed things up
-process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
+#process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
 
-process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
-process.computepuid = cms.Path(process.pileupJetIdUpdate  * process.pileupJetIdUpdate2017 * process.pileupJetIdUpdate2018)
-process.computeqgl = cms.Path(process.QGTagger)
+#process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
+#process.computepuid = cms.Path(process.pileupJetIdUpdate  * process.pileupJetIdUpdate2017 * process.pileupJetIdUpdate2018)
+#process.computeqgl = cms.Path(process.QGTagger)
 
 #This one obviously shouldn't be commented out
 process.endpath = cms.EndPath( process.jmeanalyzer)
