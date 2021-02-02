@@ -189,7 +189,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t JetPtCut_;
   Float_t AK8JetPtCut_;
   Float_t ElectronPtCut_;
-  string ElectronVetoWP_, ElectronTightWP_;
+  string ElectronVetoWP_, ElectronTightWP_, ElectronLooseWP_;
   Float_t MuonPtCut_;
   string RochCorrFile_;
   Float_t PhotonPtCut_;
@@ -328,7 +328,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<Float_t>  _lPhi;
   vector<Float_t>  _lPt;
   vector<Float_t>  _lPtcorr;
-  vector<Float_t>  _lPassTightID;
+  vector<Bool_t>  _lPassTightID;
+  vector<Bool_t>  _lPassLooseID;
 
   vector<int> _lpdgId;
   int _nEles, _nMus;
@@ -554,6 +555,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   ElectronPtCut_(iConfig.getParameter<double>("ElectronPtCut")),
   ElectronVetoWP_(iConfig.getParameter<string>("ElectronVetoWorkingPoint")),
   ElectronTightWP_(iConfig.getParameter<string>("ElectronTightWorkingPoint")),
+  ElectronLooseWP_(iConfig.getParameter<string>("ElectronLooseWorkingPoint")),
   MuonPtCut_(iConfig.getParameter<double>("MuonPtCut")),
   RochCorrFile_(iConfig.getParameter<string>("RochCorrFile")),
   PhotonPtCut_(iConfig.getParameter<double>("PhotonPtCut")),
@@ -842,6 +844,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lPtcorr.push_back(ptelecorr );
     _lpdgId.push_back(-11*(&*electron)->charge());
     _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
+    _lPassLooseID.push_back( (&*electron)->electronID(ElectronLooseWP_) );
 
 
     hltEle27WPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle27WPTightGsfTrackIsoFilter",&*electron,iEvent));
@@ -883,6 +886,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lPtcorr.push_back( ptmuoncorr );
     _lpdgId.push_back(-13*(&*muon)->charge());
     _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
+    _lPassLooseID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdLoose )&& (&*muon)->passed(reco::Muon::PFIsoLoose ) );
 
     hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09","hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p07",&*muon,iEvent));
     hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09","hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07",&*muon,iEvent));
@@ -1599,6 +1603,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lPtcorr",&_lPtcorr);
   outputTree->Branch("_lpdgId",&_lpdgId);
   outputTree->Branch("_lPassTightID",&_lPassTightID);
+  outputTree->Branch("_lPassLooseID",&_lPassLooseID);
   outputTree->Branch("_nEles", &_nEles, "_nEles/I");
   outputTree->Branch("_nMus", &_nMus, "_nMus/I");
   
@@ -1657,10 +1662,11 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_PFcand_hcalFraction",&_PFcand_hcalFraction);
   outputTree->Branch("_PFcand_PVfitidx",&_PFcand_PVfitidx);
   outputTree->Branch("_PFcand_puppiweight",&_PFcand_puppiweight);
+  }
   outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
   outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
-  }
-  
+
+
   if(Skim_=="VtxInfo" ){
   outputTree->Branch("_METCH_PV",&_METCH_PV);
   outputTree->Branch("_METPhiCH_PV",&_METPhiCH_PV);
@@ -1976,6 +1982,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _lPtcorr.clear();
   _lpdgId.clear();
   _lPassTightID.clear();
+  _lPassLooseID.clear();
   _nEles=0;
   _nMus=0;
   
@@ -2114,6 +2121,19 @@ bool JMEAnalyzer::PassSkim(){
   }
   else if(Skim_=="MET100"&&_met<100) return false;
   else if(Skim_=="MET100"&&_met>100) return true;
+  else if(Skim_=="FourLeptons" &&_lPt.size()<4 ) return false;
+  else if(Skim_=="FourLeptons" &&_lPt.size() >=4) {
+    int nl= 0;
+    for(unsigned int i = 0; i < _lPt.size(); i++){
+      if(!_lPassLooseID[i])  continue;
+      nl++;
+    }
+    if(nl>=4){
+      //      cout << "found " <<endl;
+      return true;
+    }
+    else return false;
+  }
   else if(Skim_=="HighHT") return (HLT_PFHT1050 || HLT_PFHT900 || HLT_PFJet500 || HLT_AK8PFJet500) ; 
   else if(Skim_=="L1Unprefirable" ){
     std::string str_run = std::to_string(_runNb);

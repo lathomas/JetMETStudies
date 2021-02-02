@@ -1,7 +1,7 @@
 from CRABClient.UserUtilities import config
 config = config()
 
-config.General.requestName = 'qcdflatsummer20_2016apv'
+config.General.requestName = 'qcdflatul17'
 config.General.workArea = 'crabworkarea'
 config.General.transferOutputs = True
 config.General.transferLogs = True
@@ -31,15 +31,16 @@ config.JobType.inputFiles = [
 ]
 #Make sure all the needed files are included. For example, running on UL, you should add files such as Summer19UL17_JRV2_DATA.db Summer19UL17_RunF_V5_DATA.db
 #config.Data.inputDataset = '/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/RunIISummer20UL16MiniAOD-FlatPU0to70_106X_mcRun2_asymptotic_v13-v1/MINIAODSIM'
-config.Data.inputDataset = '/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/RunIISummer20UL16MiniAODAPV-FlatPU0to75_106X_mcRun2_asymptotic_preVFP_v8-v2/MINIAODSIM'
-
+#config.Data.inputDataset = '/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/RunIISummer20UL16MiniAODAPV-FlatPU0to75_106X_mcRun2_asymptotic_preVFP_v8-v2/MINIAODSIM'
+#config.Data.inputDataset = '/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/RunIISummer19UL18MiniAOD-FlatPU0to70_106X_upgrade2018_realistic_v11_L1v1-v2/MINIAODSIM'
+config.Data.inputDataset = '/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/RunIISummer19UL17MiniAOD-FlatPU0to70_106X_mc2017_realistic_v6-v3/MINIAODSIM'
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'FileBased'
 config.Data.unitsPerJob = 1
 
 config.Data.allowNonValidInputDataset = True
 config.Data.publication = True
-config.Data.outputDatasetTag = 'RunIISummer20UL16MiniAODAPV-FlatPU0to75_106X_mcRun2_asymptotic_preVFP_v8-v2'
+config.Data.outputDatasetTag = 'RunIISummer19UL17MiniAOD-FlatPU0to70_106X_mc2017_realistic_v6-v3'
 
 
 config.Site.storageSite = 'T2_BE_IIHE'

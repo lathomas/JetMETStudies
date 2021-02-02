@@ -2,7 +2,7 @@ from CRABClient.UserUtilities import config
 config = config()
 
 config.General.requestName = 'THEREQUESTNAME'
-config.General.workArea = 'crabworkareadec2020_miniaodv2'
+config.General.workArea = 'crabworkarea_h4l'
 config.General.transferOutputs = True
 config.General.transferLogs = True
 
@@ -10,7 +10,7 @@ config.JobType.pluginName = 'Analysis'
 
 config.JobType.psetName = 'theconfig.py'
 config.JobType.outputFiles = ['output.root']
-config.JobType.maxJobRuntimeMin = 300
+config.JobType.maxJobRuntimeMin = 1000
 config.JobType.maxMemoryMB = 2500
 config.JobType.inputFiles = [
 'Summer16_07Aug2017_V11_MC.db','Summer16_07Aug2017All_V11_DATA.db','Summer16_25nsV1b_MC.db','Summer16_25nsV1b_DATA.db',
@@ -35,6 +35,10 @@ config.JobType.inputFiles = [
 'Summer19UL18_RunC_V4_DATA.db',
 'Summer19UL18_RunD_V4_DATA.db',
 'Summer19UL18_V2_MC.db',
+'Summer16_07Aug2017All_V11_DATA.db',
+'Summer16_07Aug2017_V11_MC.db',
+'Summer16_25nsV1b_DATA.db',
+'Summer16_25nsV1b_MC.db',
 'Relval_JetHTUL2017.txt',
 'UnprefireableEventList'
 ]
