@@ -1,3 +1,23 @@
+TheSkim = "THESKIM"
+ReclusterCHSJets = False
+ReclusterGenJets = False
+runEra="THERUNERA"
+UseSQLiteFiles=False
+
+ISMC=bool(MCBOOL)
+
+if not ISMC:
+    ReclusterGenJets = False
+
+if TheSkim == "FourLeptons":
+    ReclusterCHSJets = False
+    ReclusterGenJets = False
+
+if TheSkim == "MCJECs":
+   ReclusterCHSJets = False
+   ReclusterGenJets = False
+
+
 import FWCore.ParameterSet.Config as cms
 
 process = cms.Process("Demo")
@@ -14,19 +34,7 @@ patAlgosToolsTask = getPatAlgosToolsTask(process)
 
 process.source = cms.Source("PoolSource",
                                 fileNames = cms.untracked.vstring(
-#                                    '/store/mc/PhaseIITDRSpring19MiniAOD/TTbar_14TeV_TuneCP5_Pythia8/MINIAODSIM/PU200_106X_upgrade2023_realistic_v3_ext1-v3/60000/E73765BC-F41D-6349-9394-2858D7CF81E1.root'
-#'/store/mc/RunIIAutumn18MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15_ext2-v1/50000/EE271696-E60F-1743-8DB2-AC50FD899528.root'
-#'/store/mc/RunIIFall17MiniAODv2/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PU2017_12Apr2018_94X_mc2017_realistic_v14_ext1-v1/90000/EA38FF5C-D444-E811-BFA6-001E6779262E.root'
-#'/store/mc/RunIIAutumn18MiniAOD/QCD_HT1000to1500_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/20000/0E772C3C-0A8F-8341-886E-21A550D8E283.root'
-#'/store/mc/RunIIAutumn18MiniAOD/DYJetsToLL_M-50_HT-200to400_TuneCP5_PSweights_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v2/90000/FD805C2C-92E0-4044-8061-770C77462EBC.root'
-#'/store/mc/RunIIAutumn18MiniAOD/GJets_HT-200To400_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/20000/435256CF-C2B1-4646-B28A-EE1A23DFD4DC.root'
-#'/store/mc/RunIIAutumn18MiniAOD/TTJets_HT-600to800_TuneCP5_13TeV-madgraphMLM-pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15-v1/10000/014F2D77-CD31-8348-B6CC-B09134F7E8E4.root'
-#'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/70000/FCBBCC59-954C-3143-9634-DF8825F76369.root'
-#'/store/mc/RunIISummer19UL18MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/100000/00556E5A-E6CD-6C4B-83BA-0B5C00C0A5E4.root'
-#'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/270000/527C5A3A-7C09-4F42-B9DA-A84871504EBF.root'
-#'/store/data/Run2018A/DoubleMuon/MINIAOD/12Nov2019_UL2018-v2/270000/F0CC36DA-D61E-0F4B-BAF4-1FF8913DBB78.root'
 
-#'/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/280000/114CE0B4-5CA0-FA47-BCE6-C13EE15A7191.root'
 '/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/01856EE9-56C6-7240-A7BE-1D5DB9C26309.root',
 '/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/019F7BB0-0604-DA43-91E1-1C7ED270C434.root',
 '/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/01F852E5-0A2C-BD49-8FDD-AD4727172284.root',
@@ -36,58 +44,7 @@ process.source = cms.Source("PoolSource",
 '/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/03AE91F5-BDC3-514E-8B19-E45032A06A70.root',
 '/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/03B7EAF6-5670-7D44-983B-D2E50EDDB3B4.root',
 '/store/data/Run2017F/SingleElectron/MINIAOD/09Aug2019_UL2017_rsb-v2/00000/0459255D-273E-C643-950C-A75722A0D7D9.root'
-#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/CD375D55-3419-BD44-891D-0B3396DC9183.root',
-#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/CAA1C836-1A53-1140-8DAE-C3C428EDB304.root',
-#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C93984AD-C2B3-084D-8735-FE533D3FC735.root',
-#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C7F52CEB-C7C1-6B45-B016-4731B8FF000E.root',
-#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C764B195-A6AD-984A-9A44-CA92289342DB.root',
-#'/store/data/Run2017F/ZeroBias/MINIAOD/09Aug2019_UL2017-v1/50000/C722A73C-E67C-E445-BC9D-F287C2C962D1.root'
 
-
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/FAAFF59A-2340-4641-88E0-8C468D6F56AD.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F47C4B7D-B18A-3D4C-A6B9-601003D5AFF6.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F4750D03-36C4-AD4A-8CAB-1501A5EE8EF3.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F441F52A-9F68-BE42-B91B-DB4A8D1ABA99.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F36E09AC-E7E6-EB43-B61A-A59227282B33.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F18D0162-FF02-7E4A-BBB7-8D2A13CE7E87.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0E52585-2679-E542-BA08-EB22E63443A0.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0BDD302-F7CF-F94A-902B-8DFEF92CF3E8.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F0496411-475D-9345-9A07-41BD1DD19F6D.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/F002BB55-D805-9B49-8A68-EFEB41E223EB.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EF575753-1880-D047-92BC-DC8FFB908595.root',
-#'/store/data/Run2017F/DoubleEG/MINIAOD/09Aug2019_UL2017-v1/50000/EE195096-4700-6149-AE6F-56BC9150D4E5.root'
-
-#'/store/data/Run2017F/JetHT/MINIAOD/09Aug2019_UL2017-v1/130000/3CD3E778-D5BF-394E-9D46-98D77A3CB58D.root'
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FC03A7B5-7FC0-E811-99BA-B496910A9A2C.root',
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/FADA5029-2CC7-E811-BECD-0025907D1D6C.root',
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F855E2C9-30C7-E811-A621-0025901AC0F8.root',
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6A1640F-65C7-E811-BA45-0025901F8740.root',
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6989592-7DC7-E811-96B7-0CC47A0AD3BC.root',
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6670B03-D5C4-E811-AAE4-008CFA1CBB34.root',
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F640A4A9-55C7-E811-A17E-0025901AA5AE.root',
-#'/store/mc/RunIISummer16MiniAODv3/DYJetsToLL_M-50_TuneCUETP8M1_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/PUMoriond17_94X_mcRun2_asymptotic_v3_ext2-v1/270000/F6072CD4-40C7-E811-9E08-0CC47AD24CF8.root'
-#'/store/mc/RunIIAutumn18MiniAOD/QCD_Pt-15to7000_TuneCP5_Flat_13TeV_pythia8/MINIAODSIM/102X_upgrade2018_realistic_v15_ext1-v1/110000/EC1F3053-63C3-6245-814E-74759808D0C7.root'
-
-
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/323B80E2-C415-694A-9A24-3E0F68A170D7.root',
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BAD0ABF-DB86-9B4C-BD26-D5DED96E54B2.root',
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_Pt_170to300_TuneCP5_13TeV_pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/230000/3BE12E39-1ADB-F444-ABE2-08E9F3765A11.root'
-#'file:/user/lathomas/GamGamToLLStudy/CMSSW_10_6_13/src/output_met200_partial.root'
-
-#'file:qcdht1000to1500_1.root',
-#'file:qcdht1000to1500_2.root'
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/000C0A31-7750-7A4D-A883-4676E3204108.root',
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/EDBBDDF4-C086-6E4C-AEC1-F95894C26521.root',
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/ED4BB7A9-8CCA-2848-AED9-071C95A97161.root',
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/945B5A22-C9E6-3D4E-A998-322431FD8759.root',
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/94007307-8399-1F4E-B59A-B32C70FC6375.root',
-#'/store/mc/RunIISummer19UL17MiniAOD/QCD_HT1000to1500_TuneCP5_PSWeights_13TeV-madgraphMLM-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/270000/92BE7189-3636-3149-BFCD-91ED2498573C.root'
-
-
-#'file:pickevents_ZeynepVBF.root'
-
-#Here's a MINIAOD file on lxplus in case you want to use a local sample
-#'file:/afs/cern.ch/work/l/lathomas/public/qcdht1000to1500_1.root'
         )
                             )
 
@@ -105,15 +62,16 @@ process.load("Geometry.CMSCommonData.cmsIdealGeometryXML_cfi")
 
 process.load('Configuration.StandardSequences.Reconstruction_cff')
 
+if ReclusterCHSJets:
+    CHSJetCollectionName ="selectedPatJetsCHS"
+else:
+    CHSJetCollectionName ="updatedPatJetsUpdatedJEC"
 
+if ReclusterGenJets:
+    GenJetCollectionName="ak4GenJetsNoNuNEW"
+else:
+    GenJetCollectionName="slimmedGenJets"
 
-runEra="THERUNERA"
-#runEra="MCUL2018"
-#runEra="DataUL2018A"
-UseSQLiteFiles=False
-
-
-ISMC=bool(MCBOOL)
 
 EleVetoWP=''
 EleTightWP=''
@@ -121,6 +79,23 @@ PhotonTightWP=''
 #Rochester corrections folder: 
 RochesterCorrectionFile="RochesterCorrections/"
 
+
+#Starting with pre UL data
+if "Data2016" in runEra:
+    process.GlobalTag.globaltag="102X_dataRun2_v13" #2016
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2016.txt"
+
+if "Data2017" in runEra:
+    process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    RochesterCorrectionFile+="RoccoR2017.txt"
 
 if "Data2018" in runEra:
     if "2018D" in runEra: 
@@ -133,53 +108,14 @@ if "Data2018" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2018.txt"
 
-if "Data2017" in runEra:
-    process.GlobalTag.globaltag="102X_dataRun2_v13" #2017      
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
-    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2017.txt"
-
-if "DataUL2017" in runEra:
-    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2017      
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
-    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2017UL.txt"
-
-if "DataUL2018" in runEra:
-    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2018      
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
-    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2017UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet
-
-if "DataUL2016" in runEra:
-    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2018      
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
-    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2017UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet
-
-if "Data2016" in runEra:
-    process.GlobalTag.globaltag="102X_dataRun2_v13" #2016
+#Now pre UL MC
+if "MC2016" in runEra:
+    process.GlobalTag.globaltag="102X_mcRun2_asymptotic_v8" #2016
     EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2016.txt"
-
-if "MC2018" in runEra:
-    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v21" #2018     
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
-    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2018.txt"
 
 if "MC2017" in runEra:
     process.GlobalTag.globaltag="102X_mc2017_realistic_v8" #2017
@@ -189,20 +125,73 @@ if "MC2017" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
     RochesterCorrectionFile+="RoccoR2017.txt"
 
-if "MC2016" in runEra:
-    process.GlobalTag.globaltag="102X_mcRun2_asymptotic_v8" #2016
+if "MC2018" in runEra:
+    process.GlobalTag.globaltag="102X_upgrade2018_realistic_v21" #2018     
     EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
     PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2016.txt"
+    RochesterCorrectionFile+="RoccoR2018.txt"
+
+
+#Now UL data
+#2016 is divided into two parts
+if "DataUL2016B" in runEra or "DataUL2016C" in runEra or "DataUL2016D" in runEra or "DataUL2016E" in runEra or "DataUL2016F" in runEra:
+    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2016
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2016aUL.txt" 
+
+if "DataUL2016Flate" in runEra or "DataUL2016G" in runEra or "DataUL2016H" in runEra:
+    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2016
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2016bUL.txt" 
+
+if "DataUL2017" in runEra:
+    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2017      
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2017UL.txt"
+
+if "DataUL2018" in runEra:
+    process.GlobalTag.globaltag="106X_dataRun2_v32" #UL2018      
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2018UL.txt"
+
+#Now UL MC
+
+if "MCUL2016APV" in runEra:
+    process.GlobalTag.globaltag="106X_mcRun2_asymptotic_preVFP_v11" #2016
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2016aUL.txt"
+
+if "MCUL2016nonAPV" in runEra:
+    process.GlobalTag.globaltag="106X_mcRun2_asymptotic_v17" #2016
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2016bUL.txt"
 
 if "MCUL2017" in runEra:
     process.GlobalTag.globaltag="106X_mc2017_realistic_v8" #UL2017
     EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
     RochesterCorrectionFile+="RoccoR2017UL.txt"
 
 if "MCUL2018" in runEra:
@@ -210,18 +199,8 @@ if "MCUL2018" in runEra:
     EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2017UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet   
-
-if "MCUL2016" in runEra:
-    process.GlobalTag.globaltag="102X_mcRun2_asymptotic_v8" #2016 
-    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
-    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
-    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
-    PhotonTightWP='mvaPhoID-RunIIFall17-v1p1-wp80'
-    RochesterCorrectionFile+="RoccoR2016.txt"
-
-
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2018UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet   
 
 print "Roch corr file: " 
 print RochesterCorrectionFile
@@ -234,10 +213,15 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      ECALDeadCellBoundaryEnergyFilterUpdate=cms.InputTag("ecalDeadCellBoundaryEnergyFilterUpdate"),
                                      BadChargedCandidateFilterUpdate=cms.InputTag("BadChargedCandidateFilterUpdate"),
                                      Vertices=cms.InputTag("offlineSlimmedPrimaryVertices"),
-                                     Jets=cms.InputTag("updatedPatJetsUpdatedJEC"),
+                                     Jets=cms.InputTag(CHSJetCollectionName),
+                                     JetsAK8=cms.InputTag("selectedPatJetsAK8CHS"),
 #                                     JetsPuppi=cms.InputTag("updatedPatJetsUpdatedJECPuppi"),
                                      JetsPuppi=cms.InputTag("slimmedJetsPuppi"),
                                      JetsPuppiAK8=cms.InputTag("slimmedJetsAK8"),
+                                     JetsCalo=cms.InputTag("slimmedCaloJets"),
+                                     JetsPFnoCHS=cms.InputTag("selectedPatJetsPlain"),
+                                     GenJets=cms.InputTag(GenJetCollectionName),
+                                     GenAK8Jets=cms.InputTag("slimmedGenJetsAK8"),
                                      pileupJetIdDiscriminantUpdate = cms.InputTag('pileupJetIdUpdate:fullDiscriminant'),
                                      pileupJetIdDiscriminantUpdate2017 = cms.InputTag('pileupJetIdUpdate2017:fullDiscriminant'),
                                      pileupJetIdDiscriminantUpdate2018 = cms.InputTag('pileupJetIdUpdate2018:fullDiscriminant'),
@@ -256,38 +240,101 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      GenJetWithNuMatchCHS= cms.InputTag("patJetGenWithNuJetMatchUpdate"),
                                      GenJetMatchPuppi= cms.InputTag("patJetGenJetMatchUpdatePuppi"),
                                      GenJetWithNuMatchPuppi= cms.InputTag("patJetGenWithNuJetMatchUpdatePuppi"),
+                                     GenJetMatchCalo= cms.InputTag("patJetGenJetMatchUpdateCalo"),
                                      PFMet=cms.InputTag("slimmedMETs"),
                                      PuppiMet=cms.InputTag("slimmedMETsPuppi"),
                                      Electrons=cms.InputTag("slimmedElectrons"),
                                      Muons=cms.InputTag("slimmedMuons"),
                                      Photons=cms.InputTag("slimmedPhotons"),
-                                     JetPtCut=cms.double(30),
-                                     AK8JetPtCut=cms.double(20000),
-                                     ElectronPtCut=cms.double(7),
+                                     JetPtCut=cms.double(2),
+                                     AK8JetPtCut=cms.double(10),
+                                     ElectronPtCut=cms.double(1005),
                                      ElectronVetoWorkingPoint=cms.string(EleVetoWP),
                                      ElectronLooseWorkingPoint=cms.string(EleLooseWP),
                                      ElectronTightWorkingPoint=cms.string(EleTightWP),
-                                     MuonPtCut=cms.double(5),
+                                     MuonPtCut=cms.double(1005),
                                      RochCorrFile=cms.string(RochesterCorrectionFile),
-                                     PhotonPtCut=cms.double(10000),
+                                     PhotonPtCut=cms.double(15000),
                                      PhotonTightWorkingPoint=cms.string(PhotonTightWP),
-                                     PFCandPtCut=cms.double(10000),
+                                     PFCandPtCut=cms.double(250000),
                                      SaveTree=cms.bool(True),
                                      IsMC=cms.bool(ISMC),
                                      SavePUIDVariables=cms.bool(False),
                                      SaveAK8Jets=cms.bool(False),
+                                     SaveCaloJets=cms.bool(True),
+                                     SavenoCHSJets=cms.bool(True),
                                      DropUnmatchedJets=cms.bool(False),
                                      DropBadJets=cms.bool(False),
                                      SavePFinJets=cms.bool(False),
                                      ApplyPhotonID=cms.bool(False),
 #                                     Skim=cms.string("ZToEEorMuMu"),
-                                     Skim=cms.string("THESKIM"),
+                                     Skim=cms.string(TheSkim),
 #                                     Skim=cms.string("HighHT"),
                                      Debug=cms.bool(False)
                               )
 
 
+if TheSkim == "MCJECs":
+    process.jmeanalyzer.JetPtCut=cms.double(-1)
+    process.jmeanalyzer.AK8JetPtCut=cms.double(10)
+    process.jmeanalyzer.SaveAK8Jets=cms.bool(True)
+    process.jmeanalyzer.SaveCaloJets=cms.bool(True)
+    process.jmeanalyzer.SavenoCHSJets=cms.bool(True)
+    process.jmeanalyzer.DropUnmatchedJets=cms.bool(True)
+    
 
+
+if TheSkim == "ZJetsResiduals" or TheSkim == "GammaJetsResiduals":
+    process.jmeanalyzer.JetPtCut=cms.double(-1)
+    process.jmeanalyzer.AK8JetPtCut=cms.double(1000)
+    process.jmeanalyzer.PhotonPtCut=cms.double(20)
+    process.jmeanalyzer.ElectronPtCut=cms.double(10)
+    process.jmeanalyzer.MuonPtCut=cms.double(10)
+    process.jmeanalyzer.ApplyPhotonID=cms.bool(True)
+    process.jmeanalyzer.SaveAK8Jets=cms.bool(False)
+    process.jmeanalyzer.SaveCaloJets=cms.bool(False)
+    process.jmeanalyzer.SavenoCHSJets=cms.bool(False)
+    process.jmeanalyzer.DropUnmatchedJets=cms.bool(False)
+    process.jmeanalyzer.DropBadJets=cms.bool(True)
+
+
+if TheSkim == "FourLeptons":
+    process.jmeanalyzer.ElectronPtCut=cms.double(10)
+    process.jmeanalyzer.MuonPtCut=cms.double(10)
+    process.jmeanalyzer.JetPtCut=cms.double(25)
+    process.jmeanalyzer.AK8JetPtCut=cms.double(1000)
+    process.jmeanalyzer.PhotonPtCut=cms.double(2000)
+    process.jmeanalyzer.SaveAK8Jets=cms.bool(False)
+    process.jmeanalyzer.SaveCaloJets=cms.bool(False)
+    process.jmeanalyzer.SavenoCHSJets=cms.bool(False)
+    process.jmeanalyzer.DropUnmatchedJets=cms.bool(False)
+    process.jmeanalyzer.DropBadJets=cms.bool(True)
+
+if TheSkim == "PhotonHFJet" or TheSkim == "HFJet" or TheSkim == "ZHFJet":
+    process.jmeanalyzer.JetPtCut=cms.double(25)
+    process.jmeanalyzer.AK8JetPtCut=cms.double(1000)
+    process.jmeanalyzer.PhotonPtCut=cms.double(20)
+    process.jmeanalyzer.ElectronPtCut=cms.double(10)
+    process.jmeanalyzer.MuonPtCut=cms.double(10)
+    process.jmeanalyzer.ApplyPhotonID=cms.bool(True)
+    process.jmeanalyzer.SaveAK8Jets=cms.bool(False)
+    process.jmeanalyzer.SaveCaloJets=cms.bool(False)
+    process.jmeanalyzer.SavenoCHSJets=cms.bool(False)
+    process.jmeanalyzer.DropUnmatchedJets=cms.bool(False)
+    process.jmeanalyzer.DropBadJets=cms.bool(False)
+
+if TheSkim == "L1Unprefirable":
+    process.jmeanalyzer.JetPtCut=cms.double(20)
+    process.jmeanalyzer.AK8JetPtCut=cms.double(1000)
+    process.jmeanalyzer.PhotonPtCut=cms.double(15)
+    process.jmeanalyzer.ElectronPtCut=cms.double(10)
+    process.jmeanalyzer.MuonPtCut=cms.double(10)
+    process.jmeanalyzer.ApplyPhotonID=cms.bool(False)
+    process.jmeanalyzer.SaveAK8Jets=cms.bool(False)
+    process.jmeanalyzer.SaveCaloJets=cms.bool(False)
+    process.jmeanalyzer.SavenoCHSJets=cms.bool(False)
+    process.jmeanalyzer.DropUnmatchedJets=cms.bool(False)
+    process.jmeanalyzer.DropBadJets=cms.bool(False)
 
 
 #Rerunning the ecalbadcalibration filter
@@ -376,19 +423,14 @@ print JSONfile
 
 #Updating JECs
 JECsVersion=""
-if "MC2018" in runEra:
-    JECsVersion='Autumn18_V19_MC'
-if "MC2017" in runEra:
-    JECsVersion='Fall17_17Nov2017_V32_102X_MC'
-if "MC2016" in runEra:
-    JECsVersion='Summer16_07Aug2017_V11_MC'
-if "MCUL2016" in runEra:
-    JECsVersion='Summer16_07Aug2017_V11_MC'
-
+if "MCUL2016APV" in runEra:
+    JECsVersion='Summer19UL16APV_V7_MC'
+if "MCUL2016nonAPV" in runEra:
+    JECsVersion='Summer19UL16_V7_MC'
 if "MCUL2017" in runEra:
-    JECsVersion='Summer19UL17_V5_MC'
+    JECsVersion='Summer19UL17_V6_MC'
 if "MCUL2018" in runEra:
-    JECsVersion='Summer19UL18_V2_MC'
+    JECsVersion='Summer19UL18_V5_MC'
 
 if "Data2018" in runEra:
     JECsVersion='Autumn18_RunABCD_V19_DATA'
@@ -398,27 +440,41 @@ if "Data2016" in runEra or "DataUL2016" in runEra:
     JECsVersion='Summer16_07Aug2017All_V11_DATA'
 
 if "DataUL2017B" in runEra:
-    JECsVersion='Summer19UL17_RunB_V5_DATA'
+    JECsVersion='Summer19UL17_RunB_V6_DATA'
 if "DataUL2017C" in runEra:
-    JECsVersion='Summer19UL17_RunC_V5_DATA'
+    JECsVersion='Summer19UL17_RunC_V6_DATA'
 if "DataUL2017D" in runEra:
-    JECsVersion='Summer19UL17_RunD_V5_DATA'
+    JECsVersion='Summer19UL17_RunD_V6_DATA'
 if "DataUL2017E" in runEra:
-    JECsVersion='Summer19UL17_RunE_V5_DATA'
+    JECsVersion='Summer19UL17_RunE_V6_DATA'
 if "DataUL2017F" in runEra:
-    JECsVersion='Summer19UL17_RunF_V5_DATA'
+    JECsVersion='Summer19UL17_RunF_V6_DATA'
 
 if "DataUL2018A" in runEra:
-    JECsVersion='Summer19UL18_RunA_V4_DATA'
+    JECsVersion='Summer19UL18_RunA_V5_DATA'
 if "DataUL2018B" in runEra:
-    JECsVersion='Summer19UL18_RunB_V4_DATA'
+    JECsVersion='Summer19UL18_RunB_V5_DATA'
 if "DataUL2018C" in runEra:
-    JECsVersion='Summer19UL18_RunC_V4_DATA'
+    JECsVersion='Summer19UL18_RunC_V5_DATA'
 if "DataUL2018D" in runEra:
-    JECsVersion='Summer19UL18_RunD_V4_DATA'
+    JECsVersion='Summer19UL18_RunD_V5_DATA'
 
-
-
+if "DataUL2016B" in runEra:
+    JECsVersion='Summer19UL16APV_RunBCD_V7_DATA'
+if "DataUL2016C" in runEra:
+    JECsVersion='Summer19UL16APV_RunBCD_V7_DATA'
+if "DataUL2016D" in runEra:
+    JECsVersion='Summer19UL16APV_RunBCD_V7_DATA'
+if "DataUL2016E" in runEra:
+    JECsVersion='Summer19UL16APV_RunEF_V7_DATA'
+if "DataUL2016F" in runEra:
+    JECsVersion='Summer19UL16APV_RunEF_V7_DATA'
+if "DataUL2016Flate" in runEra:
+    JECsVersion='Summer19UL16_RunFGH_V7_DATA'
+if "DataUL2016G" in runEra:
+    JECsVersion='Summer19UL16_RunFGH_V7_DATA'
+if "DataUL2016H" in runEra:
+    JECsVersion='Summer19UL16_RunFGH_V7_DATA'
 
 SQLiteFile='sqlite:'+JECsVersion+'.db'
 
@@ -471,15 +527,36 @@ if "Data2016" in runEra or "DataUL2016" in runEra:
     JERVersion='Summer16_25nsV1b_DATA'
 
 if "MCUL2017" in runEra:
-    JERVersion='Summer19UL17_JRV2_MC'
+    JERVersion='Summer19UL17_JRV3_MC'
 if "DataUL2017" in runEra:
-    JERVersion='Summer19UL17_JRV2_DATA'
+    JERVersion='Summer19UL17_JRV3_DATA'
 
 if "MCUL2018" in runEra:
-    JERVersion='Summer19UL18_JRV1_MC'
+    JERVersion='Summer19UL18_JRV2_MC'
 if "DataUL2018" in runEra:
-    JERVersion='Summer19UL18_JRV1_MC'
+    JERVersion='Summer19UL18_JRV2_DATA'
 
+if "MCUL2016APV" in runEra:
+    JERVersion='Summer20UL16APV_JRV3_MC'
+if "MCUL2016nonAPV" in runEra:
+    JERVersion='Summer20UL16_JRV3_MC'
+
+if "DataUL2016B" in runEra:
+    JERVersion='Summer20UL16APV_JRV3_DATA'
+if "DataUL2016C" in runEra:
+    JERVersion='Summer20UL16APV_JRV3_DATA'
+if "DataUL2016D" in runEra:
+    JERVersion='Summer20UL16APV_JRV3_DATA'
+if "DataUL2016E" in runEra:
+    JERVersion='Summer20UL16APV_JRV3_DATA'
+if "DataUL2016F" in runEra:
+    JERVersion='Summer20UL16APV_JRV3_DATA'
+if "DataUL2016Flate" in runEra:
+    JERVersion='Summer20UL16_JRV3_DATA'
+if "DataUL2016G" in runEra:
+    JERVersion='Summer20UL16_JRV3_DATA'
+if "DataUL2016H" in runEra:
+    JERVersion='Summer20UL16_JRV3_DATA'
 
 SQLiteFileJER='sqlite:'+JERVersion+'.db'
 
@@ -552,7 +629,7 @@ process.ak4GenJetsWithNuNEW = ak4GenJets.clone(src = 'packedGenParticlesForJetsW
 from PhysicsTools.PatAlgos.mcMatchLayer0.jetMatch_cfi import patJetGenJetMatch
 
 process.patJetGenJetMatchUpdate = patJetGenJetMatch.clone(
-src         = cms.InputTag("updatedPatJetsUpdatedJEC"),
+src         = cms.InputTag(CHSJetCollectionName),
 matched     = cms.InputTag("ak4GenJetsNoNuNEW")
 )
 process.patJetGenJetMatchUpdatePuppi = patJetGenJetMatch.clone(
@@ -560,16 +637,17 @@ src         = cms.InputTag("slimmedJetsPuppi"),
 matched     = cms.InputTag("ak4GenJetsNoNuNEW")
 )
 process.patJetGenWithNuJetMatchUpdate = patJetGenJetMatch.clone(
-src         = cms.InputTag("updatedPatJetsUpdatedJEC"),
+src         = cms.InputTag(CHSJetCollectionName),
 matched     = cms.InputTag("ak4GenJetsWithNuNEW")
 )
 process.patJetGenWithNuJetMatchUpdatePuppi = patJetGenJetMatch.clone(
 src         = cms.InputTag("slimmedJetsPuppi"),
 matched     = cms.InputTag("ak4GenJetsWithNuNEW")
 )
-
-
-
+process.patJetGenJetMatchUpdateCalo = patJetGenJetMatch.clone(
+src         = cms.InputTag("slimmedCaloJets"),
+matched     = cms.InputTag("ak4GenJetsNoNuNEW")
+)
 
 
 
@@ -604,12 +682,12 @@ runMetCorAndUncFromMiniAOD(process,
                            )
 '''
 
-#Rerunning PUPPi with v14-Chihuahua tune
+#Rerunning PUPPi with v15 tune
 from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
 process.ak4PuppiJets  = ak4PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
 
 from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
-addJetCollection(process,labelName = 'Puppi', jetSource = cms.InputTag('ak4PuppiJets'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag('slimmedGenJets'), jetCorrections = ('AK4PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('packedPFCandidates'),
+addJetCollection(process,labelName = 'Puppi', jetSource = cms.InputTag('ak4PuppiJets'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag(GenJetCollectionName), jetCorrections = ('AK4PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('packedPFCandidates'),
                  pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
                  svSource = cms.InputTag('slimmedSecondaryVertices'),
                  muSource =cms.InputTag( 'slimmedMuons'),
@@ -623,16 +701,62 @@ process.patJetsPuppi.addGenJetMatch = cms.bool(ISMC)
 
 from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV15
 
-#patAlgosToolsTask.add(process.ak4PuppiJets)
-#UpdatePuppiTuneV15(process,ISMC)
+patAlgosToolsTask.add(process.ak4PuppiJets)
+UpdatePuppiTuneV15(process,ISMC)
+
+#Now doing PF jets (not CHS). Those are not in MINIAOD
+process.ak4PFJetsBis  = ak4PFJets.clone (src = 'packedPFCandidates', doAreaFastjet = True, jetPtMin = 2.)
+patAlgosToolsTask.add(process.ak4PFJetsBis)
+addJetCollection(process,labelName = 'Plain', jetSource = cms.InputTag('ak4PFJetsBis'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag(GenJetCollectionName), jetCorrections = ('AK4PF', ['L1FastJet','L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('packedPFCandidates'),
+                 pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
+                 svSource = cms.InputTag('slimmedSecondaryVertices'),
+                 muSource =cms.InputTag( 'slimmedMuons'),
+                 elSource = cms.InputTag('slimmedElectrons'),
+                 genParticles= cms.InputTag('prunedGenParticles'),
+                 getJetMCFlavour=ISMC
+)
+process.patJetsPlain.addGenPartonMatch = cms.bool(ISMC)
+process.patJetsPlain.addGenJetMatch = cms.bool(ISMC)
+
+#Recluster CHS jets to go lower in pt
+if ReclusterCHSJets:
+    process.ak4PFJetsCHSBis  = ak4PFJets.clone (src = 'pfCHS', doAreaFastjet = True, jetPtMin = 2.)
+    patAlgosToolsTask.add(process.ak4PFJetsCHSBis)
+    addJetCollection(process,labelName = 'CHS', jetSource = cms.InputTag('ak4PFJetsCHSBis'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag(GenJetCollectionName), jetCorrections = ('AK4PFchs', ['L1FastJet','L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('pfCHS'),
+                     pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
+                     svSource = cms.InputTag('slimmedSecondaryVertices'),
+                     muSource =cms.InputTag( 'slimmedMuons'),
+                     elSource = cms.InputTag('slimmedElectrons'),
+                     genParticles= cms.InputTag('prunedGenParticles'),
+                     getJetMCFlavour=ISMC
+                     )
+    process.patJetsCHS.addGenPartonMatch = cms.bool(ISMC)
+    process.patJetsCHS.addGenJetMatch = cms.bool(ISMC)
+
+    #Now AK8 CHS
+    from RecoJets.JetProducers.ak8PFJets_cfi import ak8PFJets
+    process.ak8PFJetsCHSBis  = ak8PFJets.clone (src = 'pfCHS', doAreaFastjet = True, jetPtMin = 10.)
+    patAlgosToolsTask.add(process.ak8PFJetsCHSBis)
+    addJetCollection(process,labelName = 'AK8CHS', jetSource = cms.InputTag('ak8PFJetsCHSBis'), algo = 'AK', rParam=0.8, genJetCollection=cms.InputTag('slimmedGenJetsAK8'), jetCorrections = ('AK8PFchs', ['L1FastJet','L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('pfCHS'),
+                     pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
+                     svSource = cms.InputTag('slimmedSecondaryVertices'),
+                     muSource =cms.InputTag( 'slimmedMuons'),
+                     elSource = cms.InputTag('slimmedElectrons'),
+                     genParticles= cms.InputTag('prunedGenParticles'),
+                     getJetMCFlavour=ISMC
+                     )
+    process.patJetsAK8CHS.addGenPartonMatch = cms.bool(ISMC)
+    process.patJetsAK8CHS.addGenJetMatch = cms.bool(ISMC)
+#The produced collection is called selectedPatJetsAK8CHS
 
 
+#The produced collection is called selectedPatJetsCHS
 
 #Recompute pile up ID
 from RecoJets.JetProducers.PileupJetID_cfi import  _chsalgos_81x, _chsalgos_94x, _chsalgos_102x
 process.load("RecoJets.JetProducers.PileupJetID_cfi")
 process.pileupJetIdUpdate = process.pileupJetId.clone()
-process.pileupJetIdUpdate.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
+process.pileupJetIdUpdate.jets = cms.InputTag(CHSJetCollectionName)
 process.pileupJetIdUpdate.inputIsCorrected = True
 process.pileupJetIdUpdate.applyJec = False
 process.pileupJetIdUpdate.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
@@ -640,14 +764,14 @@ process.pileupJetIdUpdate.algos = cms.VPSet(_chsalgos_81x)
 
 
 process.pileupJetIdUpdate2017 = process.pileupJetId.clone()
-process.pileupJetIdUpdate2017.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
+process.pileupJetIdUpdate2017.jets = cms.InputTag(CHSJetCollectionName)
 process.pileupJetIdUpdate2017.inputIsCorrected = True
 process.pileupJetIdUpdate2017.applyJec = False
 process.pileupJetIdUpdate2017.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
 process.pileupJetIdUpdate2017.algos = cms.VPSet(_chsalgos_94x)
 
 process.pileupJetIdUpdate2018 = process.pileupJetId.clone()
-process.pileupJetIdUpdate2018.jets = cms.InputTag("updatedPatJetsUpdatedJEC")
+process.pileupJetIdUpdate2018.jets = cms.InputTag(CHSJetCollectionName)
 process.pileupJetIdUpdate2018.inputIsCorrected = True
 process.pileupJetIdUpdate2018.applyJec = False
 process.pileupJetIdUpdate2018.vertexes = cms.InputTag("offlineSlimmedPrimaryVertices")
@@ -656,7 +780,7 @@ process.pileupJetIdUpdate2018.algos = cms.VPSet(_chsalgos_102x)
 
 #Compute QGL 
 process.load('RecoJets.JetProducers.QGTagger_cfi')
-process.QGTagger.srcJets          = cms.InputTag('updatedPatJetsUpdatedJEC')
+process.QGTagger.srcJets          = cms.InputTag(CHSJetCollectionName)
 process.QGTagger.jetsLabel        = cms.string('QGL_AK4PFchs')   
 
 
@@ -669,6 +793,11 @@ if "UL2017" in runEra or "UL2018" in runEra:
         eraforEGMSmearing='2017-UL'
     if "UL2018" in runEra:
         eraforEGMSmearing='2018-UL'
+    if "UL2016B" in runEra or "UL2016C" in runEra or "UL2016D" in runEra or "UL2016E" in runEra or "UL2016F" in runEra  or "UL2016APV" in runEra :
+        eraforEGMSmearing='2016-UL-preVFP'
+    if "UL2016Flate" in runEra or "UL2016G" in runEra or "UL2016H" in runEra  or "UL2016nonAPV" in runEra :
+        eraforEGMSmearing='2016-UL-postVFP'
+
     from RecoEgamma.EgammaTools.EgammaPostRecoTools import setupEgammaPostRecoSeq
     setupEgammaPostRecoSeq(process,
                            runVID=False, #saves CPU time by not needlessly re-running VID, if you want the Fall17V2 IDs, set this to True or remove (default is True)
@@ -678,8 +807,8 @@ if "UL2017" in runEra or "UL2018" in runEra:
 
 
 process.applyjecs =  cms.Path( process.jecSequence )
-if ISMC: 
-    process.reclustergenjets = cms.Path(process.packedGenParticlesForJetsNoNuNEW * process.packedGenParticlesForJetsWithNuNEW *process.ak4GenJetsNoNuNEW * process.ak4GenJetsWithNuNEW * process.patJetGenJetMatchUpdate *process.patJetGenJetMatchUpdatePuppi  * process.patJetGenWithNuJetMatchUpdate  * process.patJetGenWithNuJetMatchUpdatePuppi)
+if ISMC and ReclusterGenJets: 
+    process.reclustergenjets = cms.Path(process.packedGenParticlesForJetsNoNuNEW * process.packedGenParticlesForJetsWithNuNEW *process.ak4GenJetsNoNuNEW * process.ak4GenJetsWithNuNEW * process.patJetGenJetMatchUpdate *process.patJetGenJetMatchUpdatePuppi  * process.patJetGenWithNuJetMatchUpdate  * process.patJetGenWithNuJetMatchUpdatePuppi *process.patJetGenJetMatchUpdateCalo)
 
 
 #You may want to comment out some of the following lines to speed things up

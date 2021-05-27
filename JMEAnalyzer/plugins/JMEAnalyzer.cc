@@ -1,7 +1,5 @@
 // Original Author:  Laurent Thomas
 //         Created:  Fri, 26 Apr 2019 12:51:46 GMT
-//
-//
 
 
 // system include files
@@ -10,14 +8,15 @@
 #include <fstream>
 #include <string>
 
-
-
 // user include files
 #include "JetMETCorrections/Objects/interface/JetCorrector.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectorParameters.h"
 #include "CondFormats/JetMETObjects/interface/JetCorrectionUncertainty.h"
 #include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
+#include "DataFormats/L1Trigger/interface/Muon.h"
+#include "DataFormats/L1Trigger/interface/BXVector.h"
+
 
 #include "FWCore/ServiceRegistry/interface/Service.h"
 #include "CommonTools/UtilAlgos/interface/TFileService.h"
@@ -44,6 +43,7 @@
 
 #include "DataFormats/L1TGlobal/interface/GlobalAlgBlk.h"
 
+#include "DataFormats/JetReco/interface/GenJet.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHEEventProduct.h"
 #include "SimDataFormats/GeneratorProducts/interface/LHERunInfoProduct.h"
@@ -125,7 +125,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   virtual void InitandClearStuff();
   virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
   virtual void CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
-  
+  virtual int GetRecoIdx(const reco::GenJet * genjet , vector <Float_t> recojetpt,  vector <Float_t> recojeteta, vector <Float_t> recojetphi, vector <Float_t> recojetptgen );
+  virtual bool IsLeptonPhotonCleaned(const pat::Jet *iJ);
+  virtual bool IsLeptonPhotonCleaned(const reco::CaloJet *iJ);
+  virtual bool PassJetPreselection(const pat::Jet * iJ, double genjetpt, bool ispuppi);
+  virtual bool PassJetPreselection(const reco::CaloJet * iJ, double genjetpt);
   bool PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Muon *muonit, const edm::Event&);
   bool PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Electron *eleit, const edm::Event&);
   bool PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,const pat::Photon *photonit, const edm::Event&);
@@ -153,8 +157,15 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
 
   edm::EDGetTokenT<std::vector< pat::Jet> > jetToken_;
+  edm::EDGetTokenT<std::vector< pat::Jet> > jetAK8Token_;
   edm::EDGetTokenT<std::vector< pat::Jet> > jetPuppiToken_;
   edm::EDGetTokenT<std::vector< pat::Jet> > jetPuppiAK8Token_;
+  edm::EDGetTokenT<std::vector< reco::CaloJet> > jetCaloToken_;
+  edm::EDGetTokenT<std::vector< pat::Jet> > jetnoCHSToken_;
+
+  edm::EDGetTokenT<std::vector< reco::GenJet> > genjetToken_;
+  edm::EDGetTokenT<std::vector< reco::GenJet> > genAK8jetToken_;
+
   edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdateToken_;
   edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2017Token_;
   edm::EDGetTokenT<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2018Token_;
@@ -179,12 +190,15 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetWithNuAssocCHSToken_;
   edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetAssocPuppiToken_;
   edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetWithNuAssocPuppiToken_;
+  edm::EDGetTokenT<edm::Association<reco::GenJetCollection> > genJetAssocCaloToken_;
+
 
   edm::EDGetTokenT<vector<PileupSummaryInfo> > puInfoToken_;
 
   edm::EDGetTokenT<edm::TriggerResults> trgresultsToken_;
   edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> trigobjectToken_;
   edm::EDGetTokenT<BXVector<GlobalAlgBlk>> l1GtToken_;
+  edm::EDGetTokenT<l1t::MuonBxCollection>l1MuonToken_;
 
   Float_t JetPtCut_;
   Float_t AK8JetPtCut_;
@@ -196,7 +210,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   string PhotonTightWP_;
   Float_t PFCandPtCut_;
 
-  Bool_t SaveTree_, IsMC_, SavePUIDVariables_, SaveAK8Jets_, DropUnmatchedJets_, DropBadJets_, SavePFinJets_, ApplyPhotonID_;
+  Bool_t SaveTree_, IsMC_, SavePUIDVariables_, SaveAK8Jets_, SaveCaloJets_, SavenoCHSJets_, DropUnmatchedJets_, DropBadJets_, SavePFinJets_, ApplyPhotonID_;
   string Skim_;
   Bool_t Debug_;
 
@@ -224,8 +238,10 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   //Nb of primary vertices
   int _n_PV;
   Float_t _LV_x,_LV_y,_LV_z;
+  Float_t _LV_errx,_LV_erry,_LV_errz;
   Float_t _PUV1_x,_PUV1_y,_PUV1_z;
   int trueNVtx;
+
   //Rho and RhoNC;
   Float_t _rho, _rhoNC;
 
@@ -251,7 +267,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool PassEcalDeadCellBoundaryEnergyFilter_Update;
   bool PassBadChargedCandidateFilter_Update;
 
-  //Jets 
+  //AK4 CHS Jets 
   vector<Float_t>  _jetEta;
   vector<Float_t>  _jetPhi;
   vector<Float_t>  _jetPt;
@@ -267,6 +283,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector <int>  _jet_NM;
   vector <Float_t>  _jetArea;
   vector <bool> _jetPassID;
+  vector <bool> _jetLeptonPhotonCleaned;
+  
   vector <Float_t>  _jethfsigmaEtaEta;
   vector <Float_t>  _jethfsigmaPhiPhi;
   vector <Int_t> _jethfcentralEtaStripSize;
@@ -309,18 +327,67 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<int>  _jet_nParticles ;
   vector<int>  _jet_nCharged ;
 
-  //Puppi jet
+  vector<Float_t>  _ak8jetEta ;
+  vector<Float_t>  _ak8jetPhi ;
+  vector<Float_t>  _ak8jetPt ;
+  vector<Float_t>  _ak8jetArea ;
+  vector<Float_t>  _ak8jetRawPt ;
+  vector<Float_t>  _ak8jetPtGen ;
+
+
+  //AK4 Puppi jets
   vector<Float_t>  _puppijetEta;
   vector<Float_t>  _puppijetPhi;
   vector<Float_t>  _puppijetPt;
+  vector<Float_t>  _puppijetRawPt;
+  vector<Float_t>  _puppijetJECuncty;
   vector <Float_t>  _puppijetPtGen;
   vector <Float_t>  _puppijetPtGenWithNu;
+  vector<bool> _puppijetPassID;
+  vector<bool> _puppijetLeptonPhotonCleaned;
+  vector <Float_t>  _puppijetPtNoL2L3Res;
 
+  //AK8 Puppi jets
   vector<Float_t>  _puppiak8jetEta ;
+  vector<Float_t>  _puppiak8jetPhi ;
   vector<Float_t>  _puppiak8jetPt ;
+  vector<Float_t>  _puppiak8jetRawPt ;
+  vector<Float_t>  _puppiak8jetPtGen ;
   vector<Float_t>  _puppiak8jet_tau1 ;
   vector<Float_t>  _puppiak8jet_tau2 ;
   vector<Float_t>  _puppiak8jet_tau3 ;
+
+  //AK4 Calo jets
+  vector<Float_t>  _calojetEta;
+  vector<Float_t>  _calojetPhi;
+  vector<Float_t>  _calojetPt;
+  vector<Float_t>  _calojetRawPt;
+  vector <Float_t>  _calojetPtGen;
+  vector<bool> _calojetLeptonPhotonCleaned;
+  
+  //Non CHS jets 
+  vector<Float_t>  _noCHSjetEta;
+  vector<Float_t>  _noCHSjetPhi;
+  vector<Float_t>  _noCHSjetPt;
+  vector<Float_t>  _noCHSjetRawPt;
+  vector<Float_t>  _noCHSjetPtGen;
+  vector<bool> _noCHSjetLeptonPhotonCleaned;
+
+  //Gen AK4 jets
+  vector<Float_t>  _genjetEta;
+  vector<Float_t>  _genjetPhi;
+  vector<Float_t>  _genjetPt;
+  vector<Int_t>  _genjet_noCHSIdx;
+  vector<Int_t>  _genjet_CaloIdx;
+  vector<Int_t>  _genjet_CHSIdx;
+  vector<Int_t>  _genjet_PuppiIdx;
+
+  //Gen AK8 jets
+  vector<Float_t>  _genAK8jetEta;
+  vector<Float_t>  _genAK8jetPhi;
+  vector<Float_t>  _genAK8jetPt;
+  vector<Int_t>  _genAK8jet_CHSIdx;
+  vector<Int_t>  _genAK8jet_PuppiIdx;
 
 
   //Leptons
@@ -328,17 +395,40 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<Float_t>  _lPhi;
   vector<Float_t>  _lPt;
   vector<Float_t>  _lPtcorr;
+  
+  vector<Float_t>  _ldz;
+  vector<Float_t>  _ldzError;
+  vector<Float_t>  _ldxy;
+  vector<Float_t>  _ldxyError;
+  vector<Float_t>  _l3dIP;
+  vector<Float_t>  _l3dIPError;
+
   vector<Bool_t>  _lPassTightID;
   vector<Bool_t>  _lPassLooseID;
-
   vector<int> _lpdgId;
   int _nEles, _nMus;
 
+  //Gen leptons
   vector<Float_t>  _lgenEta;
   vector<Float_t>  _lgenPhi;
   vector<Float_t>  _lgenPt;
   vector<int> _lgenpdgId;
+
+  //Reco Photons
+  vector<Float_t>  _phEta;
+  vector<Float_t>  _phPhi;
+  vector<Float_t>  _phPt;
+  vector<Bool_t>  _phPassIso;
+  vector<Float_t>  _phPtcorr;
+  vector<Bool_t>  _phPassTightID;
+
+  //Gen photons
+  vector<Float_t>  _phgenEta;
+  vector<Float_t>  _phgenPhi;
+  vector<Float_t>  _phgenPt;
   
+  //Event variables (reco) 
+  //For dilepton studies
   Float_t _mll;
   Float_t _ptll;
   Float_t _pzll;
@@ -347,7 +437,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t _phill;
   Float_t _costhCSll;
   Int_t _nElesll ;
+  //For single photon studies
+  Float_t _ptgamma;
+  Float_t _phigamma;
 
+  //Event variables (gen)
   Float_t _mll_gen;
   Float_t _ptll_gen;
   Float_t _pzll_gen;
@@ -355,25 +449,13 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t _dphill_gen;
   Float_t _phill_gen;
   Float_t _costhCSll_gen;
-  
   Int_t _ngenElesll ;
-  
-  //Nb of electrons in vtx fit
-  int _n_PFele_fromvtxfit;
-  int _n_PFmu_fromvtxfit;
+  Float_t _ptgamma_gen;
+  Float_t _phigamma_gen;
 
-  //Photons
-  vector<Float_t>  _phEta;
-  vector<Float_t>  _phPhi;
-  vector<Float_t>  _phPt;
-  vector<Bool_t>  _phPassIso;
-  vector<Float_t>  _phPtcorr;
-  vector<Bool_t>  _phPassTightID;
   
-  vector<Float_t>  _phgenEta;
-  vector<Float_t>  _phgenPhi;
-  vector<Float_t>  _phgenPt;
 
+  //Some gen variables
   Float_t _genHT, _weight;
 
   //PF candidates
@@ -383,9 +465,12 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector <int> _PFcand_pdgId;
   vector <int> _PFcand_fromPV;
   vector <Float_t> _PFcand_dz;
+  vector <Float_t> _PFcand_dzError;
   vector <Float_t> _PFcand_hcalFraction;
   vector <int> _PFcand_PVfitidx;
   vector <Float_t> _PFcand_puppiweight;
+  
+
   //Nb of CH in PV fit and corresponding HT, for different pt cuts
   int _n_CH_fromvtxfit[6];
   Float_t _HT_CH_fromvtxfit[6];
@@ -393,20 +478,27 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector <Float_t> _METPhiCH_PV;
   vector <Float_t> _SumPT2CH_PV;
   vector <Float_t> _DztoLV_PV;
+  
+  //Nb of electrons in vtx fit
+  int _n_PFele_fromvtxfit;
+  int _n_PFmu_fromvtxfit;
 
 
-  //MET
+  //Reco MET (PFME, PUPPIMET, CHS MET, T1 first and then Raw)
   Float_t _met;
   Float_t _met_phi;
   Float_t _puppimet;
   Float_t _puppimet_phi;
-
+  Float_t _chsmet;
+  Float_t _chsmet_phi;
   Float_t _rawmet;
   Float_t _rawmet_phi;
   Float_t _puppirawmet;
   Float_t _puppirawmet_phi;
+  Float_t _rawchsmet;
+  Float_t _rawchsmet_phi;
 
-
+  //GenMET
   Float_t _genmet;
   Float_t _genmet_phi;
 
@@ -419,6 +511,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool HLT_Photon50_R9Id90_HE10_IsoM;
   bool HLT_Photon200;
   bool HLT_Photon175;
+  bool HLT_DiJet110_35_Mjj650_PFMET110;
   bool HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60;
   bool HLT_PFMETNoMu120_PFMHTNoMu120_IDTight;
   bool HLT_PFMET120_PFMHT120_IDTight_PFHT60;
@@ -447,6 +540,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool _l1prefire;
 
 
+  //These are variables for a TTree where each entry is a jet and where one stores all PF cands
   vector <Float_t> _Jet_PFcand_pt;
   vector <Float_t> _Jet_PFcand_eta;
   vector <Float_t> _Jet_PFcand_phi;
@@ -462,8 +556,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t _Jet_PhiGen;
 
 
-
-
+  //Trigger matching variables: is a reco object matched to a trigger filter
   vector < bool >hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09;
   vector < bool >hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09;
   vector < bool >hltEle27WPTightGsfTrackIsoFilter; 
@@ -485,18 +578,22 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector < bool >hltSinglePFJet400; 
   vector < bool >hltSinglePFJet450; 
   vector < bool >hltSinglePFJet500; 
-
-
   vector<bool> hltHIPhoton40Eta3p1;
   vector<bool> hltEle17WPLoose1GsfTrackIsoFilterForHI;
   vector<bool> hltEle15WPLoose1GsfTrackIsoFilterForHI;
   vector<bool> hltL3fL1sMu10lqL1f0L2f10L3Filtered12;
   vector<bool> hltL3fL1sMu10lqL1f0L2f10L3Filtered15;
 
+  //L1 muon
+  vector <int> _L1mu_Qual;
+  vector <Float_t> _L1mu_pt;
+  vector <Float_t> _L1mu_eta;
+  vector <Float_t> _L1mu_phi;
+  vector <int> _L1mu_bx;
 
-
-
+  //Rochester correction (for muons)
   RoccoR rc; 
+  //JEC uncertainties
   JetCorrectionUncertainty *jecUnc; 
 };
 
@@ -524,8 +621,13 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   rhoJetsToken_(consumes<double>(edm::InputTag("fixedGridRhoFastjetAll",""))),
   rhoJetsNCToken_(consumes<double>(edm::InputTag("fixedGridRhoFastjetCentralNeutral",""))),
   jetToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("Jets"))),
+  jetAK8Token_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsAK8"))),
   jetPuppiToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsPuppi"))),
   jetPuppiAK8Token_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsPuppiAK8"))),
+  jetCaloToken_(consumes< std::vector< reco::CaloJet> >(iConfig.getParameter<edm::InputTag>("JetsCalo"))),
+  jetnoCHSToken_(consumes< std::vector< pat::Jet> >(iConfig.getParameter<edm::InputTag>("JetsPFnoCHS"))),
+  genjetToken_(consumes< std::vector< reco::GenJet> >(iConfig.getParameter<edm::InputTag>("GenJets"))),
+  genAK8jetToken_(consumes< std::vector< reco::GenJet> >(iConfig.getParameter<edm::InputTag>("GenAK8Jets"))),
   pileupJetIdDiscriminantUpdateToken_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate"))),
   pileupJetIdDiscriminantUpdate2017Token_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate2017"))),
   pileupJetIdDiscriminantUpdate2018Token_(consumes<edm::ValueMap<float> >(iConfig.getParameter<edm::InputTag>("pileupJetIdDiscriminantUpdate2018"))),
@@ -546,10 +648,12 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   genJetWithNuAssocCHSToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetWithNuMatchCHS"))),
   genJetAssocPuppiToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetMatchPuppi"))),
   genJetWithNuAssocPuppiToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetWithNuMatchPuppi"))),
+  genJetAssocCaloToken_(consumes<edm::Association<reco::GenJetCollection>>(iConfig.getParameter<edm::InputTag>("GenJetMatchCalo"))),
   puInfoToken_(consumes<std::vector<PileupSummaryInfo> >(iConfig.getParameter<edm::InputTag>("PULabel"))),
   trgresultsToken_(consumes<TriggerResults>(iConfig.getParameter<edm::InputTag>("Triggers"))),
   trigobjectToken_(consumes<pat::TriggerObjectStandAloneCollection>(edm::InputTag("slimmedPatTrigger"))),
   l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
+  l1MuonToken_(consumes<l1t::MuonBxCollection>(edm::InputTag("gmtStage2Digis","Muon"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
   AK8JetPtCut_(iConfig.getParameter<double>("AK8JetPtCut")),
   ElectronPtCut_(iConfig.getParameter<double>("ElectronPtCut")),
@@ -565,6 +669,8 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   IsMC_(iConfig.getParameter<bool>("IsMC")),
   SavePUIDVariables_(iConfig.getParameter<bool>("SavePUIDVariables")),
   SaveAK8Jets_(iConfig.getParameter<bool>("SaveAK8Jets")),
+  SaveCaloJets_(iConfig.getParameter<bool>("SaveCaloJets")),
+  SavenoCHSJets_(iConfig.getParameter<bool>("SavenoCHSJets")),
   DropUnmatchedJets_(iConfig.getParameter<bool>("DropUnmatchedJets")),
   DropBadJets_(iConfig.getParameter<bool>("DropBadJets")),
   SavePFinJets_(iConfig.getParameter<bool>("SavePFinJets")),
@@ -615,6 +721,7 @@ void JMEAnalyzer::beginRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
   }
   else jecUnc = 0;
 
+  //The following lines are needed for picking events from a list (currently unprefirable events)
   int runnb = iRun.id().run();
   TString str_runnb =Form("%d", runnb) ; 
   myfile_unprefevts.open("UnprefireableEventList/run_"+str_runnb+".txt");
@@ -652,7 +759,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   /*for(unsigned int a =0; a< (GenInfoHandle->binningValues()).size();a++){
     double thebinning = GenInfoHandle->hasBinningValues() ? (GenInfoHandle->binningValues())[a] : 0.0 ;
     }*/
-
+  
+  //Pile up info at gen level
   Handle<std::vector<PileupSummaryInfo> > puInfo;
   iEvent.getByToken(puInfoToken_, puInfo);
   if(puInfo.isValid()){
@@ -681,6 +789,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if(TrigPath.Contains("HLT_Photon50_R9Id90_HE10_IsoM_v"))HLT_Photon50_R9Id90_HE10_IsoM =true;
 	if(TrigPath.Contains("HLT_Photon200_v"))HLT_Photon200 =true;
 	if(TrigPath.Contains("HLT_Photon175_v"))HLT_Photon175 =true;
+	if(TrigPath.Contains("HLT_DiJet110_35_Mjj650_PFMET110_v"))HLT_DiJet110_35_Mjj650_PFMET110 =true;
 	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 =true;
 	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight =true;
 	if(TrigPath.Contains("HLT_PFMET120_PFMHT120_IDTight_PFHT60_v"))HLT_PFMET120_PFMHT120_IDTight_PFHT60 =true;
@@ -716,29 +825,52 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _l1prefire= false;
   if(!IsMC_)_l1prefire = l1GtHandle->begin(-1)->getFinalOR();
 
+  edm::Handle<l1t::MuonBxCollection> l1muoncoll;
+  iEvent.getByToken(l1MuonToken_ , l1muoncoll);
+  //  const  int nbx = IsMC_ ? 0:2;
+  for(int i = l1muoncoll->getFirstBX() ; i<= l1muoncoll->getLastBX() ;i++){
+    for( l1t::MuonBxCollection::const_iterator l1muonit= l1muoncoll->begin(i); l1muonit != l1muoncoll->end(i) ; ++l1muonit){
+      if(l1muonit->pt()<8) continue;
+      _L1mu_Qual.push_back( l1muonit->hwQual() );
+      _L1mu_pt.push_back( l1muonit->pt() );
+      _L1mu_eta.push_back( l1muonit->eta() );
+      _L1mu_phi.push_back( l1muonit->phi() );
+      _L1mu_bx.push_back( i);
+    }
+  }
+  
 
 
   
   //Vertices
+  // NB there are usually two available collection of vertices in MINIAOD
   edm::Handle<std::vector<Vertex> > theVertices;
   iEvent.getByToken(verticesToken_,theVertices) ;
   _n_PV = theVertices->size();
+  Vertex::Point PV(0,0,0);
+  if(_n_PV){ PV = theVertices->begin()->position();}
 
+
+  //Storing leading vertex coordinates, as well as leading PU vertex (primarily for bad vertex choice studies)
   const Vertex* LVtx = &((*theVertices)[0]);
   _LV_x = LVtx->x();
   _LV_y = LVtx->y();
   _LV_z = LVtx->z();
+  _LV_errx = LVtx->xError();
+  _LV_erry = LVtx->yError();
+  _LV_errz = LVtx->zError();
+
   _PUV1_x = 0;
   _PUV1_y = 0;
   _PUV1_z = 0;
   
-
   if(_n_PV>=2) {
     _PUV1_x = ((*theVertices)[1]).x();
     _PUV1_y = ((*theVertices)[1]).y();
     _PUV1_z = ((*theVertices)[1]).z();
   }
 
+  //Storing information from all vertex to study vertex sorting
   vector <TVector2 > metPV;
   for(unsigned int i = 0;i < theVertices->size(); i++){
     const Vertex* PVtx = &((*theVertices)[i]);
@@ -816,7 +948,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
 
 
-
+  //Electrons
   edm::Handle< std::vector<pat::Electron> > thePatElectrons;
   iEvent.getByToken(electronToken_,thePatElectrons);
   for( std::vector<pat::Electron>::const_iterator electron = (*thePatElectrons).begin(); electron != (*thePatElectrons).end(); electron++ ) {
@@ -824,18 +956,13 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     //Implementing smearing/scaling EGM corrections
     //See here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaMiniAODV2#Applying_the_Energy_Scale_and_sm and here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
     double ptelecorr = (&*electron)->pt();
-    if(ptelecorr<-10){
-      cout << "ele pt, eta, phi: " << (&*electron)->pt()<<", " << (&*electron)->eta()<<", " <<(&*electron)->phi()<<endl; 
-      cout << "passveto, passtight " << (&*electron)->electronID(ElectronVetoWP_)<<", " <<  (&*electron)->electronID(ElectronTightWP_)<<endl; 
-      cout << "ele dxy, dz: " << (&*electron)->gsfTrack()->dxy(LVtx->position())<<", " << (&*electron)->gsfTrack()->dz(LVtx->position())<<endl;
-    }
     if((&*electron)->hasUserFloat("ecalEnergyPostCorr") ){
          ptelecorr = ptelecorr * (&*electron)->userFloat("ecalTrkEnergyPostCorr") /  (&*electron)->energy() ;
-	 //   cout << "Electron energy, Precorr, PostCorr, pt*cosh(eta) " << (&*electron)->energy() <<", "<<(&*electron)->userFloat("ecalEnergyPreCorr") <<", "<< (&*electron)->userFloat("ecalEnergyPostCorr") << ", "<<(&*electron)->pt() *cosh((&*electron)->eta()) <<endl; 
     }
     
     bool passvetoid = (&*electron)->electronID(ElectronVetoWP_)&& (&*electron)->pt()>10;
     if(!passvetoid) continue;
+    //Counting the number of electrons, not all of them will be stored
     _nEles++;
     if((&*electron)->pt()<ElectronPtCut_)continue;    
     _lEta.push_back((&*electron)->eta());
@@ -845,6 +972,13 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lpdgId.push_back(-11*(&*electron)->charge());
     _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
     _lPassLooseID.push_back( (&*electron)->electronID(ElectronLooseWP_) );
+    
+    _ldz.push_back( (&*electron)->gsfTrack()->dz(PV));
+    _ldzError.push_back( (&*electron)->gsfTrack()->dzError());
+    _ldxy.push_back( (&*electron)->gsfTrack()->dxy(PV));
+    _ldxyError.push_back( (&*electron)->gsfTrack()->dxyError());
+    _l3dIP.push_back( (&*electron)->dB(pat::Electron::PV3D));
+    _l3dIPError.push_back( (&*electron)->edB(pat::Electron::PV3D));
 
 
     hltEle27WPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle27WPTightGsfTrackIsoFilter",&*electron,iEvent));
@@ -860,7 +994,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     hltEle17WPLoose1GsfTrackIsoFilterForHI.push_back(PassTriggerLeg("hltEle17WPLoose1GsfTrackIsoFilterForHI",&*electron,iEvent));
     hltEle15WPLoose1GsfTrackIsoFilterForHI.push_back(PassTriggerLeg("hltEle15WPLoose1GsfTrackIsoFilterForHI",&*electron,iEvent));  
   }
-
+  
+  //Muons
   edm::Handle< std::vector<pat::Muon> > thePatMuons;
   iEvent.getByToken(muonToken_,thePatMuons);
   for( std::vector<pat::Muon>::const_iterator muon = (*thePatMuons).begin(); muon != (*thePatMuons).end(); muon++ ) {
@@ -875,9 +1010,10 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if( (&*muon)->genLepton() !=0)  ptmuoncorr *= rc.kSpreadMC( (&*muon)->charge(),  (&*muon)->pt(), (&*muon)->eta(),(&*muon)->phi(), (&*muon)->genLepton()->pt() );
       else if(! ((&*muon)->innerTrack()).isNull()) ptmuoncorr *= rc.kSmearMC( (&*muon)->charge(),  (&*muon)->pt(), (&*muon)->eta(),(&*muon)->phi(),  (&*muon)->innerTrack()->hitPattern().trackerLayersWithMeasurement(), gRandom->Rndm());
     }
-
+    
     bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>10 ;  
     if(!passvetoid) continue;
+    //Counting the number of muons, not all of them will be stored 
     _nMus++;
     if((&*muon)->pt()<MuonPtCut_)continue;
     _lEta.push_back((&*muon)->eta());
@@ -887,6 +1023,13 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lpdgId.push_back(-13*(&*muon)->charge());
     _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
     _lPassLooseID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdLoose )&& (&*muon)->passed(reco::Muon::PFIsoLoose ) );
+
+    _ldz.push_back( (&*muon)->innerTrack()->dz(PV));
+    _ldzError.push_back( (&*muon)->innerTrack()->dzError());
+    _ldxy.push_back( (&*muon)->innerTrack()->dxy(PV));
+    _ldxyError.push_back( (&*muon)->innerTrack()->dxyError());
+    _l3dIP.push_back( (&*muon)->dB(pat::Muon::PV3D));
+    _l3dIPError.push_back((&*muon)->edB(pat::Muon::PV3D));
 
     hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09","hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p07",&*muon,iEvent));
     hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09","hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07",&*muon,iEvent));
@@ -902,6 +1045,11 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
   }
 
+
+  //Photons
+  //These two variables store the pt/phi of the photon in monophoton events
+  _ptgamma=0;
+  _phigamma=0;
   edm::Handle< std::vector<pat::Photon> > thePatPhotons;
   iEvent.getByToken(photonToken_,thePatPhotons);
   for( std::vector<pat::Photon>::const_iterator photon = (*thePatPhotons).begin(); photon != (*thePatPhotons).end(); photon++ ) {
@@ -913,42 +1061,42 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     if((&*photon)->hasUserFloat("ecalEnergyPostCorr") && fabs((&*photon)->eta())<2.5){
          ptphotoncorr = ptphotoncorr * (&*photon)->userFloat("ecalEnergyPostCorr") /  (&*photon)->energy() ;
     }
-        
+    
     if(ptphotoncorr <PhotonPtCut_)continue;
-    bool passtightid = (&*photon)->photonID(PhotonTightWP_) && (&*photon)->passElectronVeto()&& !((&*photon)->hasPixelSeed()  ) &&fabs((&*photon)->eta())<1.4442&& (&*photon)->r9()>0.9 ; 
+    bool passtightid = (&*photon)->photonID(PhotonTightWP_) && (&*photon)->passElectronVeto()&& !((&*photon)->hasPixelSeed()  ) ;
     if(!passtightid&& ApplyPhotonID_) continue;
+    //Barrel photons + R9 cut to ensure a precise energy measurement
+    if(_ptgamma==0&& passtightid  && fabs((&*photon)->eta())<1.4442&& (&*photon)->r9()>0.9 ) {
+      _ptgamma=(&*photon)->pt();
+      _phigamma=(&*photon)->phi();
+    }
     _phEta.push_back((&*photon)->eta());
     _phPhi.push_back((&*photon)->phi());
     _phPt.push_back( (&*photon)->pt());
     _phPtcorr.push_back( ptphotoncorr);
     _phPassTightID.push_back(passtightid);
-    //_phIso.push_back(0.);
+
+    
     bool passmediumiso =false;
     // bool passmediumid =false; 
 
     double eta=(&*photon)->superCluster()->eta();
     double pt=(&*photon)->pt();
-
-    float chIso = (&*photon)->chargedHadronIso();
-
-    float nhIso = (&*photon)->neutralHadronIso();
-
-    float gIso = (&*photon)->photonIso();
-
+    double chIso = (&*photon)->chargedHadronIso();
+    double nhIso = (&*photon)->neutralHadronIso();
+    double gIso = (&*photon)->photonIso();
     bool barrel = (fabs(eta) <= 1.479);
     bool endcap = (!barrel && fabs(eta) < 32.5);
 
-    float sigmaIetaIeta = (&*photon)->full5x5_sigmaIetaIeta();
-    float hoe = (&*photon)->hadTowOverEm();
+    //double sigmaIetaIeta = (&*photon)->full5x5_sigmaIetaIeta();
+    //double hoe = (&*photon)->hadTowOverEm();
 
-    float chArea(0.),nhArea(0.),gArea(0.);
+    double chArea(0.),nhArea(0.),gArea(0.);
     if(fabs(eta)<1.0){ chArea = 0.0385;nhArea= 0.0636 ;gArea=0.1240;}
     else if(fabs(eta)<1.479){ chArea = 0.0468 ;nhArea=0.1103 ;gArea=0.1093;}
     else if(fabs(eta)<2.0){ chArea = 0.0435 ;nhArea=0.0759 ;gArea=0.0631;}
     else if(fabs(eta) < 2.2){ chArea = 0.0378 ;nhArea=0.0236 ;gArea=0.0779;}
     else if(fabs(eta) < 2.3){ chArea = 0.0338 ;nhArea=0.0151 ;gArea=0.0999;}
-
-
     else if(fabs(eta) < 2.4){ chArea = 0.0314 ;nhArea=0.00007 ;gArea=0.1155;}
     else { chArea =0.0269 ;nhArea=0.0132 ;gArea=0.1373 ;}
 
@@ -968,7 +1116,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	 && TMath::Max(gIso-gArea*_rho, 0.0) < 4.095 + 0.0040*pt ) passmediumiso = true;
     
     _phPassIso.push_back(passmediumiso);
-    
 
     hltEG175HEFilter.push_back(PassTriggerLeg("hltEG175HEFilter",&*photon,iEvent));
     hltEG200HEFilter.push_back(PassTriggerLeg("hltEG200HEFilter",&*photon,iEvent));
@@ -1002,7 +1149,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
     
 
-  if(!PassSkim()) return;
+  //  if(!PassSkim()) return;
 
     
   //Jets
@@ -1010,18 +1157,12 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector< pat::Jet> > theJets;
   iEvent.getByToken(jetToken_,theJets );
 
-
-
-  
   //Value map for the recalculated PU ID
   edm::Handle<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate;
   //Value map to access the recalculated variables entering PU ID
   edm::Handle<edm::ValueMap<StoredPileupJetIdentifier> > pileupJetIdVariablesUpdate;
-
-
   edm::Handle<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2017;
   edm::Handle<edm::ValueMap<float> > pileupJetIdDiscriminantUpdate2018;
-
 
   //Value map for Quark/gluon likelihood
   edm::Handle<edm::ValueMap<float> > quarkgluonlikelihood;
@@ -1032,7 +1173,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
    
   edm::Handle<edm::Association<reco::GenJetCollection>> genJetWithNuMatch;
   iEvent.getByToken(genJetWithNuAssocCHSToken_, genJetWithNuMatch);
-
 
   Float_t leadjetpt (0.);
   bool useupdategenjets = true;
@@ -1052,13 +1192,22 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       }
  
       const reco::GenJet * genjet = useupdategenjets?updatedgenjet: (&*jet) ->genJet()  ;
+      Float_t jetptgen(-99.), jetetagen(-99.),jetphigen(-99.);
+      Float_t jetptgenwithnu(-99.);
+      if( genjet !=0 ){
+	jetptgen= genjet->pt() ;
+	jetetagen= genjet->eta() ;
+	jetphigen= genjet->phi() ;
+      }
       
-      if((&*jet)->pt() >leadjetpt) leadjetpt = (&*jet)->pt();
-      if((&*jet)->pt()<JetPtCut_) continue;
+      if(!PassJetPreselection((&*jet) , jetptgen , false) ) continue;
+	 
       bool passid = PassJetID(  (&*jet) ,"2018");
-      if( DropBadJets_ && !passid  ) continue;//Drop bad jets (mostly leptons).
-
+      bool isleptoncleaned =IsLeptonPhotonCleaned ((&*jet) );
+      if( DropBadJets_ && (!passid || !isleptoncleaned )  ) continue;//Drop bad jets (mostly leptons).
       if( genjet ==0   && DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;//Drop genunmatched jets (mostly PU). Keep those with pt>50 as these probably require special attention.
+
+      if((&*jet)->pt() >leadjetpt) leadjetpt = (&*jet)->pt();
       _jetEta.push_back((&*jet)->eta());
       _jetPhi.push_back((&*jet)->phi());
       _jetPt.push_back((&*jet)->pt());
@@ -1073,11 +1222,13 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jet_NM.push_back((&*jet)->neutralMultiplicity());
       _jetArea.push_back((&*jet)->jetArea());
       _jetPassID.push_back(passid);
+      _jetLeptonPhotonCleaned.push_back(isleptoncleaned);
+      
       //Accessing the default PU ID stored in MINIAOD https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
       if((&*jet)->hasUserFloat("hfJetShowerShape:sigmaEtaEta")) _jethfsigmaEtaEta.push_back((&*jet)->userFloat("hfJetShowerShape:sigmaEtaEta"));
       if((&*jet)->hasUserFloat("hfJetShowerShape:sigmaPhiPhi")) _jethfsigmaPhiPhi.push_back((&*jet)->userFloat("hfJetShowerShape:sigmaPhiPhi"));
-      if((&*jet)->hasUserFloat("hfJetShowerShape:centralEtaStripSize")) _jethfcentralEtaStripSize.push_back((&*jet)->userFloat("hfJetShowerShape:centralEtaStripSize"));
-      if((&*jet)->hasUserFloat("hfJetShowerShape:adjacentEtaStripsSize")) _jethfadjacentEtaStripsSize.push_back((&*jet)->userFloat("hfJetShowerShape:adjacentEtaStripsSize"));
+      if((&*jet)->hasUserInt("hfJetShowerShape:centralEtaStripSize")) _jethfcentralEtaStripSize.push_back((&*jet)->userInt("hfJetShowerShape:centralEtaStripSize"));
+      if((&*jet)->hasUserInt("hfJetShowerShape:adjacentEtaStripsSize")) _jethfadjacentEtaStripsSize.push_back((&*jet)->userInt("hfJetShowerShape:adjacentEtaStripsSize"));
       if((&*jet)->hasUserFloat("pileupJetId:fullDiscriminant") )_jetPUMVA.push_back( (&*jet)->userFloat("pileupJetId:fullDiscriminant") );
       else _jetPUMVA.push_back(-99.);
       //Accessing the recomputed PU ID. This must be done with a value map. 
@@ -1112,8 +1263,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	_jet_nParticles.push_back(pujetidentifier.nParticles());
 	_jet_nCharged.push_back(pujetidentifier.nCharged());
 	
-	
-      
       }
       else if(Debug_) cout << "PUID variables are not valid"<<endl;
 
@@ -1128,6 +1277,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetDeepJet_uds.push_back( (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probuds")  );
       _jetDeepJet_g.push_back(  (&*jet)->bDiscriminator("pfDeepFlavourJetTags:probg")  );
       _jetParticleNet_b.push_back(  (&*jet)->bDiscriminator("pfParticleNetAK4JetTags:probb")+ (&*jet)->bDiscriminator("pfParticleNetAK4JetTags:probbb"));
+
       //Quark Gluon likelihood  https://twiki.cern.ch/twiki/bin/viewauth/CMS/QuarkGluonLikelihood
       iEvent.getByToken(qgLToken_, quarkgluonlikelihood);
       if(quarkgluonlikelihood.isValid() )_jetQuarkGluonLikelihood.push_back( (*quarkgluonlikelihood)[jetRef] );
@@ -1137,28 +1287,20 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetRawPt.push_back( (&*jet)->correctedP4("Uncorrected").Pt() );
       _jetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() ); 
       _jet_corrjecs.push_back((&*jet)->pt() / (&*jet)->correctedP4("Uncorrected").Pt() );
-      //Accessing uncertainties
-      //      if(jecUnc ==0) _jetJECuncty.push_back( -99.);
-      //else{
-	jecUnc->setJetEta((&*jet)->eta());
-	jecUnc->setJetPt((&*jet)->pt());
-	_jetJECuncty.push_back( jecUnc->getUncertainty(true) );
-	//}
-      Float_t jetptgen(-99.), jetetagen(-99.),jetphigen(-99.);
-      Float_t jetptgenwithnu(-99.);
-      if( genjet !=0 ){
-	jetptgen= genjet->pt() ;
-	jetetagen= genjet->eta() ;
-	jetphigen= genjet->phi() ;
-      }
+
+      jecUnc->setJetEta((&*jet)->eta());
+      jecUnc->setJetPt((&*jet)->pt());
+      _jetJECuncty.push_back( jecUnc->getUncertainty(true) );
+      
+
       if(updatedgenjetwithnu !=0) jetptgenwithnu = updatedgenjetwithnu->pt() ;
       _jetPtGen.push_back(jetptgen);
       _jetEtaGen.push_back(jetetagen);
       _jetPhiGen.push_back(jetphigen);
       _jetPtGenWithNu.push_back(jetptgenwithnu);
     
+      //Looping over PF candidates
       for (unsigned i = 0; i < jet->numberOfSourceCandidatePtrs(); ++i) {
-	//const pat::PackedCandidate * icand = jet->sourceCandidatePtr(i).get();
 	const reco::Candidate* icand = jet->sourceCandidatePtr(i).get();
 	const pat::PackedCandidate* lPack = dynamic_cast<const pat::PackedCandidate*>(icand);
 	_Jet_PFcand_pt.push_back(lPack->pt());
@@ -1227,18 +1369,34 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
         updatedgenjetwithnu = ( (*genJetWithNuMatchPuppi)[jetRef].isNonnull() && (*genJetWithNuMatchPuppi)[jetRef].isAvailable()) ? &*(*genJetWithNuMatchPuppi)[jetRef] : 0;
       }
       const reco::GenJet * genjet = useupdategenjets?updatedgenjet: (&*jet) ->genJet()  ;
-      if((&*jet)->pt()<JetPtCut_) continue;
+
+      Float_t jetptgen(-99.);//, jetetagen(-99.),jetphigen(-99.); 
+      Float_t jetptgenwithnu(-99.);
+      if( genjet !=0 ){
+        jetptgen= genjet->pt() ;
+	//jetetagen= genjet->eta() ;
+	//jetphigen= genjet->phi() ;
+      }
+      if(updatedgenjetwithnu !=0) jetptgenwithnu = updatedgenjetwithnu->pt() ;
+
+      if(!PassJetPreselection((&*jet) , jetptgen , true) ) continue;
+
+      if( genjet ==0   && DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;
+      bool isleptoncleaned =IsLeptonPhotonCleaned ((&*jet) );
+      if( DropBadJets_ && ( !isleptoncleaned )  ) continue;
+      _puppijetLeptonPhotonCleaned.push_back(isleptoncleaned);
+      //Still need to update the jet id for PUPPI
+      _puppijetPassID.push_back(true);
       _puppijetEta.push_back((&*jet)->eta());
       _puppijetPhi.push_back((&*jet)->phi());
       _puppijetPt.push_back((&*jet)->pt());
-      Float_t jetptgen(-99.);//, jetetagen(-99.),jetphigen(-99.);
-      Float_t jetptgenwithnu(-99.);
-      
-      if( genjet !=0 ){
-        jetptgen= genjet->pt() ;
-	//        jetetagen= genjet->eta() ;
-        //jetphigen= genjet->phi() ;
-      }
+      _puppijetRawPt.push_back((&*jet)-> correctedP4("Uncorrected").Pt());
+      _puppijetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() );
+
+      jecUnc->setJetEta((&*jet)->eta());
+      jecUnc->setJetPt((&*jet)->pt());
+      _puppijetJECuncty.push_back( jecUnc->getUncertainty(true) );
+
       if(updatedgenjetwithnu !=0) jetptgenwithnu = updatedgenjetwithnu->pt() ;
       _puppijetPtGen.push_back(jetptgen);
       _puppijetPtGenWithNu.push_back(jetptgenwithnu);
@@ -1246,20 +1404,136 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
   
 
-  //AK8                                                                                                                                                                                                                     
+  //AK8 Puppi jets
   edm::Handle< std::vector< pat::Jet> > thePuppiAK8Jets;
   iEvent.getByToken(jetPuppiAK8Token_,thePuppiAK8Jets );
   if(thePuppiAK8Jets.isValid()){
     for( std::vector<pat::Jet>::const_iterator jet = (*thePuppiAK8Jets).begin(); jet != (*thePuppiAK8Jets).end(); jet++ ) {
-      if((&*jet)->pt()<AK8JetPtCut_) continue;
-      if(fabs((&*jet)->eta())>2.4) continue;
+      if(Skim_=="MCJECs" &&  (&*jet) ->genJet() ==0) continue;
+      else if(Skim_=="MCJECs" &&  (&*jet) ->genJet() ->pt()<10) continue;
+      else if((Skim_=="ZJetsResiduals" || Skim_=="GammaJetsResiduals") &&  (&*jet)->correctedP4("Uncorrected").Pt() <10)  continue;
+      else if((&*jet)->pt()<AK8JetPtCut_) continue;
+
+      //      if(fabs((&*jet)->eta())>2.4) continue;
       _puppiak8jetEta.push_back((&*jet)->eta());
+      _puppiak8jetPhi.push_back((&*jet)->phi());
       _puppiak8jetPt.push_back((&*jet)->pt());
+      _puppiak8jetRawPt.push_back((&*jet)->correctedP4("Uncorrected").Pt());
+      if( (&*jet) ->genJet()  !=0) _puppiak8jetPtGen.push_back(  (&*jet) ->genJet()->pt() );
+      else  _puppiak8jetPtGen.push_back(  -1);
       _puppiak8jet_tau1.push_back((&*jet)->userFloat("NjettinessAK8Puppi:tau1"));
       _puppiak8jet_tau2.push_back((&*jet)->userFloat("NjettinessAK8Puppi:tau2"));
       _puppiak8jet_tau3.push_back((&*jet)->userFloat("NjettinessAK8Puppi:tau3"));
     }
   }
+
+
+  //AK8  jets
+  edm::Handle< std::vector< pat::Jet> > theAK8Jets;
+  iEvent.getByToken(jetAK8Token_,theAK8Jets );
+  if(theAK8Jets.isValid()){
+    for( std::vector<pat::Jet>::const_iterator jet = (*theAK8Jets).begin(); jet != (*theAK8Jets).end(); jet++ ) {
+      if(Skim_=="MCJECs" &&  (&*jet) ->genJet() ==0) continue;
+      else if(Skim_=="MCJECs" &&  (&*jet) ->genJet() ->pt()<10) continue;
+      else if((Skim_=="ZJetsResiduals" || Skim_=="GammaJetsResiduals") &&  (&*jet)->correctedP4("Uncorrected").Pt() <10)  continue;
+      else if((&*jet)->pt()<AK8JetPtCut_) continue;
+
+      //      if(fabs((&*jet)->eta())>2.4) continue;
+      _ak8jetEta.push_back((&*jet)->eta());
+      _ak8jetPhi.push_back((&*jet)->phi());
+      _ak8jetPt.push_back((&*jet)->pt());
+      _ak8jetArea.push_back((&*jet)->jetArea());
+      _ak8jetRawPt.push_back((&*jet)->correctedP4("Uncorrected").Pt());
+      if( (&*jet) ->genJet()  !=0) _ak8jetPtGen.push_back(  (&*jet) ->genJet()->pt() );
+      else  _ak8jetPtGen.push_back(  -1);
+    }
+  }
+
+
+
+  //Calo jets
+  edm::Handle< std::vector< reco::CaloJet> > theCaloJets;
+  iEvent.getByToken(jetCaloToken_,theCaloJets );
+  edm::Handle<edm::Association<reco::GenJetCollection>> genJetMatchCalo;
+  iEvent.getByToken(genJetAssocCaloToken_, genJetMatchCalo);
+
+  if(theCaloJets.isValid()){
+    for( std::vector<reco::CaloJet>::const_iterator jet = (*theCaloJets).begin(); jet != (*theCaloJets).end(); jet++ ) {
+          
+      edm::RefToBase<reco::CaloJet> jetRef(edm::Ref<reco::CaloJetCollection>( theCaloJets , jet -theCaloJets->begin()));
+      const reco::GenJet * updatedgenjet =0;
+      if(genJetMatchCalo.isValid() ) updatedgenjet = ( (*genJetMatchCalo)[jetRef].isNonnull() && (*genJetMatchCalo)[jetRef].isAvailable()) ? &*(*genJetMatchCalo)[jetRef] : 0 ;
+      Float_t jetptgen(-99.);
+      if( updatedgenjet !=0 ) jetptgen= updatedgenjet->pt() ;        
+      if( updatedgenjet ==0   && DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;
+      if(!PassJetPreselection((&*jet) , jetptgen ) ) continue;
+
+      bool isleptoncleaned =IsLeptonPhotonCleaned ((&*jet) );
+      _calojetLeptonPhotonCleaned.push_back(isleptoncleaned);
+      _calojetPtGen.push_back(jetptgen );
+      _calojetEta.push_back((&*jet)->eta());
+      _calojetPhi.push_back((&*jet)->phi());
+      _calojetPt.push_back((&*jet)->pt());
+      _calojetRawPt.push_back(0.);
+
+    }
+  }
+
+  //AK4 PF jets (no CHS)
+  edm::Handle< std::vector< pat::Jet> > thenoCHSJets;
+  iEvent.getByToken(jetnoCHSToken_,thenoCHSJets );
+  if(thenoCHSJets.isValid()){
+    for( std::vector<pat::Jet>::const_iterator jet = (*thenoCHSJets).begin(); jet != (*thenoCHSJets).end(); jet++ ) {
+      const reco::GenJet * genjet = (&*jet) ->genJet()  ;
+      if( genjet ==0   && DropUnmatchedJets_ && (&*jet)->pt()<50 ) continue;
+      Float_t jetptgen(-99.);
+      if( genjet !=0 ) jetptgen= genjet->pt() ;
+      if(!PassJetPreselection((&*jet) , jetptgen , false) ) continue;
+      
+      bool isleptoncleaned =IsLeptonPhotonCleaned ((&*jet) );
+      _noCHSjetLeptonPhotonCleaned.push_back(isleptoncleaned);
+      _noCHSjetEta.push_back((&*jet)->eta());
+      _noCHSjetPhi.push_back((&*jet)->phi());
+      _noCHSjetPt.push_back((&*jet)->pt());
+      _noCHSjetRawPt.push_back((&*jet)-> correctedP4("Uncorrected").Pt()   );
+      _noCHSjetPtGen.push_back(jetptgen);
+    }
+  }
+
+  
+  //AK4 gen jets
+  //Mostly needed for MC jecs: it can happen that a low pt gen jet is not matched to any reco jet. Not considering those would introduce a bias 
+  edm::Handle< std::vector< reco::GenJet> > theGenJets;
+  iEvent.getByToken(genjetToken_,theGenJets );
+  if(theGenJets.isValid()){
+    for( std::vector<reco::GenJet>::const_iterator jet = (*theGenJets).begin(); jet != (*theGenJets).end(); jet++ ) {
+      if((&*jet)->pt()<5&& Skim_=="MCJECs") continue;
+      _genjetEta.push_back((&*jet)->eta());
+      _genjetPt.push_back((&*jet)->pt());
+      _genjetPhi.push_back((&*jet)->phi());
+      _genjet_CHSIdx.push_back( GetRecoIdx((&*jet),_jetPt, _jetEta,_jetPhi, _jetPtGen));
+      _genjet_noCHSIdx.push_back( GetRecoIdx((&*jet),_noCHSjetPt, _noCHSjetEta,_noCHSjetPhi, _noCHSjetPtGen));
+      _genjet_PuppiIdx.push_back( GetRecoIdx((&*jet),_puppijetPt, _puppijetEta,_puppijetPhi, _puppijetPtGen));
+      _genjet_CaloIdx.push_back( GetRecoIdx((&*jet),_calojetPt, _calojetEta,_calojetPhi, _calojetPtGen));
+      
+      }
+  }
+  //AK8 gen jets
+  edm::Handle< std::vector< reco::GenJet> > theGenAK8Jets;
+  iEvent.getByToken(genAK8jetToken_,theGenAK8Jets );
+  if(theGenAK8Jets.isValid()){
+    for( std::vector<reco::GenJet>::const_iterator jet = (*theGenAK8Jets).begin(); jet != (*theGenAK8Jets).end(); jet++ ) {
+      _genAK8jetEta.push_back((&*jet)->eta());
+      _genAK8jetPt.push_back((&*jet)->phi());
+      _genAK8jetPhi.push_back((&*jet)->pt());
+      _genAK8jet_PuppiIdx.push_back( GetRecoIdx((&*jet),_puppiak8jetPt, _puppiak8jetEta,_puppiak8jetPhi, _puppiak8jetPtGen));
+      _genAK8jet_CHSIdx.push_back( GetRecoIdx((&*jet),_ak8jetPt, _ak8jetEta,_ak8jetPhi, _ak8jetPtGen));
+
+    }
+  }
+
+
+
 
   //Type 1 PFMET
   edm::Handle< vector<pat::MET> > ThePFMET;
@@ -1272,6 +1546,13 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _rawmet =  pfmet->uncorPt();
   _rawmet_phi =  pfmet->uncorPhi();
 
+  _chsmet = pfmet->corPt(pat::MET::METCorrectionLevel::Type01);
+  _chsmet_phi = pfmet->corPhi(pat::MET::METCorrectionLevel::Type01);
+  _rawchsmet = pfmet->corPt(pat::MET::METCorrectionLevel::RawChs);
+  _rawchsmet_phi = pfmet->corPhi(pat::MET::METCorrectionLevel::RawChs);
+
+
+
   //PUPPI MET
   edm::Handle< vector<pat::MET> > ThePUPPIMET;
   iEvent.getByToken(puppimetToken_, ThePUPPIMET);
@@ -1282,7 +1563,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _puppimet_phi = puppimet->phi();
   _puppirawmet = puppimet->uncorPt();
   _puppirawmet_phi = puppimet->uncorPhi();
-
+  
   
   _n_PFele_fromvtxfit=0;
   _n_PFmu_fromvtxfit=0;
@@ -1294,35 +1575,25 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _n_CH_fromvtxfit[i] = 0;
     _HT_CH_fromvtxfit[i] = 0;
   }
-
-
   //Accessing the puppi weights !
   edm::Handle<edm::ValueMap<float> > puppiweights;
   iEvent.getByToken(puppiweightsToken_, puppiweights);
-  
-
-  
   /*
     To map vertex idx with vertex ref
     https://github.com/cms-sw/cmssw/blob/master/DataFormats/PatCandidates/interface/PackedCandidate.h#L705-L706
     I need to check that the vertex idx used in fromPV is equivalent to the vertex position in the vertex collection
     
   */
-  //  for(pat::PackedCandidateCollection::const_reverse_iterator p = pfcands->rbegin() ; p != pfcands->rend() ; p++ ) {
   for( std::vector<pat::PackedCandidate>::const_iterator p = (*pfcands).begin(); p != (*pfcands).end(); p++ ) {
-
-    
     int idxrefvtx= (p->vertexRef().isNonnull()) ?  p->vertexRef().key() : -1;
-    //cout << "idxrefvtx, vtx size  " << idxrefvtx << ", " << _n_PV <<endl;
+    
     edm::RefToBase<pat::PackedCandidate> pfcandRef (edm::Ref<pat::PackedCandidateCollection>( pfcands , p  - pfcands->begin()));
-
-    //    edm::RefToBase<pat::Jet> jetRef(edm::Ref<pat::JetCollection>( thePuppiJets , jet -thePuppiJets->begin()));
     /*
     cout << "PFCH cand pt, eta, phi, pdgid: " << p->pt() <<", "<<p->eta()<<", " << p->phi() <<", "<<p->pdgId() <<endl;
     cout << "PFCH idxrefvtx, fromPV(idxrefvtx), fromPV(0):  " << idxrefvtx<<", "<< p->fromPV(idxrefvtx)<< ", "<<p->fromPV()<<endl; 
     cout << "the puppi weight is " <<   (*puppiweights)[pfcandRef]  <<endl; 
     */
-  if( idxrefvtx >=0 && p->fromPV(idxrefvtx) >=2 && fabs(p->pdgId())  == 211 ){
+    if( idxrefvtx >=0 && p->fromPV(idxrefvtx) >=2 && fabs(p->pdgId())  == 211 ){
       TVector2 ptandphi;
       ptandphi.SetMagPhi(p->pt(),p->phi());
       metPV[idxrefvtx] -= ptandphi;
@@ -1347,6 +1618,9 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _PFcand_pdgId.push_back(p->pdgId());
     _PFcand_fromPV.push_back(p->fromPV(0));//See https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookMiniAOD2017#Packed_ParticleFlow_Candidates
     _PFcand_dz.push_back(p->dz(0));
+    if(p-> hasTrackDetails())  _PFcand_dzError.push_back(p->dzError());
+    else _PFcand_dzError.push_back(-99);
+
     _PFcand_hcalFraction.push_back(p->hcalFraction());
     _PFcand_PVfitidx.push_back(idxrefvtx);
     // _PFcand_puppiweight.push_back((*puppiweights)[pfcandRef]);
@@ -1368,12 +1642,12 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     for(GenParticleCollection::const_reverse_iterator p = TheGenParticles->rbegin() ; p != TheGenParticles->rend() ; p++ ) {
       int id = TMath::Abs(p->pdgId());
       /*      if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id== 6 || id == 21 || id == 22 ) ) cout << "p ID, status, pt, eta, phi " << 
-												       p->pdgId() <<", "<<
-												       p->status() <<", "<<
-												       p->pt() <<", "<<
-												       p->eta() <<", "<<
-												       p->phi() <<
-												       endl;
+	      p->pdgId() <<", "<<
+	      p->status() <<", "<<
+	      p->pt() <<", "<<
+	      p->eta() <<", "<<
+	      p->phi() <<
+	      endl;
       */
       if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id == 21 || id == 22 ) && (p->status() == 23&& TMath::Abs(p->mother()->pdgId())!=6 &&TMath::Abs(p->mother()->pdgId())!=24 )){
 	_genHT += p->pt();
@@ -1408,7 +1682,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     //Compute dilepton variables
     Float_t mll_gen(0),ptll_gen(0),pzll_gen(0),yll_gen(0),phill_gen(0),dphill_gen(0),costhCSll_gen(0);
     if(_lgenPt.size() >=2){
-
+      
       for(unsigned int i =0; i < _lgenPt.size(); i++){
 	if (fabs(_lgenpdgId[i]) !=11 && fabs(_lgenpdgId[i])!=13 ) continue;
 	for(unsigned int j =0; j < i; j++){
@@ -1423,7 +1697,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	}
       }
     }
-
+    
 
   }
   if (Gen0.E()!=0) {
@@ -1434,9 +1708,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _genmet_phi = 0;
   }
 
-
-
-
+  
   edm::Handle<LHEEventProduct> lhe_handle;
   iEvent.getByToken(lheEventToken_, lhe_handle);
   if ( !lhe_handle.isValid()) iEvent.getByToken(lheEventALTToken_, lhe_handle);
@@ -1461,12 +1733,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       if(fabs( lhe_handle->hepeup().IDUP[i]) <=5|| lhe_handle->hepeup().IDUP[i] ==21 ) lheht += cand_.Pt();//That definition works to retrieve the HT in madgraph HT binned QCD 
     }
   }
-
   _genHT = lheht;
   //Tested with QCD/photon jets/DY with madgraphm
-
-
-
 
 
   //Filling trees and histos   
@@ -1484,6 +1752,128 @@ void
 JMEAnalyzer::beginJob()
 {
 
+
+  if(Skim_=="ZJetsResiduals" || Skim_=="GammaJetsResiduals"  ){
+    outputTree->Branch("_jetEta",&_jetEta);
+    outputTree->Branch("_jetPhi",&_jetPhi);
+    outputTree->Branch("_jetPt",&_jetPt);
+    outputTree->Branch("_jetRawPt",&_jetRawPt);
+    outputTree->Branch("_jetArea",&_jetArea);
+    outputTree->Branch("_jetPassID",&_jetPassID);
+    outputTree->Branch("_jetLeptonPhotonCleaned",&_jetLeptonPhotonCleaned);
+    outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
+    outputTree->Branch("_jetPUMVAUpdate2017",&_jetPUMVAUpdate2017);
+    outputTree->Branch("_jetPUMVAUpdate2018",&_jetPUMVAUpdate2018);
+    outputTree->Branch("_puppijetEta",&_puppijetEta);
+    outputTree->Branch("_puppijetPhi",&_puppijetPhi);
+    outputTree->Branch("_puppijetPt",&_puppijetPt);
+    outputTree->Branch("_puppijetRawPt",&_puppijetRawPt);
+    outputTree->Branch("_puppijetLeptonPhotonCleaned",&_puppijetLeptonPhotonCleaned);
+    outputTree->Branch("_puppijetPassID",&_puppijetPassID);
+    outputTree->Branch("_puppijetPtNoL2L3Res",&_puppijetPtNoL2L3Res);
+
+
+    if(IsMC_){
+      outputTree->Branch("_jetPtGen",&_jetPtGen);
+      outputTree->Branch("_jetEtaGen",&_jetEtaGen);
+      outputTree->Branch("_jetPhiGen",&_jetPhiGen);
+      outputTree->Branch("_jetPtGenWithNu",&_jetPtGenWithNu);
+      outputTree->Branch("_puppijetPtGen",&_puppijetPtGen);
+      outputTree->Branch("_puppijetPtGenWithNu",&_puppijetPtGenWithNu);
+      outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
+      outputTree->Branch("_genmet", &_genmet, "_genmet/f");
+      outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
+      outputTree->Branch("_jetJECuncty",&_jetJECuncty); 
+      outputTree->Branch("_puppijetJECuncty",&_puppijetJECuncty);
+    }
+    outputTree->Branch("_met", &_met, "_met/f");
+    outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
+    outputTree->Branch("_puppimet", &_puppimet, "_puppimet/f");
+    outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/f");
+    outputTree->Branch("_rawmet", &_rawmet, "_rawmet/f");
+    outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/f");
+    outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/f");
+    outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/f");
+    outputTree->Branch("_rawchsmet",&_rawchsmet,"_rawchsmet/f");
+    outputTree->Branch("_rawchsmet_phi",&_rawchsmet_phi,"_rawchsmet_phi/f");
+    outputTree->Branch("_chsmet",&_chsmet,"_chsmet/f");
+    outputTree->Branch("_chsmet_phi",&_chsmet_phi,"_chsmet_phi/f");
+    outputTree->Branch("_n_PV", &_n_PV, "_n_PV/I");
+    outputTree->Branch("_rho", &_rho, "_rho/f");
+    outputTree->Branch("_eventNb",   &_eventNb,   "_eventNb/l");
+    outputTree->Branch("_runNb",     &_runNb,     "_runNb/l");
+    outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
+
+  }
+
+
+  if(Skim_=="ZJetsResiduals"  ){
+    outputTree->Branch("_ptll", &_ptll, "_ptll/f");
+    outputTree->Branch("_phill", &_phill, "_phill/f");
+    outputTree->Branch("_lEta",&_lEta);
+    outputTree->Branch("_lPhi",&_lPhi);
+    outputTree->Branch("_lPt",&_lPt);
+    outputTree->Branch("_lPtcorr",&_lPtcorr);
+    outputTree->Branch("_lpdgId",&_lpdgId);
+    outputTree->Branch("_lPassTightID",&_lPassTightID);
+    outputTree->Branch("_lPassLooseID",&_lPassLooseID);
+    outputTree->Branch("_nEles", &_nEles, "_nEles/I");
+    outputTree->Branch("_nMus", &_nMus, "_nMus/I");
+
+    if(IsMC_){
+    outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/f");
+    outputTree->Branch("_phill_gen", &_phill_gen, "_phill_gen/f");
+    outputTree->Branch("_lgenPt",&_lgenPt);
+    outputTree->Branch("_lgenEta",&_lgenEta);
+    outputTree->Branch("_lgenPhi",&_lgenPhi);
+    outputTree->Branch("_lgenpdgId",&_lgenpdgId);
+    }
+
+    outputTree->Branch("HLT_Ele35_WPTight_Gsf",&HLT_Ele35_WPTight_Gsf,"HLT_Ele35_WPTight_Gsf/O");
+    outputTree->Branch("HLT_Ele32_WPTight_Gsf",&HLT_Ele32_WPTight_Gsf,"HLT_Ele32_WPTight_Gsf/O");
+    outputTree->Branch("HLT_Ele27_WPTight_Gsf",&HLT_Ele27_WPTight_Gsf,"HLT_Ele27_WPTight_Gsf/O");
+    outputTree->Branch("HLT_IsoMu27",&HLT_IsoMu27,"HLT_IsoMu27/O");
+    outputTree->Branch("HLT_IsoMu24",&HLT_IsoMu24,"HLT_IsoMu24/O");
+    outputTree->Branch("HLT_IsoTkMu24",&HLT_IsoTkMu24,"HLT_IsoTkMu24/O");
+    outputTree->Branch("HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ",&HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ,"HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ/O");
+    outputTree->Branch("HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ",&HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ,"HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ/O");
+    outputTree->Branch("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL",&HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL,"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL/O");
+    outputTree->Branch("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",&HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ,"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ/O");
+    outputTree->Branch("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",&HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8,"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8/O");
+    outputTree->Branch("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",&HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL,"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL/O");
+    outputTree->Branch("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",&HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ,"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ/O");
+  }
+
+
+  if( Skim_=="GammaJetsResiduals"  ){
+    outputTree->Branch("_ptgamma", &_ptgamma, "_ptgamma/f");
+    outputTree->Branch("_phigamma", &_phigamma, "_phigamma/f");
+    outputTree->Branch("_phEta",&_phEta);
+    outputTree->Branch("_phPhi",&_phPhi);
+    outputTree->Branch("_phPt",&_phPt);
+    outputTree->Branch("_phPtcorr",&_phPtcorr);
+    outputTree->Branch("_phPassTightID",&_phPassTightID);
+    outputTree->Branch("_phPassIso",&_phPassIso);
+
+    if(IsMC_){
+    outputTree->Branch("_ptgamma_gen", &_ptgamma_gen, "_ptgamma_gen/f");
+    outputTree->Branch("_phigamma_gen", &_phigamma_gen, "_phigamma_gen/f");
+    outputTree->Branch("_phgenEta",&_phgenEta);
+    outputTree->Branch("_phgenPhi",&_phgenPhi);
+    outputTree->Branch("_phgenPt",&_phgenPt);
+    }
+    outputTree->Branch("HLT_Photon110EB_TightID_TightIso",&HLT_Photon110EB_TightID_TightIso,"HLT_Photon110EB_TightID_TightIso/O");
+    outputTree->Branch("HLT_Photon165_R9Id90_HE10_IsoM",&HLT_Photon165_R9Id90_HE10_IsoM,"HLT_Photon165_R9Id90_HE10_IsoM/O");
+    outputTree->Branch("HLT_Photon120_R9Id90_HE10_IsoM",&HLT_Photon120_R9Id90_HE10_IsoM,"HLT_Photon120_R9Id90_HE10_IsoM/O");
+    outputTree->Branch("HLT_Photon90_R9Id90_HE10_IsoM",&HLT_Photon90_R9Id90_HE10_IsoM,"HLT_Photon90_R9Id90_HE10_IsoM/O");
+    outputTree->Branch("HLT_Photon75_R9Id90_HE10_IsoM",&HLT_Photon75_R9Id90_HE10_IsoM,"HLT_Photon75_R9Id90_HE10_IsoM/O");
+    outputTree->Branch("HLT_Photon50_R9Id90_HE10_IsoM",&HLT_Photon50_R9Id90_HE10_IsoM,"HLT_Photon50_R9Id90_HE10_IsoM/O");
+    outputTree->Branch("HLT_Photon200",&HLT_Photon200,"HLT_Photon200/O");
+    outputTree->Branch("HLT_Photon175",&HLT_Photon175,"HLT_Photon175/O");
+  }
+  if(Skim_=="ZJetsResiduals" || Skim_=="GammaJetsResiduals"  ) return;
+
+  
   outputTree->Branch("_eventNb",   &_eventNb,   "_eventNb/l");
   outputTree->Branch("_runNb",     &_runNb,     "_runNb/l");
   outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
@@ -1492,9 +1882,10 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_LV_x", &_LV_x, "_LV_x/f");
   outputTree->Branch("_LV_y", &_LV_y, "_LV_y/f");
   outputTree->Branch("_LV_z", &_LV_z, "_LV_z/f");
-  outputTree->Branch("_PUV1_x", &_PUV1_x, "_PUV1_x/f");
-  outputTree->Branch("_PUV1_y", &_PUV1_y, "_PUV1_y/f");
-  outputTree->Branch("_PUV1_z", &_PUV1_z, "_PUV1_z/f");
+  outputTree->Branch("_LV_errx", &_LV_errx, "_LV_errx/f");
+  outputTree->Branch("_LV_erry", &_LV_erry, "_LV_erry/f");
+  outputTree->Branch("_LV_errz", &_LV_errz, "_LV_errz/f");
+
 
   outputTree->Branch("_rho", &_rho, "_rho/f");
   outputTree->Branch("_rhoNC", &_rhoNC, "_rhoNC/f");
@@ -1525,6 +1916,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetPhi",&_jetPhi);
   outputTree->Branch("_jetPt",&_jetPt);
   outputTree->Branch("_jetRawPt",&_jetRawPt);
+  
+  if(Skim_!="MCJECs"){
   outputTree->Branch("_jet_CHEF",&_jet_CHEF);
   outputTree->Branch("_jet_NHEF",&_jet_NHEF);
   outputTree->Branch("_jet_NEEF",&_jet_NEEF);
@@ -1534,12 +1927,19 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jet_NHM",&_jet_NHM);
   outputTree->Branch("_jet_PHM",&_jet_PHM);
   outputTree->Branch("_jet_NM",&_jet_NM);
-  outputTree->Branch("_jetArea",&_jetArea);
-  outputTree->Branch("_jetPassID",&_jetPassID);
   outputTree->Branch("_jethfsigmaEtaEta",&_jethfsigmaEtaEta);
   outputTree->Branch("_jethfsigmaPhiPhi",&_jethfsigmaPhiPhi);
   outputTree->Branch("_jethfcentralEtaStripSize",&_jethfcentralEtaStripSize);
   outputTree->Branch("_jethfadjacentEtaStripsSize",&_jethfadjacentEtaStripsSize);
+  outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
+  outputTree->Branch("_jet_corrjecs",&_jet_corrjecs);
+  if(IsMC_)outputTree->Branch("_jethadronFlavour",&_jethadronFlavour);
+  if(IsMC_)outputTree->Branch("_jetpartonFlavour",&_jetpartonFlavour);
+  outputTree->Branch("_jetJECuncty",&_jetJECuncty);
+  }
+  outputTree->Branch("_jetArea",&_jetArea);
+  outputTree->Branch("_jetPassID",&_jetPassID);
+  outputTree->Branch("_jetLeptonPhotonCleaned",&_jetLeptonPhotonCleaned);
 
   if(IsMC_){
   outputTree->Branch("_jetPtGen",&_jetPtGen);
@@ -1547,15 +1947,10 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetPhiGen",&_jetPhiGen);
   outputTree->Branch("_jetPtGenWithNu",&_jetPtGenWithNu);
   }
-  outputTree->Branch("_jetJECuncty",&_jetJECuncty);
   outputTree->Branch("_jetPUMVA",&_jetPUMVA);
   outputTree->Branch("_jetPUMVAUpdate",&_jetPUMVAUpdate);
   outputTree->Branch("_jetPUMVAUpdate2017",&_jetPUMVAUpdate2017);
   outputTree->Branch("_jetPUMVAUpdate2018",&_jetPUMVAUpdate2018);
-  outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
-  outputTree->Branch("_jet_corrjecs",&_jet_corrjecs);
-  if(IsMC_)outputTree->Branch("_jethadronFlavour",&_jethadronFlavour);
-  if(IsMC_)outputTree->Branch("_jetpartonFlavour",&_jetpartonFlavour);
   outputTree->Branch("_jetDeepJet_b",&_jetDeepJet_b);
   outputTree->Branch("_jetParticleNet_b",&_jetParticleNet_b);
   outputTree->Branch("_jetDeepJet_c",&_jetDeepJet_c);
@@ -1585,18 +1980,139 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_puppijetEta",&_puppijetEta);
   outputTree->Branch("_puppijetPhi",&_puppijetPhi);
   outputTree->Branch("_puppijetPt",&_puppijetPt);
+  outputTree->Branch("_puppijetRawPt",&_puppijetRawPt);
   outputTree->Branch("_puppijetPtGen",&_puppijetPtGen);
   outputTree->Branch("_puppijetPtGenWithNu",&_puppijetPtGenWithNu);
-
+  outputTree->Branch("_puppijetLeptonPhotonCleaned",&_puppijetLeptonPhotonCleaned);
+  outputTree->Branch("_puppijetPassID",&_puppijetPassID);
+  outputTree->Branch("_puppijetPtNoL2L3Res",&_puppijetPtNoL2L3Res);
+  
   if(SaveAK8Jets_){
   outputTree->Branch("_puppiak8jetEta",&_puppiak8jetEta);
+  outputTree->Branch("_puppiak8jetPhi",&_puppiak8jetPhi);
   outputTree->Branch("_puppiak8jetPt",&_puppiak8jetPt);
+  outputTree->Branch("_puppiak8jetRawPt",&_puppiak8jetRawPt);
+  outputTree->Branch("_puppiak8jetPtGen",&_puppiak8jetPtGen);
   outputTree->Branch("_puppiak8jet_tau1",&_puppiak8jet_tau1);
   outputTree->Branch("_puppiak8jet_tau2",&_puppiak8jet_tau2);
   outputTree->Branch("_puppiak8jet_tau3",&_puppiak8jet_tau3);
+  outputTree->Branch("_ak8jetEta",&_ak8jetEta);
+  outputTree->Branch("_ak8jetPhi",&_ak8jetPhi);
+  outputTree->Branch("_ak8jetPt",&_ak8jetPt);
+  outputTree->Branch("_ak8jetArea",&_ak8jetArea);
+  outputTree->Branch("_ak8jetRawPt",&_ak8jetRawPt);
+  outputTree->Branch("_ak8jetPtGen",&_ak8jetPtGen);
+
+  }
+
+  if(SaveCaloJets_){
+    outputTree->Branch("_calojetEta",&_calojetEta);
+    outputTree->Branch("_calojetPhi",&_calojetPhi);
+    outputTree->Branch("_calojetPt",&_calojetPt);
+    outputTree->Branch("_calojetRawPt",&_calojetRawPt);
+    outputTree->Branch("_calojetPtGen",&_calojetPtGen);
+    outputTree->Branch("_calojetLeptonPhotonCleaned",&_calojetLeptonPhotonCleaned);
+
+  }
+  
+  if(SavenoCHSJets_){
+    outputTree->Branch("_noCHSjetEta",&_noCHSjetEta);
+    outputTree->Branch("_noCHSjetPhi",&_noCHSjetPhi);
+    outputTree->Branch("_noCHSjetPt",&_noCHSjetPt);
+    outputTree->Branch("_noCHSjetRawPt",&_noCHSjetRawPt);
+    outputTree->Branch("_noCHSjetPtGen",&_noCHSjetPtGen);
+    outputTree->Branch("_noCHSjetLeptonPhotonCleaned",&_noCHSjetLeptonPhotonCleaned);
   }
 
   
+  
+  if(Skim_=="MCJECs")
+  {
+  outputTree->Branch("_genjetEta",&_genjetEta);
+  outputTree->Branch("_genjetPhi",&_genjetPhi);
+  outputTree->Branch("_genjetPt",&_genjetPt);
+  
+  outputTree->Branch("_genjet_CHSIdx",&_genjet_CHSIdx);
+  outputTree->Branch("_genjet_noCHSIdx",&_genjet_noCHSIdx);
+  outputTree->Branch("_genjet_CaloIdx",&_genjet_CaloIdx);
+  outputTree->Branch("_genjet_PuppiIdx",&_genjet_PuppiIdx);
+ 
+
+  outputTree->Branch("_genAK8jetEta",&_genAK8jetEta);
+  outputTree->Branch("_genAK8jetPhi",&_genAK8jetPhi);
+  outputTree->Branch("_genAK8jetPt",&_genAK8jetPt);
+  outputTree->Branch("_genAK8jet_PuppiIdx",&_genAK8jet_PuppiIdx);
+  outputTree->Branch("_genAK8jet_CHSIdx",&_genAK8jet_CHSIdx);
+ 
+  }
+  
+
+  if(PFCandPtCut_<1000){
+  outputTree->Branch("_PFcand_pt",&_PFcand_pt);
+  outputTree->Branch("_PFcand_eta",&_PFcand_eta);
+  outputTree->Branch("_PFcand_phi",&_PFcand_phi);
+  outputTree->Branch("_PFcand_pdgId",&_PFcand_pdgId);
+  outputTree->Branch("_PFcand_fromPV",&_PFcand_fromPV);
+  outputTree->Branch("_PFcand_dz",&_PFcand_dz);
+  outputTree->Branch("_PFcand_dzError",&_PFcand_dzError);
+  outputTree->Branch("_PFcand_hcalFraction",&_PFcand_hcalFraction);
+  outputTree->Branch("_PFcand_PVfitidx",&_PFcand_PVfitidx);
+  outputTree->Branch("_PFcand_puppiweight",&_PFcand_puppiweight);
+  }
+
+
+
+
+  
+  if(IsMC_){
+  outputTree->Branch("_genmet", &_genmet, "_genmet/f");
+  outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
+  outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
+  }
+  outputTree->Branch("_met", &_met, "_met/f");
+  outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
+  outputTree->Branch("_puppimet", &_puppimet, "_puppimet/f");
+  outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/f");
+
+  outputTree->Branch("_rawmet", &_rawmet, "_rawmet/f");
+  outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/f");
+  outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/f");
+  outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/f");
+  
+  outputTree->Branch("_rawchsmet",&_rawchsmet,"_rawchsmet/f");
+  outputTree->Branch("_rawchsmet_phi",&_rawchsmet_phi,"_rawchsmet_phi/f");
+  outputTree->Branch("_chsmet",&_chsmet,"_chsmet/f");
+  outputTree->Branch("_chsmet_phi",&_chsmet_phi,"_chsmet_phi/f");
+
+  if(SavePFinJets_){
+    jetPFTree->Branch("_Jet_Pt", &_Jet_Pt,"_Jet_Pt/f");
+    jetPFTree->Branch("_Jet_Eta", &_Jet_Eta,"_Jet_Eta/f");
+    jetPFTree->Branch("_Jet_Phi", &_Jet_Phi,"_Jet_Phi/f");
+    jetPFTree->Branch("_Jet_PtGen", &_Jet_PtGen,"_Jet_PtGen/f");
+    jetPFTree->Branch("_Jet_EtaGen", &_Jet_EtaGen,"_Jet_EtaGen/f");
+    jetPFTree->Branch("_Jet_PhiGen", &_Jet_PhiGen,"_Jet_PhiGen/f");
+
+    jetPFTree->Branch("_PFcand_pt",&_Jet_PFcand_pt);
+    jetPFTree->Branch("_PFcand_eta",&_Jet_PFcand_eta);
+    jetPFTree->Branch("_PFcand_phi",&_Jet_PFcand_phi);
+    jetPFTree->Branch("_PFcand_pdgId",&_Jet_PFcand_pdgId);
+    jetPFTree->Branch("_PFcand_fromPV",&_Jet_PFcand_fromPV);
+    jetPFTree->Branch("_PFcand_dz",&_Jet_PFcand_dz);
+    jetPFTree->Branch("_PFcand_dzError",&_Jet_PFcand_dzError);
+  }
+
+
+  if(Skim_=="MCJECs")return;
+
+  outputTree->Branch("_PUV1_x", &_PUV1_x, "_PUV1_x/f");
+  outputTree->Branch("_PUV1_y", &_PUV1_y, "_PUV1_y/f");
+  outputTree->Branch("_PUV1_z", &_PUV1_z, "_PUV1_z/f");
+  outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
+  outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
+
+
+  
+
   outputTree->Branch("_lEta",&_lEta);
   outputTree->Branch("_lPhi",&_lPhi);
   outputTree->Branch("_lPt",&_lPt);
@@ -1607,7 +2123,17 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_nEles", &_nEles, "_nEles/I");
   outputTree->Branch("_nMus", &_nMus, "_nMus/I");
   
-  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton" || Skim_=="DileptonInfo" ){
+
+  outputTree->Branch("_ldz",&_ldz);
+  outputTree->Branch("_ldzError",&_ldzError);
+  outputTree->Branch("_ldxy",&_ldxy);
+  outputTree->Branch("_ldxyError",&_ldxyError);
+   
+  outputTree->Branch("_l3dIP",&_l3dIP);
+  outputTree->Branch("_l3dIPError",&_l3dIPError);
+
+  
+  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton" || Skim_=="DileptonInfo" || Skim_=="ZHFJet"){
     outputTree->Branch("_mll", &_mll, "_mll/f");
     outputTree->Branch("_ptll", &_ptll, "_ptll/f");
     outputTree->Branch("_pzll", &_pzll, "_pzll/f");
@@ -1617,6 +2143,7 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/f");
     outputTree->Branch("_nElesll",&_nElesll,"_nElesll/I");
     
+    if(IsMC_){
     outputTree->Branch("_mll_gen", &_mll_gen, "_mll_gen/f");
     outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/f");
     outputTree->Branch("_pzll_gen", &_pzll_gen, "_pzll_gen/f");
@@ -1625,6 +2152,7 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_phill_gen", &_phill_gen, "_phill_gen/f");
     outputTree->Branch("_costhCSll_gen", &_costhCSll_gen, "_costhCSll_gen/f");
     outputTree->Branch("_ngenElesll",&_ngenElesll,"_ngenElesll/I");
+    }
   }
   outputTree->Branch("_n_PFele_fromvtxfit",&_n_PFele_fromvtxfit,"_n_PFele_fromvtxfit/I");
   outputTree->Branch("_n_PFmu_fromvtxfit",&_n_PFmu_fromvtxfit,"_n_PFmu_fromvtxfit/I");
@@ -1652,19 +2180,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_phPassTightID",&_phPassTightID);
   outputTree->Branch("_phPassIso",&_phPassIso);
   }
-  if(PFCandPtCut_<1000){
-  outputTree->Branch("_PFcand_pt",&_PFcand_pt);
-  outputTree->Branch("_PFcand_eta",&_PFcand_eta);
-  outputTree->Branch("_PFcand_phi",&_PFcand_phi);
-  outputTree->Branch("_PFcand_pdgId",&_PFcand_pdgId);
-  outputTree->Branch("_PFcand_fromPV",&_PFcand_fromPV);
-  outputTree->Branch("_PFcand_dz",&_PFcand_dz);
-  outputTree->Branch("_PFcand_hcalFraction",&_PFcand_hcalFraction);
-  outputTree->Branch("_PFcand_PVfitidx",&_PFcand_PVfitidx);
-  outputTree->Branch("_PFcand_puppiweight",&_PFcand_puppiweight);
-  }
-  outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
-  outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
+
 
 
   if(Skim_=="VtxInfo" ){
@@ -1674,21 +2190,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_DztoLV_PV",&_DztoLV_PV);
   }
 
-  if(IsMC_){
-  outputTree->Branch("_genmet", &_genmet, "_genmet/f");
-  outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
-  outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
-  }
-  outputTree->Branch("_met", &_met, "_met/f");
-  outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
-  outputTree->Branch("_puppimet", &_puppimet, "_puppimet/f");
-  outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/f");
 
-  outputTree->Branch("_rawmet", &_rawmet, "_rawmet/f");
-  outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/f");
-  outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/f");
-  outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/f");
-  
+
 
   outputTree->Branch("HLT_Photon110EB_TightID_TightIso",&HLT_Photon110EB_TightID_TightIso,"HLT_Photon110EB_TightID_TightIso/O");
   outputTree->Branch("HLT_Photon165_R9Id90_HE10_IsoM",&HLT_Photon165_R9Id90_HE10_IsoM,"HLT_Photon165_R9Id90_HE10_IsoM/O");
@@ -1698,6 +2201,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("HLT_Photon50_R9Id90_HE10_IsoM",&HLT_Photon50_R9Id90_HE10_IsoM,"HLT_Photon50_R9Id90_HE10_IsoM/O");
   outputTree->Branch("HLT_Photon200",&HLT_Photon200,"HLT_Photon200/O");
   outputTree->Branch("HLT_Photon175",&HLT_Photon175,"HLT_Photon175/O");
+  outputTree->Branch("HLT_DiJet110_35_Mjj650_PFMET110",&HLT_DiJet110_35_Mjj650_PFMET110,"HLT_DiJet110_35_Mjj650_PFMET110/O");
   outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60/O");
   outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight/O");
   outputTree->Branch("HLT_PFMET120_PFMHT120_IDTight_PFHT60",&HLT_PFMET120_PFMHT120_IDTight_PFHT60,"HLT_PFMET120_PFMHT120_IDTight_PFHT60/O");
@@ -1723,27 +2227,17 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ",&HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ,"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ/O");
   outputTree->Branch("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",&HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL,"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL/O");
   outputTree->Branch("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",&HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL,"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL/O");
+
   if(!IsMC_)outputTree->Branch("_l1prefire",&_l1prefire,"_l1prefire/O");
 
-  if(SavePFinJets_){
-    jetPFTree->Branch("_Jet_Pt", &_Jet_Pt,"_Jet_Pt/f");
-    jetPFTree->Branch("_Jet_Eta", &_Jet_Eta,"_Jet_Eta/f");
-    jetPFTree->Branch("_Jet_Phi", &_Jet_Phi,"_Jet_Phi/f");
-    jetPFTree->Branch("_Jet_PtGen", &_Jet_PtGen,"_Jet_PtGen/f");
-    jetPFTree->Branch("_Jet_EtaGen", &_Jet_EtaGen,"_Jet_EtaGen/f");
-    jetPFTree->Branch("_Jet_PhiGen", &_Jet_PhiGen,"_Jet_PhiGen/f");
-
-    jetPFTree->Branch("_PFcand_pt",&_Jet_PFcand_pt);
-    jetPFTree->Branch("_PFcand_eta",&_Jet_PFcand_eta);
-    jetPFTree->Branch("_PFcand_phi",&_Jet_PFcand_phi);
-    jetPFTree->Branch("_PFcand_pdgId",&_Jet_PFcand_pdgId);
-    jetPFTree->Branch("_PFcand_fromPV",&_Jet_PFcand_fromPV);
-    jetPFTree->Branch("_PFcand_dz",&_Jet_PFcand_dz);
-    jetPFTree->Branch("_PFcand_dzError",&_Jet_PFcand_dzError);
+  if(Skim_=="L1Unprefirable"){
+  outputTree->Branch("_L1mu_Qual",&_L1mu_Qual);
+  outputTree->Branch("_L1mu_pt",&_L1mu_pt);
+  outputTree->Branch("_L1mu_eta",&_L1mu_eta);
+  outputTree->Branch("_L1mu_phi",&_L1mu_phi);
+  outputTree->Branch("_L1mu_bx",&_L1mu_bx);
   }
 
-
-  
   outputTree->Branch("hltEle27WPTightGsfTrackIsoFilter",&hltEle27WPTightGsfTrackIsoFilter);
   outputTree->Branch("hltEle35noerWPTightGsfTrackIsoFilter",&hltEle35noerWPTightGsfTrackIsoFilter);
   outputTree->Branch("hltEle32WPTightGsfTrackIsoFilter",&hltEle32WPTightGsfTrackIsoFilter);
@@ -1774,6 +2268,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("hltSinglePFJet400",&hltSinglePFJet400);
   outputTree->Branch("hltSinglePFJet450",&hltSinglePFJet450);
   outputTree->Branch("hltSinglePFJet500",&hltSinglePFJet500);
+
+
 
 }
 
@@ -1919,6 +2415,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _jet_NM.clear();
   _jetArea.clear();
   _jetPassID.clear();
+  _jetLeptonPhotonCleaned.clear();
   _jethfsigmaEtaEta.clear();
   _jethfsigmaPhiPhi.clear();
   _jethfcentralEtaStripSize.clear();
@@ -1966,14 +2463,59 @@ void JMEAnalyzer::InitandClearStuff(){
   _puppijetEta.clear();
   _puppijetPhi.clear();
   _puppijetPt.clear(); 
+  _puppijetRawPt.clear(); 
   _puppijetPtGen.clear();
   _puppijetPtGenWithNu.clear();
+  _puppijetLeptonPhotonCleaned.clear();
+  _puppijetPassID.clear();
+  _puppijetJECuncty.clear();
+  _puppijetPtNoL2L3Res.clear();
 
   _puppiak8jetEta.clear();
+  _puppiak8jetPhi.clear();
   _puppiak8jetPt.clear();
+  _puppiak8jetRawPt.clear();
+  _puppiak8jetPtGen.clear();
   _puppiak8jet_tau1.clear();
   _puppiak8jet_tau2.clear();
   _puppiak8jet_tau3.clear();
+
+  _ak8jetEta.clear();
+  _ak8jetPhi.clear();
+  _ak8jetPt.clear();
+  _ak8jetArea.clear();
+  _ak8jetRawPt.clear();
+  _ak8jetPtGen.clear();
+
+  _calojetEta.clear();
+  _calojetPhi.clear();
+  _calojetPt.clear();
+  _calojetRawPt.clear();
+  _calojetPtGen.clear();
+  _calojetLeptonPhotonCleaned.clear();
+
+  _noCHSjetEta.clear();
+  _noCHSjetPhi.clear();
+  _noCHSjetPt.clear();
+  _noCHSjetRawPt.clear();
+  _noCHSjetPtGen.clear();
+  _noCHSjetLeptonPhotonCleaned.clear();
+
+  
+  _genjetEta.clear();
+  _genjetPhi.clear();
+  _genjetPt.clear();
+  _genjet_CHSIdx.clear();
+  _genjet_noCHSIdx.clear();
+  _genjet_CaloIdx.clear();
+  _genjet_PuppiIdx.clear();
+
+
+  _genAK8jetEta.clear();
+  _genAK8jetPhi.clear();
+  _genAK8jetPt.clear();
+  _genAK8jet_CHSIdx.clear();
+  _genAK8jet_PuppiIdx.clear();
 
 
   _lEta.clear();
@@ -1983,6 +2525,14 @@ void JMEAnalyzer::InitandClearStuff(){
   _lpdgId.clear();
   _lPassTightID.clear();
   _lPassLooseID.clear();
+
+  _ldz.clear();
+  _ldzError.clear();
+  _ldxy.clear();
+  _ldxyError.clear();
+  _l3dIP.clear();
+  _l3dIPError.clear();
+  
   _nEles=0;
   _nMus=0;
   
@@ -2009,6 +2559,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _PFcand_pdgId.clear();
   _PFcand_fromPV.clear();
   _PFcand_dz.clear();
+  _PFcand_dzError.clear();
   _PFcand_hcalFraction.clear();
   _PFcand_PVfitidx.clear();
   _PFcand_puppiweight.clear();
@@ -2029,6 +2580,12 @@ void JMEAnalyzer::InitandClearStuff(){
   _SumPT2CH_PV.clear();
   _DztoLV_PV.clear();
 
+  
+  _L1mu_Qual.clear();
+  _L1mu_pt.clear();
+  _L1mu_eta.clear();
+  _L1mu_phi.clear();
+  _L1mu_bx.clear();
 
 
 
@@ -2040,6 +2597,7 @@ void JMEAnalyzer::InitandClearStuff(){
   HLT_Photon50_R9Id90_HE10_IsoM=false;
   HLT_Photon200=false;
   HLT_Photon175=false;
+  HLT_DiJet110_35_Mjj650_PFMET110=false;
   HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60=false;
   HLT_PFMETNoMu120_PFMHTNoMu120_IDTight=false;
   HLT_PFMET120_PFMHT120_IDTight_PFHT60=false;
@@ -2163,9 +2721,53 @@ bool JMEAnalyzer::PassSkim(){
       
     }
     //    else cout << "myfile_unprefevts.is_open() = false " << endl;
-
-
     return false;   
+  }
+
+  else if(Skim_=="ZJetsResiduals" || Skim_=="GammaJetsResiduals"  ){
+    
+    if(Skim_=="ZJetsResiduals" && (_ptll==0|| _mll<70 || _mll>110 || _phPt.size()>0)) return false;
+    if(Skim_=="GammaJetsResiduals"  && (_ptgamma<50 || _phPt.size()>1  ||_lPt.size()>0 ) ) return false; 
+    
+
+    int ntotjets(0), ntotpuppijets(0);
+    for(unsigned int i = 0; i < _jetPt.size(); i++){
+      if( !_jetPassID[i] ) continue; 
+      if( !_jetLeptonPhotonCleaned[i] ) continue; 
+      if(_jetPtNoL2L3Res[i] <30) continue;
+      if(_jetPtNoL2L3Res[i] <40&&abs(_jetEta[i])>2.4 ) continue;
+
+      ntotjets++;
+    }
+
+    for(unsigned int i = 0; i < _puppijetPt.size(); i++){
+      if( !_puppijetPassID[i] ) continue;
+      if( !_puppijetLeptonPhotonCleaned[i] ) continue;
+      if(_puppijetPtNoL2L3Res[i] <30) continue;
+      if(_puppijetPtNoL2L3Res[i] <40&&abs(_puppijetEta[i])>2.4 ) continue;
+      
+      ntotpuppijets++;
+    }
+
+    if(ntotjets>1&& ntotpuppijets>1) return false;
+  }
+  else if(Skim_=="HFJet" || Skim_=="PhotonHFJet" || Skim_=="ZHFJet"){
+    int nhfjet=0;
+    for(unsigned int i = 0; i < _jetPt.size(); i++){
+      if(fabs(_jetEta[i])>2.95&&_jetPt[i]>70)nhfjet++;
+    }
+  
+    if ( Skim_=="HFJet" && nhfjet >0 ) return true;
+    if ( Skim_=="ZHFJet" && nhfjet >0 &&_ptll>50&&_mll>70&&_mll<110 && (HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8 || HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ||HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL || HLT_IsoMu27 || HLT_IsoMu24 || HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ || HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL )) return true;
+    int ngoodphotons =0;
+    for(unsigned int i = 0; i < _phPt.size(); i++){
+      if(_phPt[i]<50) continue;
+      if(fabs(_phEta[i])>1.4442) continue;
+      ngoodphotons++;
+    }
+    if ( Skim_=="PhotonHFJet"  && nhfjet>0&& _met<50&& ngoodphotons >0 && (  HLT_Photon110EB_TightID_TightIso  ||HLT_Photon165_R9Id90_HE10_IsoM  ||HLT_Photon120_R9Id90_HE10_IsoM  ||HLT_Photon90_R9Id90_HE10_IsoM || HLT_Photon75_R9Id90_HE10_IsoM  ||HLT_Photon50_R9Id90_HE10_IsoM  ||HLT_Photon200  ||HLT_Photon175) ) return true;
+    return false;
+
   }
 
   return true; 
@@ -2244,7 +2846,6 @@ bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string trigg
   edm::InputTag  triggerObjects_("slimmedPatTrigger");
   iEvent.getByToken(trigobjectToken_, triggerObjects);
   iEvent.getByToken(trgresultsToken_, triggerBits);
-  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
   for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
     obj.unpackNamesAndLabels(iEvent,*triggerBits);                                                                                                                                                           
     for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
@@ -2267,9 +2868,6 @@ bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string trigg
 
   iEvent.getByToken(trgresultsToken_, triggerBits);
 
-  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
-
-                                                                                                                                                                            
   for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
     obj.unpackNamesAndLabels(iEvent,*triggerBits);
     for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
@@ -2299,7 +2897,6 @@ bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string trigg
 
   iEvent.getByToken(trgresultsToken_, triggerBits);
 
-  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
   for (pat::TriggerObjectStandAlone obj : *triggerObjects) { 
     obj.unpackNamesAndLabels(iEvent,*triggerBits);
     for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
@@ -2326,8 +2923,6 @@ bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string trigg
 
   iEvent.getByToken(trgresultsToken_, triggerBits);
 
-  const edm::TriggerNames &names = iEvent.triggerNames(*triggerBits);
-
   for (pat::TriggerObjectStandAlone obj : *triggerObjects) {                                                                               
     obj.unpackNamesAndLabels(iEvent,*triggerBits);
     for (unsigned h = 0; h < obj.filterLabels().size(); ++h){
@@ -2344,6 +2939,99 @@ bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string trigg
 
 
 
+int  JMEAnalyzer::GetRecoIdx(const reco::GenJet * genjet , vector <Float_t> recojetpt,  vector <Float_t> recojeteta, vector <Float_t> recojetphi, vector <Float_t> recojetptgen ){
+  Float_t etagen = genjet->eta();
+  Float_t phigen = genjet->phi();
+  Float_t ptgen = genjet->pt();
+  
+  for(unsigned int i = 0; i<  recojeteta.size() ; i++){
+    if(abs( recojetptgen[i] - ptgen)>0.1 )continue;// Requiring the two to be exactly equal might not work due to rounding issues? 
+    Float_t dr = deltaR(etagen,phigen, recojeteta[i] ,  recojetphi[i] );
+    if(dr>0.3) continue; 
+    return i;
+  }
+  return -1;
+}
+      
 
+bool JMEAnalyzer::IsLeptonPhotonCleaned(const pat::Jet *iJ){
+  for(unsigned int i = 0 ; i < _lPt.size(); i++){
+    double dr = deltaR( _lEta[i],_lPhi[i],iJ->eta(),iJ->phi()); 
+    if(dr<0.3) return false; 
+  }
+  for(unsigned int i = 0 ; i < _phPt.size(); i++){
+    double dr = deltaR( _phEta[i],_phPhi[i],iJ->eta(),iJ->phi()); 
+    if(dr<0.3) return false; 
+  }
+  return true;
+}
+
+bool JMEAnalyzer::IsLeptonPhotonCleaned(const reco::CaloJet *iJ){
+  for(unsigned int i = 0 ; i < _lPt.size(); i++){
+    double dr = deltaR( _lEta[i],_lPhi[i],iJ->eta(),iJ->phi()); 
+    if(dr<0.3) return false; 
+  }
+  for(unsigned int i = 0 ; i < _phPt.size(); i++){
+    double dr = deltaR( _phEta[i],_phPhi[i],iJ->eta(),iJ->phi()); 
+    if(dr<0.3) return false; 
+  }
+  return true;
+}
+
+bool JMEAnalyzer::PassJetPreselection(const pat::Jet * iJ, double genjetpt, bool ispuppi){
+  //These values should be chosen small enough that the resulting cut is always looser than the final cut that will be applied on the corrected pt after including L2L3res
+  double ptcut = 10;
+  double ptcut_foractivity_central =  15;
+  double ptcut_foractivity_fwd =  20;
+  if(Skim_=="MCJECs" &&  genjetpt<5) return false;
+  else if(Skim_=="ZJetsResiduals" ){
+    //There are 3 kinds of jets we care of: 
+    //a) Those with large dphi(Z,j) for ptZ>10 => used for balance measurement
+    //b) Those with low dphi(Z,j) for ptZ<5 => used to build the PU template
+    //c) All other jets are used to assess the jet activity. For those we only care about large pt. 
+    if(iJ->correctedP4("L3Absolute").Pt()<ptcut)return false;
+    double dphi_jet_ll = fabs(deltaPhi(_phill, iJ->phi()));
+    bool  passdphicond =  (_ptll>10&& dphi_jet_ll > 2.9 ) || ( _ptll<5 && dphi_jet_ll<2. && dphi_jet_ll>1.0);
+    if( !passdphicond && iJ->correctedP4("L3Absolute").Pt()  <   ptcut_foractivity_central ) return false;
+    if( !passdphicond && iJ->correctedP4("L3Absolute").Pt()  <   ptcut_foractivity_fwd && fabs(iJ->eta())>2.4) return false;
+  }
+  else if(Skim_=="GammaJetsResiduals") {
+    //For gamma + jets, item b) above doesn't apply 
+    if(iJ->correctedP4("L3Absolute").Pt()<ptcut)return false;
+    double dphi_jet_gamma = fabs(deltaPhi(_phigamma, iJ->phi()));
+    bool  passdphicond =  (_ptgamma>50&& dphi_jet_gamma > 2.9 );
+    if( !passdphicond && iJ->correctedP4("L3Absolute").Pt()  <   ptcut_foractivity_central ) return false;
+    if( !passdphicond && iJ->correctedP4("L3Absolute").Pt()  <   ptcut_foractivity_fwd && fabs(iJ->eta())>2.4) return false;
+  }
+  else if(  iJ->pt()< JetPtCut_) return false;
+  return true;
+}
+
+
+bool JMEAnalyzer::PassJetPreselection(const reco::CaloJet * iJ, double genjetpt){
+  if(Skim_=="MCJECs" &&  genjetpt<5) return false;
+  else if(  iJ->pt()< JetPtCut_) return false;
+  return true;
+
+}
 //define this as a plug-in
 DEFINE_FWK_MODULE(JMEAnalyzer);
+
+
+
+/*
+  - prescale for photon triggers      
+  - add jer variation?
+  - update jet id for puppi
+  - add AK8 CHS
+-Add dz and isolation for leptons? 
+
+
+*/
+/* Then the residual procedure is as follows:
+   a) Fit ptbalance to extract JES and JER for both data and MC => One can derive an approximate residual corr as 1+JES(MC)-JER(data) for a given ref pt bin
+   b) Convert the ref pt bin into a <jetpt> bin 
+   c) Fit the Residual vs <jetpt> for various eta bins
+   d) Apply the residual to data and go back to a) 
+
+*/
