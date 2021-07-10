@@ -405,6 +405,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
   vector<Bool_t>  _lPassTightID;
   vector<Bool_t>  _lPassLooseID;
+  vector<Bool_t> _lisSAMuon ;
   vector<int> _lpdgId;
   int _nEles, _nMus;
 
@@ -972,7 +973,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lpdgId.push_back(-11*(&*electron)->charge());
     _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
     _lPassLooseID.push_back( (&*electron)->electronID(ElectronLooseWP_) );
-    
+    _lisSAMuon.push_back( false); 
+
     _ldz.push_back( (&*electron)->gsfTrack()->dz(PV));
     _ldzError.push_back( (&*electron)->gsfTrack()->dzError());
     _ldxy.push_back( (&*electron)->gsfTrack()->dxy(PV));
@@ -999,7 +1001,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector<pat::Muon> > thePatMuons;
   iEvent.getByToken(muonToken_,thePatMuons);
   for( std::vector<pat::Muon>::const_iterator muon = (*thePatMuons).begin(); muon != (*thePatMuons).end(); muon++ ) {
-    if((&*muon)->pt() <5) continue; //Loose cut  on uncorrected pt 
+    if((&*muon)->pt() <0) continue; //Loose cut  on uncorrected pt 
 
     //Rochester corrections: https://twiki.cern.ch/twiki/bin/viewauth/CMS/RochcorMuon#Rochester_Correction
     //https://indico.cern.ch/event/926898/contributions/3897122/attachments/2052816/3441285/roccor.pdf
@@ -1012,6 +1014,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     
     bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>10 ;  
+    passvetoid=  (&*muon)->isStandAloneMuon() || (&*muon)->pt()>5;
     if(!passvetoid) continue;
     //Counting the number of muons, not all of them will be stored 
     _nMus++;
@@ -1023,14 +1026,24 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lpdgId.push_back(-13*(&*muon)->charge());
     _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
     _lPassLooseID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdLoose )&& (&*muon)->passed(reco::Muon::PFIsoLoose ) );
-
-    _ldz.push_back( (&*muon)->innerTrack()->dz(PV));
-    _ldzError.push_back( (&*muon)->innerTrack()->dzError());
-    _ldxy.push_back( (&*muon)->innerTrack()->dxy(PV));
-    _ldxyError.push_back( (&*muon)->innerTrack()->dxyError());
-    _l3dIP.push_back( (&*muon)->dB(pat::Muon::PV3D));
-    _l3dIPError.push_back((&*muon)->edB(pat::Muon::PV3D));
-
+    _lisSAMuon.push_back( (&*muon)->isStandAloneMuon());
+    if( !((&*muon)->innerTrack()).isNull()){
+      _ldz.push_back( (&*muon)->innerTrack()->dz(PV));
+      _ldzError.push_back( (&*muon)->innerTrack()->dzError());
+      _ldxy.push_back( (&*muon)->innerTrack()->dxy(PV));
+      _ldxyError.push_back( (&*muon)->innerTrack()->dxyError());
+      _l3dIP.push_back( (&*muon)->dB(pat::Muon::PV3D));
+      _l3dIPError.push_back((&*muon)->edB(pat::Muon::PV3D));
+    }
+    else{
+      _ldz.push_back( 0.);
+      _ldzError.push_back(0.);
+      _ldxy.push_back(0.);
+      _ldxyError.push_back(0.);
+      _l3dIP.push_back(0.);
+      _l3dIPError.push_back(0.);
+    }
+    
     hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09","hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p07",&*muon,iEvent));
     hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09","hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07",&*muon,iEvent));
     hltEle27WPTightGsfTrackIsoFilter.push_back(false);
@@ -1075,7 +1088,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _phPt.push_back( (&*photon)->pt());
     _phPtcorr.push_back( ptphotoncorr);
     _phPassTightID.push_back(passtightid);
-
+    
     
     bool passmediumiso =false;
     // bool passmediumid =false; 
@@ -2120,6 +2133,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lpdgId",&_lpdgId);
   outputTree->Branch("_lPassTightID",&_lPassTightID);
   outputTree->Branch("_lPassLooseID",&_lPassLooseID);
+  outputTree->Branch("_lisSAMuon",&_lisSAMuon);
   outputTree->Branch("_nEles", &_nEles, "_nEles/I");
   outputTree->Branch("_nMus", &_nMus, "_nMus/I");
   
@@ -2230,13 +2244,14 @@ JMEAnalyzer::beginJob()
 
   if(!IsMC_)outputTree->Branch("_l1prefire",&_l1prefire,"_l1prefire/O");
 
-  if(Skim_=="L1Unprefirable"){
+  if(Skim_=="L1Unprefirable" || Skim_==""){
   outputTree->Branch("_L1mu_Qual",&_L1mu_Qual);
   outputTree->Branch("_L1mu_pt",&_L1mu_pt);
   outputTree->Branch("_L1mu_eta",&_L1mu_eta);
   outputTree->Branch("_L1mu_phi",&_L1mu_phi);
   outputTree->Branch("_L1mu_bx",&_L1mu_bx);
   }
+  
 
   outputTree->Branch("hltEle27WPTightGsfTrackIsoFilter",&hltEle27WPTightGsfTrackIsoFilter);
   outputTree->Branch("hltEle35noerWPTightGsfTrackIsoFilter",&hltEle35noerWPTightGsfTrackIsoFilter);
@@ -2525,6 +2540,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _lpdgId.clear();
   _lPassTightID.clear();
   _lPassLooseID.clear();
+  _lisSAMuon.clear();
 
   _ldz.clear();
   _ldzError.clear();

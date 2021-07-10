@@ -4,15 +4,16 @@ TheSkim = "MCJECs"
 TheSkim = "HFJet"
 TheSkim = "L1Unprefirable"
 TheSkim = ""
+TheSkim = "MCJECs"
 
 ReclusterCHSJets = False
 ReclusterGenJets = False
 
 
 #runEra="DataUL2017F"
-runEra="MCUL2016nonAPV"
-#runEra="MCUL2018"
-#runEra="DataUL2018C"
+#runEra="MCUL2017"
+runEra="MCUL2018"
+#runEra="DataUL2018A"
 ISMC=False
 if "MC" in runEra:
     ISMC=True
@@ -23,8 +24,8 @@ UseSQLiteFiles=False
 
 
 if TheSkim == "MCJECs":
-   ReclusterCHSJets = False
-   ReclusterGenJets = False
+   ReclusterCHSJets = True
+   ReclusterGenJets = True
 
 
 import FWCore.ParameterSet.Config as cms
@@ -49,12 +50,18 @@ process.source = cms.Source("PoolSource",
 #2017
 #'/store/mc/RunIISummer19UL17MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v6-v2/100000/002C691B-A0CE-A24F-8805-03B4C52C9004.root'
 #2016
-'/store/mc/RunIISummer20UL16MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/260000/003F1A76-9CDA-7644-A34E-923C4B1C0E5E.root'
+#'/store/mc/RunIISummer20UL16MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/260000/003F1A76-9CDA-7644-A34E-923C4B1C0E5E.root'
 
 #Data
 #'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/270000/527C5A3A-7C09-4F42-B9DA-A84871504EBF.root'
 #'/store/data/Run2018A/DoubleMuon/MINIAOD/12Nov2019_UL2018-v2/270000/F0CC36DA-D61E-0F4B-BAF4-1FF8913DBB78.root'
+'file:/user/lathomas/SUSYSSDilepton/new/New/CMSSW_10_6_23/src/pickevents_2018a.root',
+'file:/user/lathomas/SUSYSSDilepton/new/New/CMSSW_10_6_23/src/pickevents_2018b.root',
+'file:/user/lathomas/SUSYSSDilepton/new/New/CMSSW_10_6_23/src/pickevents_2018c.root',
+'file:/user/lathomas/SUSYSSDilepton/new/New/CMSSW_10_6_23/src/pickevents_2018d.root'
 
+
+#'/store/data/Run2016E/JetHT/MINIAOD/21Feb2020_UL2016_HIPM-v1/10000/30434744-4792-9C4F-A1D3-87ACE1D2E6E0.root'
 #Here's a MINIAOD file on lxplus in case you want to use a local sample
 #'file:/afs/cern.ch/work/l/lathomas/public/qcdht1000to1500_1.root'
         )
