@@ -42,6 +42,7 @@
 #include "DataFormats/VertexReco/interface/Vertex.h"
 
 #include "DataFormats/L1TGlobal/interface/GlobalAlgBlk.h"
+#include "DataFormats/L1TGlobal/interface/GlobalExtBlk.h"
 
 #include "DataFormats/JetReco/interface/GenJet.h"
 #include "SimDataFormats/GeneratorProducts/interface/GenEventInfoProduct.h"
@@ -199,6 +200,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> trigobjectToken_;
   edm::EDGetTokenT<BXVector<GlobalAlgBlk>> l1GtToken_;
   edm::EDGetTokenT<l1t::MuonBxCollection>l1MuonToken_;
+  edm::EDGetTokenT<GlobalExtBlkBxCollection> UnprefirableEventToken_;
 
   Float_t JetPtCut_;
   Float_t AK8JetPtCut_;
@@ -266,6 +268,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool PassecalLaserCorrFilter_Update;  
   bool PassEcalDeadCellBoundaryEnergyFilter_Update;
   bool PassBadChargedCandidateFilter_Update;
+  bool Flag_IsUnprefirable;
 
   //AK4 CHS Jets 
   vector<Float_t>  _jetEta;
@@ -655,6 +658,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   trigobjectToken_(consumes<pat::TriggerObjectStandAloneCollection>(edm::InputTag("slimmedPatTrigger"))),
   l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
   l1MuonToken_(consumes<l1t::MuonBxCollection>(edm::InputTag("gmtStage2Digis","Muon"))),
+  UnprefirableEventToken_(consumes<GlobalExtBlkBxCollection>(edm::InputTag("simGtExtUnprefireable"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
   AK8JetPtCut_(iConfig.getParameter<double>("AK8JetPtCut")),
   ElectronPtCut_(iConfig.getParameter<double>("ElectronPtCut")),
@@ -841,6 +845,15 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   }
   
 
+  //Unprefirable
+  Flag_IsUnprefirable = false;
+  edm::Handle<GlobalExtBlkBxCollection> handleUnprefEventResults;
+  iEvent.getByToken(UnprefirableEventToken_, handleUnprefEventResults);
+  if(handleUnprefEventResults.isValid()){
+    if (handleUnprefEventResults->size() != 0) {
+      Flag_IsUnprefirable = handleUnprefEventResults->at(0, 0).getExternalDecision(GlobalExtBlk::maxExternalConditions - 1);
+    }
+  }
 
   
   //Vertices
@@ -1903,7 +1916,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_rho", &_rho, "_rho/f");
   outputTree->Branch("_rhoNC", &_rhoNC, "_rhoNC/f");
   
-
+  outputTree->Branch("Flag_IsUnprefirable",&Flag_IsUnprefirable,"Flag_IsUnprefirable/O");
   outputTree->Branch("Flag_goodVertices",&Flag_goodVertices,"Flag_goodVertices/O");
   outputTree->Branch("Flag_globalTightHalo2016Filter",&Flag_globalTightHalo2016Filter,"Flag_globalTightHalo2016Filter/O");
   outputTree->Branch("Flag_globalSuperTightHalo2016Filter",&Flag_globalSuperTightHalo2016Filter,"Flag_globalSuperTightHalo2016Filter/O");
