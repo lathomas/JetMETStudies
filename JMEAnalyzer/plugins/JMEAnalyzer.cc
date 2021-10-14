@@ -1217,7 +1217,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	updatedgenjetwithnu = ( (*genJetWithNuMatch)[jetRef].isNonnull() && (*genJetWithNuMatch)[jetRef].isAvailable()) ? &*(*genJetWithNuMatch)[jetRef] : 0;
       }
  
-      const reco::GenJet * genjet = useupdategenjets?updatedgenjet: (&*jet) ->genJet()  ;
+      const reco::GenJet * genjet = updatedgenjet != 0 ? updatedgenjet : (&*jet) ->genJet()  ;
       Float_t jetptgen(-99.), jetetagen(-99.),jetphigen(-99.);
       Float_t jetptgenwithnu(-99.);
       if( genjet !=0 ){

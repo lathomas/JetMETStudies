@@ -3,7 +3,7 @@ TheSkim = "ZJetsResiduals"
 TheSkim = "MCJECs" 
 TheSkim = "HFJet"
 TheSkim = "L1Unprefirable"
-TheSkim = ""
+TheSkim = "ZJetsResiduals"
 #TheSkim = "MCJECs"
 
 ReclusterCHSJets = False
@@ -11,9 +11,9 @@ ReclusterGenJets = False
 
 
 #runEra="DataUL2017F"
-#runEra="MCUL2017"
+runEra="MCUL2017"
 #runEra="MCUL2018"
-runEra="DataUL2018D"
+#runEra="DataUL2018D"
 ISMC=False
 if "MC" in runEra:
     ISMC=True
@@ -35,7 +35,7 @@ process = cms.Process("Demo")
 process.load("FWCore.MessageService.MessageLogger_cfi")
 process.MessageLogger.cerr.FwkReport.reportEvery = 1000
 
-process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(10000) )  
+process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )  
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(23374) )  
 
 from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
@@ -52,13 +52,14 @@ process.source = cms.Source("PoolSource",
 #2016
 #'/store/mc/RunIISummer20UL16MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mcRun2_asymptotic_v13-v2/260000/003F1A76-9CDA-7644-A34E-923C4B1C0E5E.root'
 
+'/store/mc/RunIISummer20UL17MiniAODv2/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_mc2017_realistic_v9-v2/250000/EBB47EA5-4B28-7B42-BFC8-C0F75800C7AC.root'
 #'/store/mc/RunIISummer20UL18MiniAODv2/QCD_bEnriched_HT100to200_TuneCP5_13TeV-madgraph-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/120000/09FB91A8-7902-AF42-AFEC-AFB6A294955E.root'
 #'/store/mc/RunIISummer19UL18MiniAODv2/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/MINIAODSIM/FlatPU0to70_106X_upgrade2018_realistic_v16_L1v1-v1/280000/0024EE42-B032-5E49-A78D-152B70540F9C.root'
 
 
 #'/store/mc/RunIISummer20UL18MiniAODv2/QCD_bEnriched_HT2000toInf_TuneCP5_13TeV-madgraph-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/110000/C46792AE-B560-3541-B67A-DD73050C49A8.root'
 
-'/store/data/Run2018D/DoubleMuon/MINIAOD/UL2018_MiniAODv2-v1/270002/152AABA5-91A3-9F4B-82BE-654A96DEAE98.root'
+#'/store/data/Run2018D/DoubleMuon/MINIAOD/UL2018_MiniAODv2-v1/270002/152AABA5-91A3-9F4B-82BE-654A96DEAE98.root'
 #Data
 #'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/270000/527C5A3A-7C09-4F42-B9DA-A84871504EBF.root'
 #'/store/data/Run2018A/DoubleMuon/MINIAOD/12Nov2019_UL2018-v2/270000/F0CC36DA-D61E-0F4B-BAF4-1FF8913DBB78.root'
@@ -728,6 +729,7 @@ from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
 from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
 
 #Rerunning PUPPi with v15 tune
+'''
 process.ak4PuppiJets  = ak4PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
 addJetCollection(process,labelName = 'Puppi', jetSource = cms.InputTag('ak4PuppiJets'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag(GenJetCollectionName), jetCorrections = ('AK4PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('packedPFCandidates'),
                  pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
@@ -745,7 +747,7 @@ from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV15
 
 patAlgosToolsTask.add(process.ak4PuppiJets)
 UpdatePuppiTuneV15(process,ISMC)
-
+'''
 
 #Now doing PF jets (not CHS). Those are not in MINIAOD
 process.ak4PFJetsBis  = ak4PFJets.clone (src = 'packedPFCandidates', doAreaFastjet = True, jetPtMin = 2.)
