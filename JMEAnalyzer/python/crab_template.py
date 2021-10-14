@@ -3,7 +3,7 @@ from CRABClient.UserUtilities import config
 config = config()
 
 config.General.requestName = 'THEREQUESTNAME'
-config.General.workArea = 'crabworkarea_Oct2021'
+config.General.workArea = 'crabworkarea_October2021'
 config.General.transferOutputs = True
 config.General.transferLogs = True
 
@@ -14,9 +14,10 @@ config.JobType.outputFiles = ['output.root']
 config.JobType.maxJobRuntimeMin = 1000
 config.JobType.maxMemoryMB = 2500
 config.JobType.inputFiles = [
-'Summer16_07Aug2017_V11_MC.db','Summer16_07Aug2017All_V11_DATA.db','Summer16_25nsV1b_MC.db','Summer16_25nsV1b_DATA.db',
-'Fall17_17Nov2017_V32_102X_MC.db','Fall17_17Nov2017_V32_102X_DATA.db','Fall17_V3b_MC.db','Fall17_V3b_DATA.db',
-'Autumn18_V19_MC.db','Autumn18_RunABCD_V19_DATA.db','Autumn18_V7b_MC.db','Autumn18_V7b_DATA.db',
+#'Summer16_07Aug2017_V11_MC.db','Summer16_07Aug2017All_V11_DATA.db','Summer16_25nsV1b_MC.db','Summer16_25nsV1b_DATA.db',
+#'Fall17_17Nov2017_V32_102X_MC.db','Fall17_17Nov2017_V32_102X_DATA.db','Fall17_V3b_MC.db','Fall17_V3b_DATA.db',
+#'Autumn18_V19_MC.db','Autumn18_RunABCD_V19_DATA.db','Autumn18_V7b_MC.db','Autumn18_V7b_DATA.db',
+'*UL*.db',
 'Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt',
 'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt',
 'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt',
