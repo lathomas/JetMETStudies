@@ -14,8 +14,8 @@ if TheSkim == "FourLeptons":
     ReclusterGenJets = False
 
 if TheSkim == "MCJECs":
-   ReclusterCHSJets = False
-   ReclusterGenJets = False
+   ReclusterCHSJets = True
+   ReclusterGenJets = True
 
 
 import FWCore.ParameterSet.Config as cms
@@ -682,11 +682,14 @@ runMetCorAndUncFromMiniAOD(process,
                            )
 '''
 
-#Rerunning PUPPi with v15 tune
-from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
-process.ak4PuppiJets  = ak4PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
 
+
+from RecoJets.JetProducers.ak4PFJets_cfi import ak4PFJets
 from PhysicsTools.PatAlgos.tools.jetTools import addJetCollection
+
+'''
+#Rerunning PUPPi with v15 tune
+process.ak4PuppiJets  = ak4PFJets.clone (src = 'puppi', doAreaFastjet = True, jetPtMin = 2.)
 addJetCollection(process,labelName = 'Puppi', jetSource = cms.InputTag('ak4PuppiJets'), algo = 'AK', rParam=0.4, genJetCollection=cms.InputTag(GenJetCollectionName), jetCorrections = ('AK4PFPuppi', ['L1FastJet', 'L2Relative', 'L3Absolute','L2L3Residual'], 'None'),pfCandidates = cms.InputTag('packedPFCandidates'),
                  pvSource = cms.InputTag('offlineSlimmedPrimaryVertices'),
                  svSource = cms.InputTag('slimmedSecondaryVertices'),
@@ -703,6 +706,7 @@ from CommonTools.PileupAlgos.customizePuppiTune_cff import UpdatePuppiTuneV15
 
 patAlgosToolsTask.add(process.ak4PuppiJets)
 UpdatePuppiTuneV15(process,ISMC)
+'''
 
 #Now doing PF jets (not CHS). Those are not in MINIAOD
 process.ak4PFJetsBis  = ak4PFJets.clone (src = 'packedPFCandidates', doAreaFastjet = True, jetPtMin = 2.)

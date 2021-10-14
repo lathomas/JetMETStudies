@@ -3,7 +3,7 @@ from CRABClient.UserUtilities import config
 config = config()
 
 config.General.requestName = 'THEREQUESTNAME'
-config.General.workArea = 'crabworkarea_May2021'
+config.General.workArea = 'crabworkarea_Oct2021'
 config.General.transferOutputs = True
 config.General.transferLogs = True
 

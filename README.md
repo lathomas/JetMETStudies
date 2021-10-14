@@ -31,3 +31,17 @@ For that file, please set
 ```
 runEra=MCUL2017
 ```
+
+
+One can send jobs through crabs by using the SubmitToCrab.sh. For example: 
+```
+sh SubmitToCrab.sh /DoubleMuon/Run2018A-UL2018_MiniAODv2-v1/MINIAOD doublemuon2018a 1 ZJetsResiduals DataUL2018A
+sh SubmitToCrab.sh /DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/RunIISummer20UL18MiniAODv2-106X_upgrade2018_realistic_v16_L1v1-v2/MINIAODSIM dyamcatnlo2018  1 ZJetsResiduals MCUL2018
+```
+
+Arguments are (in that order):
+- dataset name
+- local folder for crab 
+- files per job 
+- skim name
+- Label specifying era (for reapplying JECs etc)
