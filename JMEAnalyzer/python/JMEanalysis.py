@@ -4,7 +4,7 @@ TheSkim = "MCJECs"
 TheSkim = "HFJet"
 TheSkim = "L1Unprefirable"
 TheSkim = "ZJetsResiduals"
-#TheSkim = "MCJECs"
+TheSkim = "MCJECs"
 
 ReclusterCHSJets = False
 ReclusterGenJets = False
@@ -696,12 +696,12 @@ matched     = cms.InputTag("ak4GenJetsNoNuNEW")
 from PhysicsTools.PatUtils.tools.runMETCorrectionsAndUncertainties import runMetCorAndUncFromMiniAOD
 
 #Recompute PFMET (with updated JECs)
-'''
+
 runMetCorAndUncFromMiniAOD (
     process,
     isData = not ISMC
 )
-'''
+
 
 
 '''
