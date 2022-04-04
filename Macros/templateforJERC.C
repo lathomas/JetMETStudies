@@ -5,7 +5,7 @@
 #include <TCanvas.h>
 #include "TrueNvtxReweighting.h"
 #include <iostream>
-
+#include <TVector2.h>
 
 /*  !!!!!
 
@@ -335,6 +335,8 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
   TH1D *  h_PtRecoJetoverPtGenJet[Nptbins][Netabins][3]; // Here the Nptbins is a binning on reco Zpt or reco jet pt
   TH1D *  h_PtRecoJetoverPtGenJet_GentPtBinning[Nptbins][Netabins][3]; //  Here the Nptbins is a binning on gen jet pt 
   
+  TH1D *  h_upar_CHSMET[Nptbins][Netabins][3]; 
+  TH1D *  h_upar_PFMET[Nptbins][Netabins][3]; 
 
   
   //Jet reco pt distribution for PU events. This is used for building h_PtRecoJetoverPtRecoZ_PU.
@@ -402,7 +404,10 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
 	h_PtRecoZoverPtGenZ[i][j][k] =new TH1D("h_PtRecoZoverPtGenZ"+suffix_etaptbin,"",1000,0,5);
 	h_PtRecoJetoverPtGenJet[i][j][k] =new TH1D("h_PtRecoJetoverPtGenJet"+suffix_etaptbin,"",2000,0,2);
 	
+	h_upar_CHSMET[i][j][k] =new TH1D("h_upar_CHSMET"+suffix_etaptbin,"",2000,-5,5);
+	h_upar_PFMET[i][j][k] =new TH1D("h_upar_PFMET"+suffix_etaptbin,"",2000,-5,5);
 	
+
 	suffix_etaptbin = "_pt"+ptmin_str + "to"+ptmax_str + "_eta"+ etamin_str+ "to"+etamax_str ;
 	h_PtRecoJetoverPtGenJet_GentPtBinning[i][j][k] =new TH1D("h_PtRecoJetoverPtGenJet_GentPtBinning"+suffix_etaptbin+"_"+pubin[k],"",1000,0,5);
 	
@@ -414,6 +419,11 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
 	h_PtRecoZoverPtGenZ[i][j][k]->Sumw2();
 	h_PtRecoJetoverPtGenJet[i][j][k]->Sumw2();
 	h_PtRecoJetoverPtGenJet_GentPtBinning[i][j][k]->Sumw2();
+
+
+	h_upar_CHSMET[i][j][k]->Sumw2();
+	h_upar_PFMET[i][j][k]->Sumw2();
+
       }
     }
   }
@@ -423,7 +433,16 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
   //When useresiduals = false, only MC JECs are applied to data (and not the residuals). In that case, the attempt is to derive both residuals JES and JERSF. 
   //For now keep using useresiduals = true and focus on JER SF on fully calibrated jets
   Init(thetree,useresiduals);
-  
+
+
+  //Retrieve weights for MC
+  TH1D * hCounter;
+  double EventsTimesWeight =1;
+  if(samplename.Index("MC")>=0){
+    hCounter = (TH1D*)myf->Get("jmeanalyzer/hCounter");
+    EventsTimesWeight = hCounter->GetBinContent(1);
+  }
+
   //Some counters
   int ctr_nomatchedjet(0), ctr_nomatchedl(0);
   int ctr_all(0);
@@ -438,6 +457,7 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
     thetree->GetEntry(jentry);
     ShiftSyst(unctytype);//Shift a given value to its up/down variation
     double totweight=1;
+    if(samplename.Index("MC")>=0) totweight *=  _weight /EventsTimesWeight; 
     //PU reweighting. No reweighting for UL right now (to be added, small effect anyways)
     if( samplename.Index("UL2017")>=0 &&samplename.Index("MC")>=0 ) totweight*=1;
     else if( samplename.Index("UL2018")>=0 &&samplename.Index("MC")>=0 ) totweight*=1;
@@ -530,6 +550,7 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
     thetree->GetEntry(jentry);
     ShiftSyst(unctytype);
     double totweight=1;
+    if(samplename.Index("MC")>=0) totweight *=  _weight /EventsTimesWeight; 
     //PU reweighting. No reweighting for UL right now (to be added, small effect anyways)
     if( samplename.Index("UL2017")>=0 &&samplename.Index("MC")>=0 ) totweight*=1;
     else if( samplename.Index("UL2018")>=0 &&samplename.Index("MC")>=0 ) totweight*=1;
@@ -679,6 +700,15 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
 	    if( (*_jetPtGen)[idxj] !=0 )  h_PtRecoJetoverPtGenJet[thebinpt][thebineta][k]->Fill( (*_jetPt)[idxj]/ (*_jetPtGen)[idxj] ,totweight);
 	}
 
+	//Checking the MET projection for events with ptbalance>0.7
+	if((*_jetPt)[idxj] / p4dilepton.Pt()> 0.7){
+	  double upar(0.),uperp(0.);
+	  GetRecoilProjections(_met,_met_phi,p4dilepton.Pt(), p4dilepton.Phi(),upar,uperp, "PFMET");
+	  h_upar_CHSMET[thebinpt][thebineta][k]->Fill(upar / p4dilepton.Pt()-1 ,totweight);
+	  GetRecoilProjections(_chsmet,_chsmet_phi,p4dilepton.Pt(), p4dilepton.Phi(),upar,uperp, "CHSMET");
+	  h_upar_PFMET[thebinpt][thebineta][k]->Fill(upar /p4dilepton.Pt()-1 ,totweight);
+	}
+
       }
       if(isMC&& (*_jetPtGen)[idxj] !=0 ){//gen matched jet
 	FindEtaPtbin( (*_jetPtGen)[idxj]  ,(*_jetEta)[idxj], thebinpt,thebineta);
@@ -737,6 +767,10 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
 	     h_PtRecoJetoverPtGenJet[i][j][k]->Write();
 	     h_PtGenJetoverPtGenZ[i][j][k]->Write(); 
 	   }
+
+	   h_upar_CHSMET[i][j][k]->Write();
+	   h_upar_PFMET[i][j][k]->Write();
+
 	 }	   
 	 if(k==3&&isMC) {
 	   for(int l=0; l<3 ;l++) h_PtRecoJetoverPtGenJet_GentPtBinning[i][j][l]->Write();
@@ -1114,3 +1148,30 @@ void templateforJERC::ShiftSyst(TString unctytype){
 
 
 }
+
+
+void templateforJERC::GetRecoilProjections(double TheMET, double TheMETphi, double zpt, double zphi, double &upar, double &uperp, TString hname){
+
+
+
+  TVector2 TV2_met;
+  TV2_met.SetMagPhi(TheMET,TheMETphi);
+  TVector2 TV2_ptZ;
+  TV2_ptZ.SetMagPhi(zpt,zphi);
+
+  TVector2 ut_vec(0.,0.);
+  ut_vec -=  ( TV2_met+ TV2_ptZ);
+
+
+upar = (ut_vec.Proj(TV2_ptZ)).Mod();
+if(  fabs(acos(cos(TV2_ptZ.Phi()-(ut_vec.Proj(TV2_ptZ)).Phi())))  < 1) upar = -upar;
+
+TVector2 perpdir = TV2_ptZ.Rotate(3.14159265/2);
+
+uperp =  (ut_vec.Proj(perpdir)).Mod();
+if( sin ( TV2_ptZ.Phi()-(ut_vec.Proj(perpdir)).Phi() ) >0 ) uperp =  -uperp;
+
+
+
+}
+

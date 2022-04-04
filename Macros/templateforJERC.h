@@ -101,6 +101,7 @@ public :
    Bool_t          HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8;
    Bool_t          HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL;
    Bool_t          HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ;
+   Double_t        _weight;
 
    // List of branches
    TBranch        *b__jetEta;   //!
@@ -178,7 +179,7 @@ public :
    TBranch        *b_HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8;   //!
    TBranch        *b_HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL;   //!
    TBranch        *b_HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ;   //!
-
+   TBranch        *b__weight;
    templateforJERC(TTree *tree=0);
    virtual ~templateforJERC();
    virtual Int_t    Cut(Long64_t entry);
@@ -197,7 +198,7 @@ public :
    
    virtual TLorentzVector GenLP4(int irecol);
    virtual void ShiftSyst(TString unctytype);
-
+   virtual void GetRecoilProjections(double TheMET, double TheMETphi, double zpt, double zphi, double &upar, double &uperp, TString hname);
    virtual Bool_t   Notify();
    virtual void     Show(Long64_t entry = -1);
 
@@ -367,9 +368,10 @@ void templateforJERC::Init(TTree *tree, bool useresiduals)
    fChain->SetBranchAddress("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8", &HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8, &b_HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8);
    fChain->SetBranchAddress("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL", &HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL, &b_HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL);
    fChain->SetBranchAddress("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ", &HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ, &b_HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ);
-
+   fChain->SetBranchAddress("_weight", &_weight, &b__weight);
    
    fChain->SetBranchStatus("*",0);
+   fChain->SetBranchStatus("*met*",1);
    fChain->SetBranchStatus("_lpdgId",1);
    fChain->SetBranchStatus("_lPassTightID",1);
    fChain->SetBranchStatus("_lPassLooseID",1);
@@ -394,7 +396,7 @@ void templateforJERC::Init(TTree *tree, bool useresiduals)
    fChain->SetBranchStatus("_rho",1);
    fChain->SetBranchStatus("_eventNb",1);
    fChain->SetBranchStatus("trueNVtx",1);
-
+   fChain->SetBranchStatus("_weight",1);
 
 
 
