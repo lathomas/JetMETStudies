@@ -2,8 +2,8 @@ from CRABClient.UserUtilities import config
 config = config()
 
 
-config.General.requestName = 'therequest'
-config.General.workArea = 'crabworkarea'
+config.General.requestName = 'l1unpref_2018c'
+config.General.workArea = 'crabworkareanew'
 config.General.transferOutputs = True
 config.General.transferLogs = True
 
@@ -19,16 +19,19 @@ config.JobType.inputFiles = [
 'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt',
 'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt',
 'RochesterCorrections',
-'UnprefireableEventList'
+'UnprefireableEventList',
+'*UL*.db'
 ]
-config.Data.inputDataset = '/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/RunIISummer19UL17MiniAOD-FlatPU0to70_106X_mc2017_realistic_v6-v3/MINIAODSIM'
+#config.Data.inputDataset = '/QCD_Pt-15to7000_TuneCP5_Flat2018_13TeV_pythia8/RunIISummer19UL17MiniAOD-FlatPU0to70_106X_mc2017_realistic_v6-v3/MINIAODSIM'
+config.Data.inputDataset = '/JetHT/Run2018C-UL2018_MiniAODv2-v1/MINIAOD'
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'FileBased'
-config.Data.unitsPerJob = 1
+config.Data.unitsPerJob = 10
 
 config.Data.allowNonValidInputDataset = True
 config.Data.publication = True
-config.Data.outputDatasetTag = 'RunIISummer19UL17MiniAOD-FlatPU0to70_106X_mc2017_realistic_v6-v3_PuppiV15_Pt2'
+#config.Data.outputDatasetTag = 'RunIISummer19UL17MiniAOD-FlatPU0to70_106X_mc2017_realistic_v6-v3_PuppiV15_Pt2'
+config.Data.outputDatasetTag = 'L1UnprefirableEvents'
 
 config.Site.storageSite = 'T2_BE_IIHE'
 config.Site.blacklist = ['T2_US_Vanderbilt','T1_IT_CNAF']

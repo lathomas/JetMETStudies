@@ -15,6 +15,8 @@
 #include "JetMETCorrections/Objects/interface/JetCorrectionsRecord.h"
 #include "CondFormats/JetMETObjects/interface/FactorizedJetCorrector.h"
 #include "DataFormats/L1Trigger/interface/Muon.h"
+#include "DataFormats/L1Trigger/interface/EGamma.h"
+#include "DataFormats/L1Trigger/interface/Jet.h"
 #include "DataFormats/L1Trigger/interface/BXVector.h"
 
 
@@ -34,6 +36,7 @@
 
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
+#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
@@ -183,6 +186,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<std::vector< pat::Photon> > photonToken_;
 
   edm::EDGetTokenT<GenParticleCollection> genpartToken_;
+  edm::EDGetTokenT<std::vector< pat::PackedGenParticle>> packedgenpartToken_;
+
   edm::EDGetTokenT<GenEventInfoProduct> geninfoToken_;
   edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
   edm::EDGetTokenT<LHEEventProduct> lheEventALTToken_;
@@ -200,6 +205,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<pat::TriggerObjectStandAloneCollection> trigobjectToken_;
   edm::EDGetTokenT<BXVector<GlobalAlgBlk>> l1GtToken_;
   edm::EDGetTokenT<l1t::MuonBxCollection>l1MuonToken_;
+  edm::EDGetTokenT<l1t::EGammaBxCollection>l1EGammaToken_;
+  edm::EDGetTokenT<l1t::JetBxCollection>l1JetToken_;
   edm::EDGetTokenT<GlobalExtBlkBxCollection> UnprefirableEventToken_;
 
   Float_t JetPtCut_;
@@ -505,6 +512,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   //GenMET
   Float_t _genmet;
   Float_t _genmet_phi;
+  Float_t _genptvec;
+  Float_t _genptscal;
 
   //Triggers
   bool HLT_Photon110EB_TightID_TightIso;
@@ -595,6 +604,19 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector <Float_t> _L1mu_phi;
   vector <int> _L1mu_bx;
 
+  //L1 EG
+  vector <Float_t> _L1eg_pt;
+  vector <Float_t> _L1eg_eta;
+  vector <Float_t> _L1eg_phi;
+  vector <int> _L1eg_bx;
+
+  //L1 jet 
+  vector <Float_t> _L1jet_pt;
+  vector <Float_t> _L1jet_eta;
+  vector <Float_t> _L1jet_phi;
+  vector <int> _L1jet_bx;
+
+
   //Rochester correction (for muons)
   RoccoR rc; 
   //JEC uncertainties
@@ -645,6 +667,8 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   muonToken_(consumes< std::vector< pat::Muon> >(iConfig.getParameter<edm::InputTag>("Muons"))),
   photonToken_(consumes< std::vector< pat::Photon> >(iConfig.getParameter<edm::InputTag>("Photons"))),
   genpartToken_(consumes<GenParticleCollection> (iConfig.getParameter<edm::InputTag>("GenParticles"))),
+  packedgenpartToken_(consumes<std::vector< pat::PackedGenParticle>>(iConfig.getParameter<edm::InputTag>("PackedGenParticles"))),
+ 
   geninfoToken_(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("GenInfo"))),
   lheEventToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabel"))),
   lheEventALTToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabelALT"))),
@@ -658,6 +682,8 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   trigobjectToken_(consumes<pat::TriggerObjectStandAloneCollection>(edm::InputTag("slimmedPatTrigger"))),
   l1GtToken_(consumes<BXVector<GlobalAlgBlk>>(iConfig.getParameter<edm::InputTag>("l1GtSrc"))),
   l1MuonToken_(consumes<l1t::MuonBxCollection>(edm::InputTag("gmtStage2Digis","Muon"))),
+  l1EGammaToken_(consumes<l1t::EGammaBxCollection>(edm::InputTag("caloStage2Digis","EGamma"))),
+  l1JetToken_(consumes<l1t::JetBxCollection>(edm::InputTag("caloStage2Digis","Jet"))),
   UnprefirableEventToken_(consumes<GlobalExtBlkBxCollection>(edm::InputTag("simGtExtUnprefireable"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
   AK8JetPtCut_(iConfig.getParameter<double>("AK8JetPtCut")),
@@ -843,7 +869,34 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _L1mu_bx.push_back( i);
     }
   }
-  
+
+  //L1 eg
+  edm::Handle<l1t::EGammaBxCollection> l1egcoll;
+  iEvent.getByToken(l1EGammaToken_ , l1egcoll);
+  for(int i = l1egcoll->getFirstBX() ; i<= l1egcoll->getLastBX() ;i++){
+    for( l1t::EGammaBxCollection::const_iterator l1egit= l1egcoll->begin(i); l1egit != l1egcoll->end(i) ; ++l1egit){
+      if(l1egit->pt()<5) continue;
+      _L1eg_pt.push_back( l1egit->pt() );
+      _L1eg_eta.push_back( l1egit->eta() );
+      _L1eg_phi.push_back( l1egit->phi() );
+      _L1eg_bx.push_back( i);
+    }
+  }
+
+  //L1 jet
+  edm::Handle<l1t::JetBxCollection> l1jetcoll;
+  iEvent.getByToken(l1JetToken_ , l1jetcoll);
+  for(int i = l1jetcoll->getFirstBX() ; i<= l1jetcoll->getLastBX() ;i++){
+    for( l1t::JetBxCollection::const_iterator l1jetit= l1jetcoll->begin(i); l1jetit != l1jetcoll->end(i) ; ++l1jetit){
+      if(l1jetit->pt()<10) continue;
+      _L1jet_pt.push_back( l1jetit->pt() );
+      _L1jet_eta.push_back( l1jetit->eta() );
+      _L1jet_phi.push_back( l1jetit->phi() );
+      _L1jet_bx.push_back( i);
+    }
+  }
+
+
 
   //Unprefirable
   Flag_IsUnprefirable = false;
@@ -854,6 +907,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       Flag_IsUnprefirable = handleUnprefEventResults->at(0, 0).getExternalDecision(GlobalExtBlk::maxExternalConditions - 1);
     }
   }
+
+  if(Skim_=="L1Unprefirable" && !PassSkim() )  return; 
 
   
   //Vertices
@@ -1659,21 +1714,46 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
   //Gen particle info
+
+  _genptvec = 0;
+  _genptscal = 0;
+  TLorentzVector GenP4;
+  GenP4.SetPtEtaPhiE( 0, 0, 0, 0);
+
+  edm::Handle<std::vector< pat::PackedGenParticle>> gencands;
+  iEvent.getByToken(packedgenpartToken_ ,gencands);
+  for( std::vector<pat::PackedGenParticle>::const_iterator p = (*gencands).begin(); p != (*gencands).end(); p++ ) {
+    if(p->status() == 1  ){//p->status() == 1 alone doesn't work, MET is 73 ! Same when adding  && p->isLastCopy()
+      TLorentzVector Gen;
+      Gen.SetPtEtaPhiE( p->pt(), p->eta(), p->phi(), p->energy() );
+      GenP4 += Gen;
+      _genptscal+=p->pt();
+    }
+
+  }
+
+
   edm::Handle<GenParticleCollection> TheGenParticles;
   iEvent.getByToken(genpartToken_, TheGenParticles);
   TLorentzVector Gen0;
   Gen0.SetPtEtaPhiE( 0, 0, 0, 0);
+
   _genHT = 0;
+
   if(TheGenParticles.isValid()){
     for(GenParticleCollection::const_reverse_iterator p = TheGenParticles->rbegin() ; p != TheGenParticles->rend() ; p++ ) {
+
+
+      
       int id = TMath::Abs(p->pdgId());
-      /*      if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id== 6 || id == 21 || id == 22 ) ) cout << "p ID, status, pt, eta, phi " << 
-	      p->pdgId() <<", "<<
-	      p->status() <<", "<<
-	      p->pt() <<", "<<
-	      p->eta() <<", "<<
-	      p->phi() <<
-	      endl;
+      /*     if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id== 6 || id == 21 || id == 22 ) ) 
+      cout << "p ID, status, pt, eta, phi " << 
+	p->pdgId() <<", "<<
+	p->status() <<", "<<
+	p->pt() <<", "<<
+	p->eta() <<", "<<
+	p->phi() <<
+	endl;
       */
       if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id == 21 || id == 22 ) && (p->status() == 23&& TMath::Abs(p->mother()->pdgId())!=6 &&TMath::Abs(p->mother()->pdgId())!=24 )){
 	_genHT += p->pt();
@@ -1726,6 +1806,11 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     
 
   }
+  else{
+    cout <<"TheGenParticles.isValid() is false " <<endl;
+  }
+
+  _genptvec = GenP4.Pt();
   if (Gen0.E()!=0) {
     _genmet = Gen0.Pt();
     _genmet_phi = Gen0.Phi();
@@ -2094,6 +2179,10 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_genmet", &_genmet, "_genmet/f");
   outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
   outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
+
+  outputTree->Branch("_genptvec", &_genptvec, "_genptvec/f");
+  outputTree->Branch("_genptscal", &_genptscal, "_genptscal/f");
+
   }
   outputTree->Branch("_met", &_met, "_met/f");
   outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
@@ -2263,6 +2352,18 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_L1mu_eta",&_L1mu_eta);
   outputTree->Branch("_L1mu_phi",&_L1mu_phi);
   outputTree->Branch("_L1mu_bx",&_L1mu_bx);
+
+  outputTree->Branch("_L1eg_pt",&_L1eg_pt);
+  outputTree->Branch("_L1eg_eta",&_L1eg_eta);
+  outputTree->Branch("_L1eg_phi",&_L1eg_phi);
+  outputTree->Branch("_L1eg_bx",&_L1eg_bx);
+
+
+  outputTree->Branch("_L1jet_pt",&_L1jet_pt);
+  outputTree->Branch("_L1jet_eta",&_L1jet_eta);
+  outputTree->Branch("_L1jet_phi",&_L1jet_phi);
+  outputTree->Branch("_L1jet_bx",&_L1jet_bx);
+
   }
   
 
@@ -2616,6 +2717,15 @@ void JMEAnalyzer::InitandClearStuff(){
   _L1mu_phi.clear();
   _L1mu_bx.clear();
 
+  _L1eg_pt.clear();
+  _L1eg_eta.clear();
+  _L1eg_phi.clear();
+  _L1eg_bx.clear();
+
+  _L1jet_pt.clear();
+  _L1jet_eta.clear();
+  _L1jet_phi.clear();
+  _L1jet_bx.clear();
 
 
   HLT_Photon110EB_TightID_TightIso=false;
@@ -2723,6 +2833,9 @@ bool JMEAnalyzer::PassSkim(){
   }
   else if(Skim_=="HighHT") return (HLT_PFHT1050 || HLT_PFHT900 || HLT_PFJet500 || HLT_AK8PFJet500) ; 
   else if(Skim_=="L1Unprefirable" ){
+    if (Flag_IsUnprefirable) return true;
+    else return false;
+
     std::string str_run = std::to_string(_runNb);
     std::string str_lumi = std::to_string(_lumiBlock);
     std::string str_event = std::to_string(_eventNb);
