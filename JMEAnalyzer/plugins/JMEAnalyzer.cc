@@ -1892,6 +1892,7 @@ JMEAnalyzer::beginJob()
       outputTree->Branch("_puppijetPtGen",&_puppijetPtGen);
       outputTree->Branch("_puppijetPtGenWithNu",&_puppijetPtGenWithNu);
       outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
+      outputTree->Branch("_weight",&_weight,"_weight/f");
       outputTree->Branch("_genmet", &_genmet, "_genmet/f");
       outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
       outputTree->Branch("_jetJECuncty",&_jetJECuncty); 
