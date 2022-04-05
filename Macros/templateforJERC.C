@@ -457,7 +457,7 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
     thetree->GetEntry(jentry);
     ShiftSyst(unctytype);//Shift a given value to its up/down variation
     double totweight=1;
-    if(samplename.Index("MC")>=0) totweight *=  _weight /EventsTimesWeight; 
+    //if(samplename.Index("MC")>=0) totweight *=  _weight /EventsTimesWeight;  // to be uncommented
     //PU reweighting. No reweighting for UL right now (to be added, small effect anyways)
     if( samplename.Index("UL2017")>=0 &&samplename.Index("MC")>=0 ) totweight*=1;
     else if( samplename.Index("UL2018")>=0 &&samplename.Index("MC")>=0 ) totweight*=1;
@@ -704,9 +704,9 @@ void templateforJERC::Loop(TString samplename, bool useresiduals,  TString uncty
 	if((*_jetPt)[idxj] / p4dilepton.Pt()> 0.7){
 	  double upar(0.),uperp(0.);
 	  GetRecoilProjections(_met,_met_phi,p4dilepton.Pt(), p4dilepton.Phi(),upar,uperp, "PFMET");
-	  h_upar_CHSMET[thebinpt][thebineta][k]->Fill(upar / p4dilepton.Pt()-1 ,totweight);
+	  h_upar_PFMET[thebinpt][thebineta][k]->Fill(upar /p4dilepton.Pt()-1 ,totweight);	 
 	  GetRecoilProjections(_chsmet,_chsmet_phi,p4dilepton.Pt(), p4dilepton.Phi(),upar,uperp, "CHSMET");
-	  h_upar_PFMET[thebinpt][thebineta][k]->Fill(upar /p4dilepton.Pt()-1 ,totweight);
+	  h_upar_CHSMET[thebinpt][thebineta][k]->Fill(upar / p4dilepton.Pt()-1 ,totweight);
 	}
 
       }
