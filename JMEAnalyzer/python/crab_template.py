@@ -3,7 +3,7 @@ from CRABClient.UserUtilities import config
 config = config()
 
 config.General.requestName = 'THEREQUESTNAME'
-config.General.workArea = 'crabworkarea_October2021'
+config.General.workArea = 'crabworkarea_April2022'
 config.General.transferOutputs = True
 config.General.transferLogs = True
 
@@ -18,10 +18,6 @@ config.JobType.inputFiles = [
 #'Fall17_17Nov2017_V32_102X_MC.db','Fall17_17Nov2017_V32_102X_DATA.db','Fall17_V3b_MC.db','Fall17_V3b_DATA.db',
 #'Autumn18_V19_MC.db','Autumn18_RunABCD_V19_DATA.db','Autumn18_V7b_MC.db','Autumn18_V7b_DATA.db',
 '*UL*.db',
-'Cert_294927-306462_13TeV_UL2017_Collisions17_GoldenJSON.txt',
-'Cert_314472-325175_13TeV_PromptReco_Collisions18_JSON.txt',
-'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt',
-'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt',
 'RochesterCorrections',
 'UnprefireableEventList'
 ]
@@ -36,7 +32,8 @@ config.Data.allowNonValidInputDataset = True
 
 
 config.Data.publication = True
-config.Data.outputDatasetTag = 'CAMPAIGN_RUNERA_THESKIM_May2021'
+config.Data.outputDatasetTag = 'CAMPAIGN_RUNERA_THESKIM_April2022'
+config.Data.lumiMask = 'GoldenJSON_2016to2018UL.json'
 
 
 config.Site.storageSite = 'T2_BE_IIHE'
