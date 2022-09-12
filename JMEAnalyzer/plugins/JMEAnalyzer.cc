@@ -1,8 +1,8 @@
 // Original Author:  Laurent Thomas
 //         Created:  Fri, 26 Apr 2019 12:51:46 GMT
 
-
 // system include files
+
 #include <memory>
 #include <iostream>
 #include <fstream>
@@ -36,7 +36,6 @@
 
 #include "DataFormats/Common/interface/TriggerResults.h"
 #include "DataFormats/PatCandidates/interface/PackedCandidate.h"
-#include "DataFormats/PatCandidates/interface/PackedGenParticle.h"
 #include "DataFormats/PatCandidates/interface/Electron.h"
 #include "DataFormats/PatCandidates/interface/Jet.h"
 #include "DataFormats/PatCandidates/interface/MET.h"
@@ -56,6 +55,7 @@
 
 #include "JetMETStudies/JMEAnalyzer/interface/Tools.h"
 #include "RecoJets/JetProducers/plugins/PileupJetIdProducer.h" 
+#include "L1Trigger/L1TGlobal/interface/L1TGlobalUtil.h"
 
 #include "TH1F.h"
 #include "TH2F.h"
@@ -186,8 +186,6 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<std::vector< pat::Photon> > photonToken_;
 
   edm::EDGetTokenT<GenParticleCollection> genpartToken_;
-  edm::EDGetTokenT<std::vector< pat::PackedGenParticle>> packedgenpartToken_;
-
   edm::EDGetTokenT<GenEventInfoProduct> geninfoToken_;
   edm::EDGetTokenT<LHEEventProduct> lheEventToken_;
   edm::EDGetTokenT<LHEEventProduct> lheEventALTToken_;
@@ -208,6 +206,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<l1t::EGammaBxCollection>l1EGammaToken_;
   edm::EDGetTokenT<l1t::JetBxCollection>l1JetToken_;
   edm::EDGetTokenT<GlobalExtBlkBxCollection> UnprefirableEventToken_;
+
+  l1t::L1TGlobalUtil* l1GtUtils_;
+  InputTag  algTag_, extTag_;
+  //  edm::ESGetToken<JetCorrectorParametersCollection, JetCorrectionsRecord> jecsToken_; 
+
 
   Float_t JetPtCut_;
   Float_t AK8JetPtCut_;
@@ -413,6 +416,9 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<Float_t>  _l3dIP;
   vector<Float_t>  _l3dIPError;
 
+  vector<Bool_t>  _lpassHLT_IsoMu24;
+  vector<Bool_t>  _lpassHLT_Ele32_WPTight_Gsf;
+
   vector<Bool_t>  _lPassTightID;
   vector<Bool_t>  _lPassLooseID;
   vector<Bool_t> _lisSAMuon ;
@@ -512,8 +518,6 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   //GenMET
   Float_t _genmet;
   Float_t _genmet_phi;
-  Float_t _genptvec;
-  Float_t _genptscal;
 
   //Triggers
   bool HLT_Photon110EB_TightID_TightIso;
@@ -527,6 +531,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool HLT_DiJet110_35_Mjj650_PFMET110;
   bool HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60;
   bool HLT_PFMETNoMu120_PFMHTNoMu120_IDTight;
+  bool HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF;
   bool HLT_PFMET120_PFMHT120_IDTight_PFHT60;
   bool HLT_PFMET120_PFMHT120_IDTight;
   bool HLT_PFHT1050;
@@ -550,6 +555,10 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ;
   bool HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL;
   bool HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL;
+  bool HLT_PixelClusters_WP1;
+  bool HLT_PixelClusters_WP2;
+  bool HLT_PixelClusters_WP2_split;
+
   bool _l1prefire;
 
 
@@ -582,6 +591,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector < bool >hltEG90R9Id90HE10IsoMTrackIsoFilter; 
   vector < bool >hltEG75R9Id90HE10IsoMTrackIsoFilter; 
   vector < bool >hltEG50R9Id90HE10IsoMTrackIsoFilter; 
+  vector < bool >hltEG110EBTightIDTightIsoTrackIsoFilter;
   vector < bool >hltSinglePFJet60; 
   vector < bool >hltSinglePFJet80; 
   vector < bool >hltSinglePFJet140 ;
@@ -597,20 +607,31 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<bool> hltL3fL1sMu10lqL1f0L2f10L3Filtered12;
   vector<bool> hltL3fL1sMu10lqL1f0L2f10L3Filtered15;
 
+  bool passL1_Initial_bxmin1[512];
+  bool passL1_Initial_bx0[512];
+  bool passL1_Initial_bxplus1[512];
+
   //L1 muon
   vector <int> _L1mu_Qual;
   vector <Float_t> _L1mu_pt;
   vector <Float_t> _L1mu_eta;
   vector <Float_t> _L1mu_phi;
+  vector <int> _L1mu_TFIdx;
   vector <int> _L1mu_bx;
+  
+  vector <int> _L1mu_dXY;
+  vector <Float_t> _L1mu_upt;
+  vector <int> _L1mu_charge;
 
-  //L1 EG
+
+  //L1 eg
   vector <Float_t> _L1eg_pt;
   vector <Float_t> _L1eg_eta;
   vector <Float_t> _L1eg_phi;
   vector <int> _L1eg_bx;
+  vector <int> _L1eg_iso;
 
-  //L1 jet 
+  //L1 jet
   vector <Float_t> _L1jet_pt;
   vector <Float_t> _L1jet_eta;
   vector <Float_t> _L1jet_phi;
@@ -620,7 +641,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   //Rochester correction (for muons)
   RoccoR rc; 
   //JEC uncertainties
-  JetCorrectionUncertainty *jecUnc; 
+  //  JetCorrectionUncertainty *jecUnc; 
 };
 
 //
@@ -667,8 +688,6 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   muonToken_(consumes< std::vector< pat::Muon> >(iConfig.getParameter<edm::InputTag>("Muons"))),
   photonToken_(consumes< std::vector< pat::Photon> >(iConfig.getParameter<edm::InputTag>("Photons"))),
   genpartToken_(consumes<GenParticleCollection> (iConfig.getParameter<edm::InputTag>("GenParticles"))),
-  packedgenpartToken_(consumes<std::vector< pat::PackedGenParticle>>(iConfig.getParameter<edm::InputTag>("PackedGenParticles"))),
- 
   geninfoToken_(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("GenInfo"))),
   lheEventToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabel"))),
   lheEventALTToken_(consumes<LHEEventProduct> ( iConfig.getParameter<InputTag>("LHELabelALT"))),
@@ -685,6 +704,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   l1EGammaToken_(consumes<l1t::EGammaBxCollection>(edm::InputTag("caloStage2Digis","EGamma"))),
   l1JetToken_(consumes<l1t::JetBxCollection>(edm::InputTag("caloStage2Digis","Jet"))),
   UnprefirableEventToken_(consumes<GlobalExtBlkBxCollection>(edm::InputTag("simGtExtUnprefireable"))),
+//  jecsToken_(esConsumes(edm::ESInputTag("","AK4PFchs"))),
   JetPtCut_(iConfig.getParameter<double>("JetPtCut")),
   AK8JetPtCut_(iConfig.getParameter<double>("AK8JetPtCut")),
   ElectronPtCut_(iConfig.getParameter<double>("ElectronPtCut")),
@@ -722,7 +742,9 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
 
   
   rc.init(RochCorrFile_);
-  
+  algTag_ = iConfig.getParameter<edm::InputTag>("l1GtSrc") ; 
+  extTag_ = iConfig.getParameter<edm::InputTag>("l1GtSrc");
+  l1GtUtils_ =new l1t::L1TGlobalUtil(iConfig, consumesCollector(), *this, algTag_, extTag_, l1t::UseEventSetupIn::Event);
 }
 
 
@@ -743,14 +765,9 @@ void JMEAnalyzer::beginRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
 {
   //JES uncties: https://twiki.cern.ch/twiki/bin/view/CMSPublic/WorkBookJetEnergyCorrections#JetCorUncertainties
 
-  edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
-  iSetup.get<JetCorrectionsRecord>().get("AK4PFchs",JetCorParColl);
+  //  edm::ESHandle<JetCorrectorParametersCollection> JetCorParColl;
+  //iSetup.get<JetCorrectionsRecord>().get("AK4PFchs",JetCorParColl);
 
-  if(JetCorParColl.isValid()){
-  JetCorrectorParameters const & JetCorPar = (*JetCorParColl)["Uncertainty"];
-  jecUnc = new JetCorrectionUncertainty(JetCorPar);
-  }
-  else jecUnc = 0;
 
   //The following lines are needed for picking events from a list (currently unprefirable events)
   int runnb = iRun.id().run();
@@ -764,13 +781,25 @@ void JMEAnalyzer::endRun(edm::Run const & iRun, edm::EventSetup const& iSetup)
 {
 
   myfile_unprefevts.close();
-  delete jecUnc;
+  //  delete jecUnc;
 }
 
 // ------------ method called for each event  ------------
 void
 JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 {
+  
+  if(Debug_) std::cout <<"Entering analyze" <<std::endl;
+  /*
+  if(auto handle = iSetup.getHandle(jecsToken_)) {
+    auto const& JetCorParColl = *handle;
+    JetCorrectorParameters const & JetCorPar = (JetCorParColl)["Uncertainty"];
+    jecUnc = new JetCorrectionUncertainty(JetCorPar);
+  }
+  else jecUnc = 0;
+  */
+
+
   
   InitandClearStuff();
   
@@ -803,6 +832,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   else trueNVtx = -1.;
   h_trueNVtx->Fill(trueNVtx);
 
+  if(Debug_) std::cout <<"Entering analyze 2" <<std::endl;
   //Triggers 
   edm::Handle<TriggerResults> trigResults;
   iEvent.getByToken(trgresultsToken_, trigResults);
@@ -823,6 +853,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if(TrigPath.Contains("HLT_DiJet110_35_Mjj650_PFMET110_v"))HLT_DiJet110_35_Mjj650_PFMET110 =true;
 	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60 =true;
 	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight =true;
+	if(TrigPath.Contains("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF_v"))HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF =true;
 	if(TrigPath.Contains("HLT_PFMET120_PFMHT120_IDTight_PFHT60_v"))HLT_PFMET120_PFMHT120_IDTight_PFHT60 =true;
 	if(TrigPath.Contains("HLT_PFMET120_PFMHT120_IDTight_v"))HLT_PFMET120_PFMHT120_IDTight =true;
 	if(TrigPath.Contains("HLT_PFHT1050_v"))HLT_PFHT1050 =true;
@@ -846,33 +877,67 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if(TrigPath.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ_v"))HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_DZ =true;
 	if(TrigPath.Contains("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL_v"))HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL =true;
 	if(TrigPath.Contains("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL_v"))HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL =true;
+
+	if(TrigPath.Contains("HLT_PixelClusters_WP1_v"))HLT_PixelClusters_WP1 =true;
+	if(TrigPath.Contains("HLT_PixelClusters_WP2_v"))HLT_PixelClusters_WP2 =true;
+	if(TrigPath.Contains("HLT_PixelClusters_WP2_split_v"))HLT_PixelClusters_WP2_split =true;
       }
     }
   }
 
+  if(Debug_) std::cout <<"Entering analyze 3" <<std::endl;
   //Prefiring, see: https://github.com/nsmith-/PrefireAnalysis/#usage
   edm::Handle<BXVector<GlobalAlgBlk>> l1GtHandle;
   iEvent.getByToken(l1GtToken_, l1GtHandle);
+
+
+  l1GtUtils_->retrieveL1(iEvent, iSetup, l1GtToken_);
+  const std::vector<std::pair<std::string, bool>> initialDecisions = l1GtUtils_->decisionsInitial();
+  
+  /*
+  for(int i = 0; i < 20; i++){
+    std::cout << "L1 algo: " << initialDecisions[i].first<<std::endl;
+    }*/
+
   _l1prefire= false;
   if(!IsMC_)_l1prefire = l1GtHandle->begin(-1)->getFinalOR();
 
+
+  for(int i =0; i <512; i++){
+    if(!IsMC_) passL1_Initial_bxmin1[i]= l1GtHandle->begin(-1)->getAlgoDecisionInitial(i);
+    else passL1_Initial_bxmin1[i]= false;
+    passL1_Initial_bx0[i]= l1GtHandle->begin(0)->getAlgoDecisionInitial(i);
+    if(!IsMC_) passL1_Initial_bxplus1[i]= l1GtHandle->begin(+1)->getAlgoDecisionInitial(i);
+    else passL1_Initial_bxmin1[i]= false;
+  }
+
+
+
+
+  if(Debug_) std::cout <<"Entering analyze 4" <<std::endl;
   edm::Handle<l1t::MuonBxCollection> l1muoncoll;
   iEvent.getByToken(l1MuonToken_ , l1muoncoll);
   //  const  int nbx = IsMC_ ? 0:2;
   for(int i = l1muoncoll->getFirstBX() ; i<= l1muoncoll->getLastBX() ;i++){
     for( l1t::MuonBxCollection::const_iterator l1muonit= l1muoncoll->begin(i); l1muonit != l1muoncoll->end(i) ; ++l1muonit){
-      if(l1muonit->pt()<8) continue;
+      if(l1muonit->pt()<1) continue;
       _L1mu_Qual.push_back( l1muonit->hwQual() );
       _L1mu_pt.push_back( l1muonit->pt() );
       _L1mu_eta.push_back( l1muonit->eta() );
       _L1mu_phi.push_back( l1muonit->phi() );
       _L1mu_bx.push_back( i);
+      _L1mu_dXY.push_back( l1muonit->hwDXY() );
+      _L1mu_upt.push_back( l1muonit->ptUnconstrained() );
+      _L1mu_charge.push_back(l1muonit->charge());
+      _L1mu_TFIdx.push_back( l1muonit->tfMuonIndex());
     }
   }
+  
+  if(Debug_) std::cout <<"Entering analyze 5" <<std::endl;
 
-  //L1 eg
   edm::Handle<l1t::EGammaBxCollection> l1egcoll;
   iEvent.getByToken(l1EGammaToken_ , l1egcoll);
+  //  const  int nbx = IsMC_ ? 0:2;
   for(int i = l1egcoll->getFirstBX() ; i<= l1egcoll->getLastBX() ;i++){
     for( l1t::EGammaBxCollection::const_iterator l1egit= l1egcoll->begin(i); l1egit != l1egcoll->end(i) ; ++l1egit){
       if(l1egit->pt()<5) continue;
@@ -880,21 +945,27 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _L1eg_eta.push_back( l1egit->eta() );
       _L1eg_phi.push_back( l1egit->phi() );
       _L1eg_bx.push_back( i);
+      _L1eg_iso.push_back( l1egit->hwIso());
+
+      //      cout << "L1EG pt, eta, phi: "<<l1egit->pt() <<", "<<l1egit->eta() <<", " <<l1egit->phi() <<", "  <<endl;
+      //cout << "L1EG hwIso, hwQual, hwEta:  "<< l1egit->hwIso() <<", " <<l1egit->hwQual() <<", " <<l1egit->hwEta() <<", " <<endl; 
     }
   }
 
-  //L1 jet
+
   edm::Handle<l1t::JetBxCollection> l1jetcoll;
   iEvent.getByToken(l1JetToken_ , l1jetcoll);
+  //  const  int nbx = IsMC_ ? 0:2;
   for(int i = l1jetcoll->getFirstBX() ; i<= l1jetcoll->getLastBX() ;i++){
     for( l1t::JetBxCollection::const_iterator l1jetit= l1jetcoll->begin(i); l1jetit != l1jetcoll->end(i) ; ++l1jetit){
-      if(l1jetit->pt()<10) continue;
+      if(l1jetit->pt()<25) continue;
       _L1jet_pt.push_back( l1jetit->pt() );
       _L1jet_eta.push_back( l1jetit->eta() );
       _L1jet_phi.push_back( l1jetit->phi() );
       _L1jet_bx.push_back( i);
     }
   }
+
 
 
 
@@ -907,9 +978,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       Flag_IsUnprefirable = handleUnprefEventResults->at(0, 0).getExternalDecision(GlobalExtBlk::maxExternalConditions - 1);
     }
   }
-
-  if(Skim_=="L1Unprefirable" && !PassSkim() )  return; 
-
+  if(Debug_) std::cout <<"Entering analyze 6" <<std::endl;
   
   //Vertices
   // NB there are usually two available collection of vertices in MINIAOD
@@ -921,6 +990,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
   //Storing leading vertex coordinates, as well as leading PU vertex (primarily for bad vertex choice studies)
+  if(Debug_) std::cout <<"Entering analyze 7" <<std::endl;
   const Vertex* LVtx = &((*theVertices)[0]);
   _LV_x = LVtx->x();
   _LV_y = LVtx->y();
@@ -962,13 +1032,14 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   _rhoNC = *rhoJetsNC;
 
 
-  
+  if(Debug_) std::cout <<"Entering analyze 8" <<std::endl;  
   //MET filters are stored in TriggerResults::RECO or TriggerResults::PAT . Should take the latter if it exists
   edm::Handle<TriggerResults> METFilterResults;
   iEvent.getByToken(metfilterspatToken_, METFilterResults);
   if(!(METFilterResults.isValid())) iEvent.getByToken(metfiltersrecoToken_, METFilterResults);
   
   Flag_goodVertices= GetMETFilterDecision(iEvent,METFilterResults,"Flag_goodVertices");
+  if(!Flag_goodVertices && Skim_=="L1Study")return;
   Flag_globalTightHalo2016Filter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_globalTightHalo2016Filter");
   Flag_globalSuperTightHalo2016Filter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_globalSuperTightHalo2016Filter");
   Flag_HBHENoiseFilter= GetMETFilterDecision(iEvent,METFilterResults,"Flag_HBHENoiseFilter");
@@ -1021,7 +1092,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector<pat::Electron> > thePatElectrons;
   iEvent.getByToken(electronToken_,thePatElectrons);
   for( std::vector<pat::Electron>::const_iterator electron = (*thePatElectrons).begin(); electron != (*thePatElectrons).end(); electron++ ) {
-    if((&*electron)->pt() <5) continue; //Loose cut  on uncorrected pt 
+    if((&*electron)->pt() <3) continue; //Loose cut  on uncorrected pt 
     //Implementing smearing/scaling EGM corrections
     //See here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaMiniAODV2#Applying_the_Energy_Scale_and_sm and here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
     double ptelecorr = (&*electron)->pt();
@@ -1029,7 +1100,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
          ptelecorr = ptelecorr * (&*electron)->userFloat("ecalTrkEnergyPostCorr") /  (&*electron)->energy() ;
     }
     
-    bool passvetoid = (&*electron)->electronID(ElectronVetoWP_)&& (&*electron)->pt()>10;
+    bool passvetoid = (&*electron)->electronID(ElectronVetoWP_)&& (&*electron)->pt()>3;
     if(!passvetoid) continue;
     //Counting the number of electrons, not all of them will be stored
     _nEles++;
@@ -1050,6 +1121,9 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _l3dIP.push_back( (&*electron)->dB(pat::Electron::PV3D));
     _l3dIPError.push_back( (&*electron)->edB(pat::Electron::PV3D));
 
+    _lpassHLT_IsoMu24.push_back(false);
+    //if((&*electron)->pt()>30)std::cout << "Pt, Eta, Phi, pass Ele32 " <<  ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v*",true,true) != nullptr) << ", "<<   ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v",true,true) != nullptr)  <<", " <<  ((&*electron)->triggerObjectMatchByPath ("HLT_Ele35_WPTight_Gsf_v*",true,true) != nullptr)<<", " << ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v*",true,false) != nullptr) <<", " << ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v*",false,false) != nullptr)  <<std::endl; 
+    _lpassHLT_Ele32_WPTight_Gsf.push_back( PassTriggerLeg("hltEle32WPTightGsfTrackIsoFilter",&*electron,iEvent) );
 
     hltEle27WPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle27WPTightGsfTrackIsoFilter",&*electron,iEvent));
     hltEle35noerWPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle35noerWPTightGsfTrackIsoFilter",&*electron,iEvent));
@@ -1087,6 +1161,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     //Counting the number of muons, not all of them will be stored 
     _nMus++;
     if((&*muon)->pt()<MuonPtCut_)continue;
+    //std::cout << "Muon pt, eta, phi, pass IsoMu24" << (&*muon)->pt()<<", " << (&*muon)->eta()<<", " << (&*muon)->phi() <<", "<<(&*muon)->triggered("HLT_IsoMu24_v*")  <<std::endl;
     _lEta.push_back((&*muon)->eta());
     _lPhi.push_back((&*muon)->phi());
     _lPt.push_back((&*muon)->pt());
@@ -1111,7 +1186,9 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _l3dIP.push_back(0.);
       _l3dIPError.push_back(0.);
     }
-    
+    _lpassHLT_IsoMu24.push_back((&*muon)->triggered("HLT_IsoMu24_v*"));
+    _lpassHLT_Ele32_WPTight_Gsf.push_back(false);
+
     hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09","hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p07",&*muon,iEvent));
     hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09","hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07",&*muon,iEvent));
     hltEle27WPTightGsfTrackIsoFilter.push_back(false);
@@ -1134,7 +1211,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector<pat::Photon> > thePatPhotons;
   iEvent.getByToken(photonToken_,thePatPhotons);
   for( std::vector<pat::Photon>::const_iterator photon = (*thePatPhotons).begin(); photon != (*thePatPhotons).end(); photon++ ) {
-    if((&*photon)->pt() <10) continue; //Loose cut  on uncorrected pt 
+    //    cout << "Photon pt, eta, phi " << (&*photon)->pt()<< ", " <<(&*photon)->eta()<<", "<<(&*photon)->phi()<<endl;
+    if((&*photon)->pt() <5) continue; //Loose cut  on uncorrected pt 
     double ptphotoncorr = (&*photon)->pt(); //This is (possibly) the smeared/scaled pt for data ! 
     //Implementing smearing/scaling EGM corrections
     //See here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaMiniAODV2#Applying_the_Energy_Scale_and_sm and here: https://twiki.cern.ch/twiki/bin/viewauth/CMS/EgammaUL2016To2018
@@ -1205,7 +1283,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     hltEG90R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG90R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
     hltEG75R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG75R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
     hltEG50R9Id90HE10IsoMTrackIsoFilter.push_back(PassTriggerLeg("hltEG50R9Id90HE10IsoMTrackIsoFilter",&*photon,iEvent));
-
+    hltEG110EBTightIDTightIsoTrackIsoFilter.push_back(PassTriggerLeg("hltEG110EBTightIDTightIsoTrackIsoFilter",&*photon,iEvent));
   }
   
   
@@ -1213,11 +1291,11 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   Float_t mll(0),ptll(0),pzll(0),yll(0),phill(0),dphill(0),costhCSll(0);
   for(unsigned int i = 0; i < _lPt.size(); i++){
     if(_lPt.size() !=2) continue;
-    if(_lPt[i]<20) continue;
+    if(_lPt[i]<5) continue;
       if(!_lPassTightID[i])  continue;
       if(fabs(_lpdgId[i]) !=11 && fabs(_lpdgId[i])!=13 ) continue;
       for(unsigned int j = 0; j < i; j++){
-        if(_lPt[j]<20) continue;
+        if(_lPt[j]<5) continue;
         if(!_lPassTightID[j])  continue;
         if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
         //if( _lpdgId[i] != -_lpdgId[j]  ) continue;
@@ -1264,6 +1342,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       //The gen jets are defined excluding neutrinos. 
       //In order to decrease this pt cut and/or include neutrinos, one needs to recluster gen jets. 
       //Boolean to use the updated gen jet collection or the default one. Should probably be made configurable at some point.
+      
+      //      if(abs((&*jet)->eta())>3 ) cout <<"LOL pt, eta, phi"<<  (&*jet)->pt() <<", " <<  (&*jet)->eta() <<", " << (&*jet)->phi() <<endl;
 
       const reco::GenJet * updatedgenjet =0;
       const reco::GenJet * updatedgenjetwithnu =0; 
@@ -1369,10 +1449,10 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() ); 
       _jet_corrjecs.push_back((&*jet)->pt() / (&*jet)->correctedP4("Uncorrected").Pt() );
 
-      jecUnc->setJetEta((&*jet)->eta());
+      /*jecUnc->setJetEta((&*jet)->eta());
       jecUnc->setJetPt((&*jet)->pt());
       _jetJECuncty.push_back( jecUnc->getUncertainty(true) );
-      
+      */
 
       if(updatedgenjetwithnu !=0) jetptgenwithnu = updatedgenjetwithnu->pt() ;
       _jetPtGen.push_back(jetptgen);
@@ -1474,10 +1554,10 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _puppijetRawPt.push_back((&*jet)-> correctedP4("Uncorrected").Pt());
       _puppijetPtNoL2L3Res.push_back( (&*jet)->correctedP4("L3Absolute") .Pt() );
 
-      jecUnc->setJetEta((&*jet)->eta());
+      /*      jecUnc->setJetEta((&*jet)->eta());
       jecUnc->setJetPt((&*jet)->pt());
       _puppijetJECuncty.push_back( jecUnc->getUncertainty(true) );
-
+      */
       if(updatedgenjetwithnu !=0) jetptgenwithnu = updatedgenjetwithnu->pt() ;
       _puppijetPtGen.push_back(jetptgen);
       _puppijetPtGenWithNu.push_back(jetptgenwithnu);
@@ -1714,46 +1794,21 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
   //Gen particle info
-
-  _genptvec = 0;
-  _genptscal = 0;
-  TLorentzVector GenP4;
-  GenP4.SetPtEtaPhiE( 0, 0, 0, 0);
-
-  edm::Handle<std::vector< pat::PackedGenParticle>> gencands;
-  iEvent.getByToken(packedgenpartToken_ ,gencands);
-  for( std::vector<pat::PackedGenParticle>::const_iterator p = (*gencands).begin(); p != (*gencands).end(); p++ ) {
-    if(p->status() == 1  ){//p->status() == 1 alone doesn't work, MET is 73 ! Same when adding  && p->isLastCopy()
-      TLorentzVector Gen;
-      Gen.SetPtEtaPhiE( p->pt(), p->eta(), p->phi(), p->energy() );
-      GenP4 += Gen;
-      _genptscal+=p->pt();
-    }
-
-  }
-
-
   edm::Handle<GenParticleCollection> TheGenParticles;
   iEvent.getByToken(genpartToken_, TheGenParticles);
   TLorentzVector Gen0;
   Gen0.SetPtEtaPhiE( 0, 0, 0, 0);
-
   _genHT = 0;
-
   if(TheGenParticles.isValid()){
     for(GenParticleCollection::const_reverse_iterator p = TheGenParticles->rbegin() ; p != TheGenParticles->rend() ; p++ ) {
-
-
-      
       int id = TMath::Abs(p->pdgId());
-      /*     if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id== 6 || id == 21 || id == 22 ) ) 
-      cout << "p ID, status, pt, eta, phi " << 
-	p->pdgId() <<", "<<
-	p->status() <<", "<<
-	p->pt() <<", "<<
-	p->eta() <<", "<<
-	p->phi() <<
-	endl;
+      /*      if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id== 6 || id == 21 || id == 22 ) ) cout << "p ID, status, pt, eta, phi " << 
+	      p->pdgId() <<", "<<
+	      p->status() <<", "<<
+	      p->pt() <<", "<<
+	      p->eta() <<", "<<
+	      p->phi() <<
+	      endl;
       */
       if ((id == 1 || id == 2 || id == 3 || id == 4 || id == 5 || id == 21 || id == 22 ) && (p->status() == 23&& TMath::Abs(p->mother()->pdgId())!=6 &&TMath::Abs(p->mother()->pdgId())!=24 )){
 	_genHT += p->pt();
@@ -1806,11 +1861,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     
 
   }
-  else{
-    cout <<"TheGenParticles.isValid() is false " <<endl;
-  }
-
-  _genptvec = GenP4.Pt();
   if (Gen0.E()!=0) {
     _genmet = Gen0.Pt();
     _genmet_phi = Gen0.Phi();
@@ -1863,6 +1913,208 @@ void
 JMEAnalyzer::beginJob()
 {
 
+ 
+  if(Skim_.find("L1Study") !=std::string::npos){
+
+
+    outputTree->Branch("_eventNb",   &_eventNb,   "_eventNb/l");
+    outputTree->Branch("_runNb",     &_runNb,     "_runNb/l");
+    outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
+    outputTree->Branch("_bx", &_bx, "_bx/l");
+    outputTree->Branch("_n_PV", &_n_PV, "_n_PV/I");
+    outputTree->Branch("_LV_x", &_LV_x, "_LV_x/F");
+    outputTree->Branch("_LV_y", &_LV_y, "_LV_y/F");
+    outputTree->Branch("_LV_z", &_LV_z, "_LV_z/F");
+
+    outputTree->Branch("_l1prefire",&_l1prefire,"_l1prefire/O");
+
+
+
+    outputTree->Branch("_lEta",&_lEta);
+    outputTree->Branch("_lPhi",&_lPhi);
+    outputTree->Branch("_lPt",&_lPt);
+    outputTree->Branch("_lPtcorr",&_lPtcorr);
+    outputTree->Branch("_lpdgId",&_lpdgId);
+    outputTree->Branch("_lPassTightID",&_lPassTightID);
+    outputTree->Branch("_lPassLooseID",&_lPassLooseID);
+    outputTree->Branch("_lisSAMuon",&_lisSAMuon);
+    outputTree->Branch("_nEles", &_nEles, "_nEles/I");
+    outputTree->Branch("_nMus", &_nMus, "_nMus/I");
+    outputTree->Branch("_ldz",&_ldz);
+    outputTree->Branch("_ldzError",&_ldzError);
+    outputTree->Branch("_ldxy",&_ldxy);
+    outputTree->Branch("_ldxyError",&_ldxyError);
+    
+    outputTree->Branch("_l3dIP",&_l3dIP);
+    outputTree->Branch("_l3dIPError",&_l3dIPError);
+    outputTree->Branch("_lpassHLT_IsoMu24",&_lpassHLT_IsoMu24);
+    outputTree->Branch("_lpassHLT_Ele32_WPTight_Gsf",&_lpassHLT_Ele32_WPTight_Gsf);
+    
+
+    outputTree->Branch("_phEta",&_phEta);
+    outputTree->Branch("_phPhi",&_phPhi);
+    outputTree->Branch("_phPt",&_phPt);
+    outputTree->Branch("_phPtcorr",&_phPtcorr);
+    outputTree->Branch("_phPassTightID",&_phPassTightID);
+    outputTree->Branch("_phPassIso",&_phPassIso);
+
+    //outputTree->Branch("passL1_Initial_bxmin1",&passL1_Initial_bxmin1,"passL1_Initial_bxmin1[512]/O");
+    outputTree->Branch("passL1_Initial_bx0",&passL1_Initial_bx0,"passL1_Initial_bx0[512]/O");
+    //outputTree->Branch("passL1_Initial_bxplus1",&passL1_Initial_bxplus1,"passL1_Initial_bxplus1[512]/O");
+    
+
+    outputTree->Branch("_L1mu_Qual",&_L1mu_Qual);
+    outputTree->Branch("_L1mu_pt",&_L1mu_pt);
+    outputTree->Branch("_L1mu_eta",&_L1mu_eta);
+    outputTree->Branch("_L1mu_phi",&_L1mu_phi);
+    outputTree->Branch("_L1mu_bx",&_L1mu_bx);
+    outputTree->Branch("_L1mu_TFIdx",&_L1mu_TFIdx);
+    outputTree->Branch("_L1mu_upt",&_L1mu_upt);
+    outputTree->Branch("_L1mu_charge",&_L1mu_charge);
+    outputTree->Branch("_L1mu_dXY",&_L1mu_dXY);
+
+    
+    outputTree->Branch("_ptgamma", &_ptgamma, "_ptgamma/F");
+    outputTree->Branch("_phigamma", &_phigamma, "_phigamma/F");
+    outputTree->Branch("_mll", &_mll, "_mll/F");
+    outputTree->Branch("_ptll", &_ptll, "_ptll/F");
+    outputTree->Branch("_phill", &_phill, "_phill/F");
+
+    if(Skim_.find("ZTo") !=std::string::npos){
+
+    outputTree->Branch("_pzll", &_pzll, "_pzll/F");
+    outputTree->Branch("_yll", &_yll, "_yll/F");
+    outputTree->Branch("_dphill", &_dphill, "_dphill/F");
+    outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/F");
+    outputTree->Branch("_nElesll",&_nElesll,"_nElesll/I");
+    }
+
+    
+    if(Skim_.find("ZToEE") !=std::string::npos){
+    outputTree->Branch("_L1eg_pt",&_L1eg_pt);
+    outputTree->Branch("_L1eg_eta",&_L1eg_eta);
+    outputTree->Branch("_L1eg_phi",&_L1eg_phi);
+    outputTree->Branch("_L1eg_bx",&_L1eg_bx);
+    outputTree->Branch("_L1eg_iso",&_L1eg_iso);
+    }
+
+
+    if(Skim_.find("JME") !=std::string::npos){
+    
+    outputTree->Branch("_L1jet_pt",&_L1jet_pt);
+    outputTree->Branch("_L1jet_eta",&_L1jet_eta);
+    outputTree->Branch("_L1jet_phi",&_L1jet_phi);
+    outputTree->Branch("_L1jet_bx",&_L1jet_bx);
+    }
+
+
+    // outputTree->Branch("_PUV1_x", &_PUV1_x, "_PUV1_x/F");
+    //outputTree->Branch("_PUV1_y", &_PUV1_y, "_PUV1_y/F");
+    // outputTree->Branch("_PUV1_z", &_PUV1_z, "_PUV1_z/F");
+    //    outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
+    //outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/F");
+    
+    outputTree->Branch("_met", &_met, "_met/F");
+    outputTree->Branch("_met_phi", &_met_phi, "_met_phi/F");
+    outputTree->Branch("_puppimet", &_puppimet, "_puppimet/F");
+    outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/F");
+    
+    outputTree->Branch("_rawmet", &_rawmet, "_rawmet/F");
+    outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/F");
+    outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/F");
+    outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/F");
+    
+    //outputTree->Branch("_rawchsmet",&_rawchsmet,"_rawchsmet/F");
+    //outputTree->Branch("_rawchsmet_phi",&_rawchsmet_phi,"_rawchsmet_phi/F");
+    //outputTree->Branch("_chsmet",&_chsmet,"_chsmet/F");
+    //outputTree->Branch("_chsmet_phi",&_chsmet_phi,"_chsmet_phi/F");
+    
+    outputTree->Branch("_jetEta",&_jetEta);
+    outputTree->Branch("_jetPhi",&_jetPhi);
+    outputTree->Branch("_jetPt",&_jetPt);
+    //    outputTree->Branch("_jetRawPt",&_jetRawPt);
+    outputTree->Branch("_jet_CHEF",&_jet_CHEF);
+    outputTree->Branch("_jet_NHEF",&_jet_NHEF);
+    outputTree->Branch("_jet_NEEF",&_jet_NEEF);
+    outputTree->Branch("_jet_CEEF",&_jet_CEEF);
+    outputTree->Branch("_jet_MUEF",&_jet_MUEF);
+    /*outputTree->Branch("_jet_CHM",&_jet_CHM);
+    outputTree->Branch("_jet_NHM",&_jet_NHM);
+    outputTree->Branch("_jet_PHM",&_jet_PHM);
+    outputTree->Branch("_jet_NM",&_jet_NM);*/
+    outputTree->Branch("_jetPassID",&_jetPassID);
+    outputTree->Branch("_jetLeptonPhotonCleaned",&_jetLeptonPhotonCleaned);
+    
+    outputTree->Branch("_jetDeepJet_b",&_jetDeepJet_b);
+    /*outputTree->Branch("_jetParticleNet_b",&_jetParticleNet_b);
+    outputTree->Branch("_jetDeepJet_c",&_jetDeepJet_c);
+    outputTree->Branch("_jetDeepJet_uds",&_jetDeepJet_uds);
+    outputTree->Branch("_jetDeepJet_g",&_jetDeepJet_g);
+    outputTree->Branch("_jetQuarkGluonLikelihood",&_jetQuarkGluonLikelihood);*/
+    outputTree->Branch("_jetPUMVAUpdate",&_jetPUMVAUpdate);
+    outputTree->Branch("_jethfsigmaEtaEta",&_jethfsigmaEtaEta);
+    outputTree->Branch("_jethfsigmaPhiPhi",&_jethfsigmaPhiPhi);
+    outputTree->Branch("_jethfcentralEtaStripSize",&_jethfcentralEtaStripSize);
+    outputTree->Branch("_jethfadjacentEtaStripsSize",&_jethfadjacentEtaStripsSize);
+
+    
+
+    outputTree->Branch("Flag_IsUnprefirable",&Flag_IsUnprefirable,"Flag_IsUnprefirable/O");
+    outputTree->Branch("Flag_goodVertices",&Flag_goodVertices,"Flag_goodVertices/O");
+    outputTree->Branch("Flag_globalTightHalo2016Filter",&Flag_globalTightHalo2016Filter,"Flag_globalTightHalo2016Filter/O");
+    outputTree->Branch("Flag_globalSuperTightHalo2016Filter",&Flag_globalSuperTightHalo2016Filter,"Flag_globalSuperTightHalo2016Filter/O");
+    outputTree->Branch("Flag_HBHENoiseFilter",&Flag_HBHENoiseFilter,"Flag_HBHENoiseFilter/O");
+    outputTree->Branch("Flag_HBHENoiseIsoFilter",&Flag_HBHENoiseIsoFilter,"Flag_HBHENoiseIsoFilter/O");
+    outputTree->Branch("Flag_EcalDeadCellTriggerPrimitiveFilter",&Flag_EcalDeadCellTriggerPrimitiveFilter,"Flag_EcalDeadCellTriggerPrimitiveFilter/O");
+    outputTree->Branch("Flag_BadPFMuonFilter",&Flag_BadPFMuonFilter,"Flag_BadPFMuonFilter/O");
+    outputTree->Branch("Flag_BadPFMuonDzFilter",&Flag_BadPFMuonDzFilter,"Flag_BadPFMuonDzFilter/O");
+    outputTree->Branch("Flag_hfNoisyHitsFilter",&Flag_hfNoisyHitsFilter,"Flag_hfNoisyHitsFilter/O");
+    outputTree->Branch("Flag_BadChargedCandidateFilter",&Flag_BadChargedCandidateFilter,"Flag_BadChargedCandidateFilter/O");
+    outputTree->Branch("Flag_eeBadScFilter",&Flag_eeBadScFilter,"Flag_eeBadScFilter/O");
+    outputTree->Branch("Flag_ecalBadCalibFilter",&Flag_ecalBadCalibFilter,"Flag_ecalBadCalibFilter/O");
+    outputTree->Branch("Flag_ecalLaserCorrFilter",&Flag_ecalLaserCorrFilter,"Flag_ecalLaserCorrFilter/O");
+    outputTree->Branch("Flag_EcalDeadCellBoundaryEnergyFilter",&Flag_EcalDeadCellBoundaryEnergyFilter,"Flag_EcalDeadCellBoundaryEnergyFilter/O");
+
+
+    outputTree->Branch("HLT_PixelClusters_WP1",&HLT_PixelClusters_WP1,"HLT_PixelClusters_WP1/O");
+    outputTree->Branch("HLT_PixelClusters_WP2",&HLT_PixelClusters_WP2,"HLT_PixelClusters_WP2/O");
+    outputTree->Branch("HLT_PixelClusters_WP2_split",&HLT_PixelClusters_WP2_split,"HLT_PixelClusters_WP2_split/O");
+    outputTree->Branch("HLT_IsoMu24",&HLT_IsoMu24,"HLT_IsoMu24/O");
+    outputTree->Branch("HLT_Ele32_WPTight_Gsf",&HLT_Ele32_WPTight_Gsf,"HLT_Ele32_WPTight_Gsf/O");
+
+
+    outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60/O");
+    outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight/O");
+    outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF/O");
+    outputTree->Branch("HLT_PFHT1050",&HLT_PFHT1050,"HLT_PFHT1050/O");
+    outputTree->Branch("HLT_DiJet110_35_Mjj650_PFMET110",&HLT_DiJet110_35_Mjj650_PFMET110,"HLT_DiJet110_35_Mjj650_PFMET110/O");
+    outputTree->Branch("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8",&HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8,"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ_Mass3p8/O");
+    outputTree->Branch("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL",&HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL,"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL/O");
+    outputTree->Branch("HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ",&HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ,"HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL_DZ/O");
+    outputTree->Branch("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL",&HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL,"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL/O");
+    outputTree->Branch("HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ",&HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ,"HLT_Ele23_Ele12_CaloIdL_TrackIdL_IsoVL_DZ/O");
+
+    outputTree->Branch("HLT_Photon110EB_TightID_TightIso",&HLT_Photon110EB_TightID_TightIso,"HLT_Photon110EB_TightID_TightIso/O");
+
+    outputTree->Branch("HLT_Photon50_R9Id90_HE10_IsoM",&HLT_Photon50_R9Id90_HE10_IsoM,"HLT_Photon50_R9Id90_HE10_IsoM/O");
+
+    outputTree->Branch("hltSinglePFJet60",&hltSinglePFJet60);
+    outputTree->Branch("hltSinglePFJet80",&hltSinglePFJet80);
+    outputTree->Branch("hltSinglePFJet140",&hltSinglePFJet140);
+    outputTree->Branch("hltSinglePFJet200",&hltSinglePFJet200);
+    outputTree->Branch("hltSinglePFJet260",&hltSinglePFJet260);
+    outputTree->Branch("hltSinglePFJet320",&hltSinglePFJet320);
+    outputTree->Branch("hltSinglePFJet400",&hltSinglePFJet400);
+    outputTree->Branch("hltSinglePFJet450",&hltSinglePFJet450);
+    outputTree->Branch("hltSinglePFJet500",&hltSinglePFJet500);
+
+    outputTree->Branch("hltEG200HEFilter",&hltEG200HEFilter );
+    outputTree->Branch("hltEG110EBTightIDTightIsoTrackIsoFilter",&hltEG110EBTightIDTightIsoTrackIsoFilter);
+    
+
+    return;
+  }
+ 
 
   if(Skim_=="ZJetsResiduals" || Skim_=="GammaJetsResiduals"  ){
     outputTree->Branch("_jetEta",&_jetEta);
@@ -1892,26 +2144,25 @@ JMEAnalyzer::beginJob()
       outputTree->Branch("_puppijetPtGen",&_puppijetPtGen);
       outputTree->Branch("_puppijetPtGenWithNu",&_puppijetPtGenWithNu);
       outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
-      outputTree->Branch("_weight",&_weight,"_weight/f");
-      outputTree->Branch("_genmet", &_genmet, "_genmet/f");
-      outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
+      outputTree->Branch("_genmet", &_genmet, "_genmet/F");
+      outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/F");
       outputTree->Branch("_jetJECuncty",&_jetJECuncty); 
       outputTree->Branch("_puppijetJECuncty",&_puppijetJECuncty);
     }
-    outputTree->Branch("_met", &_met, "_met/f");
-    outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
-    outputTree->Branch("_puppimet", &_puppimet, "_puppimet/f");
-    outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/f");
-    outputTree->Branch("_rawmet", &_rawmet, "_rawmet/f");
-    outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/f");
-    outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/f");
-    outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/f");
-    outputTree->Branch("_rawchsmet",&_rawchsmet,"_rawchsmet/f");
-    outputTree->Branch("_rawchsmet_phi",&_rawchsmet_phi,"_rawchsmet_phi/f");
-    outputTree->Branch("_chsmet",&_chsmet,"_chsmet/f");
-    outputTree->Branch("_chsmet_phi",&_chsmet_phi,"_chsmet_phi/f");
+    outputTree->Branch("_met", &_met, "_met/F");
+    outputTree->Branch("_met_phi", &_met_phi, "_met_phi/F");
+    outputTree->Branch("_puppimet", &_puppimet, "_puppimet/F");
+    outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/F");
+    outputTree->Branch("_rawmet", &_rawmet, "_rawmet/F");
+    outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/F");
+    outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/F");
+    outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/F");
+    outputTree->Branch("_rawchsmet",&_rawchsmet,"_rawchsmet/F");
+    outputTree->Branch("_rawchsmet_phi",&_rawchsmet_phi,"_rawchsmet_phi/F");
+    outputTree->Branch("_chsmet",&_chsmet,"_chsmet/F");
+    outputTree->Branch("_chsmet_phi",&_chsmet_phi,"_chsmet_phi/F");
     outputTree->Branch("_n_PV", &_n_PV, "_n_PV/I");
-    outputTree->Branch("_rho", &_rho, "_rho/f");
+    outputTree->Branch("_rho", &_rho, "_rho/F");
     outputTree->Branch("_eventNb",   &_eventNb,   "_eventNb/l");
     outputTree->Branch("_runNb",     &_runNb,     "_runNb/l");
     outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
@@ -1920,8 +2171,8 @@ JMEAnalyzer::beginJob()
 
 
   if(Skim_=="ZJetsResiduals"  ){
-    outputTree->Branch("_ptll", &_ptll, "_ptll/f");
-    outputTree->Branch("_phill", &_phill, "_phill/f");
+    outputTree->Branch("_ptll", &_ptll, "_ptll/F");
+    outputTree->Branch("_phill", &_phill, "_phill/F");
     outputTree->Branch("_lEta",&_lEta);
     outputTree->Branch("_lPhi",&_lPhi);
     outputTree->Branch("_lPt",&_lPt);
@@ -1933,8 +2184,8 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_nMus", &_nMus, "_nMus/I");
 
     if(IsMC_){
-    outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/f");
-    outputTree->Branch("_phill_gen", &_phill_gen, "_phill_gen/f");
+    outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/F");
+    outputTree->Branch("_phill_gen", &_phill_gen, "_phill_gen/F");
     outputTree->Branch("_lgenPt",&_lgenPt);
     outputTree->Branch("_lgenEta",&_lgenEta);
     outputTree->Branch("_lgenPhi",&_lgenPhi);
@@ -1958,8 +2209,8 @@ JMEAnalyzer::beginJob()
 
 
   if( Skim_=="GammaJetsResiduals"  ){
-    outputTree->Branch("_ptgamma", &_ptgamma, "_ptgamma/f");
-    outputTree->Branch("_phigamma", &_phigamma, "_phigamma/f");
+    outputTree->Branch("_ptgamma", &_ptgamma, "_ptgamma/F");
+    outputTree->Branch("_phigamma", &_phigamma, "_phigamma/F");
     outputTree->Branch("_phEta",&_phEta);
     outputTree->Branch("_phPhi",&_phPhi);
     outputTree->Branch("_phPt",&_phPt);
@@ -1968,8 +2219,8 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_phPassIso",&_phPassIso);
 
     if(IsMC_){
-    outputTree->Branch("_ptgamma_gen", &_ptgamma_gen, "_ptgamma_gen/f");
-    outputTree->Branch("_phigamma_gen", &_phigamma_gen, "_phigamma_gen/f");
+    outputTree->Branch("_ptgamma_gen", &_ptgamma_gen, "_ptgamma_gen/F");
+    outputTree->Branch("_phigamma_gen", &_phigamma_gen, "_phigamma_gen/F");
     outputTree->Branch("_phgenEta",&_phgenEta);
     outputTree->Branch("_phgenPhi",&_phgenPhi);
     outputTree->Branch("_phgenPt",&_phgenPt);
@@ -1991,16 +2242,16 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
   outputTree->Branch("_bx", &_bx, "_bx/l");
   outputTree->Branch("_n_PV", &_n_PV, "_n_PV/I");
-  outputTree->Branch("_LV_x", &_LV_x, "_LV_x/f");
-  outputTree->Branch("_LV_y", &_LV_y, "_LV_y/f");
-  outputTree->Branch("_LV_z", &_LV_z, "_LV_z/f");
-  outputTree->Branch("_LV_errx", &_LV_errx, "_LV_errx/f");
-  outputTree->Branch("_LV_erry", &_LV_erry, "_LV_erry/f");
-  outputTree->Branch("_LV_errz", &_LV_errz, "_LV_errz/f");
+  outputTree->Branch("_LV_x", &_LV_x, "_LV_x/F");
+  outputTree->Branch("_LV_y", &_LV_y, "_LV_y/F");
+  outputTree->Branch("_LV_z", &_LV_z, "_LV_z/F");
+  outputTree->Branch("_LV_errx", &_LV_errx, "_LV_errx/F");
+  outputTree->Branch("_LV_erry", &_LV_erry, "_LV_erry/F");
+  outputTree->Branch("_LV_errz", &_LV_errz, "_LV_errz/F");
 
 
-  outputTree->Branch("_rho", &_rho, "_rho/f");
-  outputTree->Branch("_rhoNC", &_rhoNC, "_rhoNC/f");
+  outputTree->Branch("_rho", &_rho, "_rho/F");
+  outputTree->Branch("_rhoNC", &_rhoNC, "_rhoNC/F");
   
   outputTree->Branch("Flag_IsUnprefirable",&Flag_IsUnprefirable,"Flag_IsUnprefirable/O");
   outputTree->Branch("Flag_goodVertices",&Flag_goodVertices,"Flag_goodVertices/O");
@@ -2177,36 +2428,32 @@ JMEAnalyzer::beginJob()
 
   
   if(IsMC_){
-  outputTree->Branch("_genmet", &_genmet, "_genmet/f");
-  outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/f");
+  outputTree->Branch("_genmet", &_genmet, "_genmet/F");
+  outputTree->Branch("_genmet_phi", &_genmet_phi, "_genmet_phi/F");
   outputTree->Branch("trueNVtx", &trueNVtx,"trueNVtx/I");
-
-  outputTree->Branch("_genptvec", &_genptvec, "_genptvec/f");
-  outputTree->Branch("_genptscal", &_genptscal, "_genptscal/f");
-
   }
-  outputTree->Branch("_met", &_met, "_met/f");
-  outputTree->Branch("_met_phi", &_met_phi, "_met_phi/f");
-  outputTree->Branch("_puppimet", &_puppimet, "_puppimet/f");
-  outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/f");
+  outputTree->Branch("_met", &_met, "_met/F");
+  outputTree->Branch("_met_phi", &_met_phi, "_met_phi/F");
+  outputTree->Branch("_puppimet", &_puppimet, "_puppimet/F");
+  outputTree->Branch("_puppimet_phi", &_puppimet_phi, "_puppimet_phi/F");
 
-  outputTree->Branch("_rawmet", &_rawmet, "_rawmet/f");
-  outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/f");
-  outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/f");
-  outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/f");
+  outputTree->Branch("_rawmet", &_rawmet, "_rawmet/F");
+  outputTree->Branch("_rawmet_phi", &_rawmet_phi, "_rawmet_phi/F");
+  outputTree->Branch("_puppirawmet", &_puppirawmet, "_puppirawmet/F");
+  outputTree->Branch("_puppirawmet_phi", &_puppirawmet_phi, "_puppirawmet_phi/F");
   
-  outputTree->Branch("_rawchsmet",&_rawchsmet,"_rawchsmet/f");
-  outputTree->Branch("_rawchsmet_phi",&_rawchsmet_phi,"_rawchsmet_phi/f");
-  outputTree->Branch("_chsmet",&_chsmet,"_chsmet/f");
-  outputTree->Branch("_chsmet_phi",&_chsmet_phi,"_chsmet_phi/f");
+  outputTree->Branch("_rawchsmet",&_rawchsmet,"_rawchsmet/F");
+  outputTree->Branch("_rawchsmet_phi",&_rawchsmet_phi,"_rawchsmet_phi/F");
+  outputTree->Branch("_chsmet",&_chsmet,"_chsmet/F");
+  outputTree->Branch("_chsmet_phi",&_chsmet_phi,"_chsmet_phi/F");
 
   if(SavePFinJets_){
-    jetPFTree->Branch("_Jet_Pt", &_Jet_Pt,"_Jet_Pt/f");
-    jetPFTree->Branch("_Jet_Eta", &_Jet_Eta,"_Jet_Eta/f");
-    jetPFTree->Branch("_Jet_Phi", &_Jet_Phi,"_Jet_Phi/f");
-    jetPFTree->Branch("_Jet_PtGen", &_Jet_PtGen,"_Jet_PtGen/f");
-    jetPFTree->Branch("_Jet_EtaGen", &_Jet_EtaGen,"_Jet_EtaGen/f");
-    jetPFTree->Branch("_Jet_PhiGen", &_Jet_PhiGen,"_Jet_PhiGen/f");
+    jetPFTree->Branch("_Jet_Pt", &_Jet_Pt,"_Jet_Pt/F");
+    jetPFTree->Branch("_Jet_Eta", &_Jet_Eta,"_Jet_Eta/F");
+    jetPFTree->Branch("_Jet_Phi", &_Jet_Phi,"_Jet_Phi/F");
+    jetPFTree->Branch("_Jet_PtGen", &_Jet_PtGen,"_Jet_PtGen/F");
+    jetPFTree->Branch("_Jet_EtaGen", &_Jet_EtaGen,"_Jet_EtaGen/F");
+    jetPFTree->Branch("_Jet_PhiGen", &_Jet_PhiGen,"_Jet_PhiGen/F");
 
     jetPFTree->Branch("_PFcand_pt",&_Jet_PFcand_pt);
     jetPFTree->Branch("_PFcand_eta",&_Jet_PFcand_eta);
@@ -2220,11 +2467,11 @@ JMEAnalyzer::beginJob()
 
   if(Skim_=="MCJECs")return;
 
-  outputTree->Branch("_PUV1_x", &_PUV1_x, "_PUV1_x/f");
-  outputTree->Branch("_PUV1_y", &_PUV1_y, "_PUV1_y/f");
-  outputTree->Branch("_PUV1_z", &_PUV1_z, "_PUV1_z/f");
+  outputTree->Branch("_PUV1_x", &_PUV1_x, "_PUV1_x/F");
+  outputTree->Branch("_PUV1_y", &_PUV1_y, "_PUV1_y/F");
+  outputTree->Branch("_PUV1_z", &_PUV1_z, "_PUV1_z/F");
   outputTree->Branch("_n_CH_fromvtxfit",&_n_CH_fromvtxfit,"_n_CH_fromvtxfit[6]/I");
-  outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/f");
+  outputTree->Branch("_HT_CH_fromvtxfit", &_HT_CH_fromvtxfit, "_HT_CH_fromvtxfit[6]/F");
 
 
   
@@ -2251,23 +2498,23 @@ JMEAnalyzer::beginJob()
 
   
   if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton" || Skim_=="DileptonInfo" || Skim_=="ZHFJet"){
-    outputTree->Branch("_mll", &_mll, "_mll/f");
-    outputTree->Branch("_ptll", &_ptll, "_ptll/f");
-    outputTree->Branch("_pzll", &_pzll, "_pzll/f");
-    outputTree->Branch("_yll", &_yll, "_yll/f");
-    outputTree->Branch("_dphill", &_dphill, "_dphill/f");
-    outputTree->Branch("_phill", &_phill, "_phill/f");
-    outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/f");
+    outputTree->Branch("_mll", &_mll, "_mll/F");
+    outputTree->Branch("_ptll", &_ptll, "_ptll/F");
+    outputTree->Branch("_pzll", &_pzll, "_pzll/F");
+    outputTree->Branch("_yll", &_yll, "_yll/F");
+    outputTree->Branch("_dphill", &_dphill, "_dphill/F");
+    outputTree->Branch("_phill", &_phill, "_phill/F");
+    outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/F");
     outputTree->Branch("_nElesll",&_nElesll,"_nElesll/I");
     
     if(IsMC_){
-    outputTree->Branch("_mll_gen", &_mll_gen, "_mll_gen/f");
-    outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/f");
-    outputTree->Branch("_pzll_gen", &_pzll_gen, "_pzll_gen/f");
-    outputTree->Branch("_yll_gen", &_yll_gen, "_yll_gen/f");
-    outputTree->Branch("_dphill_gen", &_dphill_gen, "_dphill_gen/f");
-    outputTree->Branch("_phill_gen", &_phill_gen, "_phill_gen/f");
-    outputTree->Branch("_costhCSll_gen", &_costhCSll_gen, "_costhCSll_gen/f");
+    outputTree->Branch("_mll_gen", &_mll_gen, "_mll_gen/F");
+    outputTree->Branch("_ptll_gen", &_ptll_gen, "_ptll_gen/F");
+    outputTree->Branch("_pzll_gen", &_pzll_gen, "_pzll_gen/F");
+    outputTree->Branch("_yll_gen", &_yll_gen, "_yll_gen/F");
+    outputTree->Branch("_dphill_gen", &_dphill_gen, "_dphill_gen/F");
+    outputTree->Branch("_phill_gen", &_phill_gen, "_phill_gen/F");
+    outputTree->Branch("_costhCSll_gen", &_costhCSll_gen, "_costhCSll_gen/F");
     outputTree->Branch("_ngenElesll",&_ngenElesll,"_ngenElesll/I");
     }
   }
@@ -2283,8 +2530,8 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_phgenEta",&_phgenEta);
     outputTree->Branch("_phgenPhi",&_phgenPhi);
     outputTree->Branch("_phgenPt",&_phgenPt);
-    outputTree->Branch("_genHT",&_genHT,"_genHT/f");
-    outputTree->Branch("_weight",&_weight,"_weight/f");
+    outputTree->Branch("_genHT",&_genHT,"_genHT/F");
+    outputTree->Branch("_weight",&_weight,"_weight/F");
     
 
   }
@@ -2321,6 +2568,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("HLT_DiJet110_35_Mjj650_PFMET110",&HLT_DiJet110_35_Mjj650_PFMET110,"HLT_DiJet110_35_Mjj650_PFMET110/O");
   outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60/O");
   outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight/O");
+  outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF/O");
   outputTree->Branch("HLT_PFMET120_PFMHT120_IDTight_PFHT60",&HLT_PFMET120_PFMHT120_IDTight_PFHT60,"HLT_PFMET120_PFMHT120_IDTight_PFHT60/O");
   outputTree->Branch("HLT_PFMET120_PFMHT120_IDTight",&HLT_PFMET120_PFMHT120_IDTight,"HLT_PFMET120_PFMHT120_IDTight/O");
   outputTree->Branch("HLT_PFHT1050",&HLT_PFHT1050,"HLT_PFHT1050/O");
@@ -2353,17 +2601,29 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_L1mu_eta",&_L1mu_eta);
   outputTree->Branch("_L1mu_phi",&_L1mu_phi);
   outputTree->Branch("_L1mu_bx",&_L1mu_bx);
+  outputTree->Branch("_L1mu_TFIdx",&_L1mu_TFIdx);
+  outputTree->Branch("_L1mu_upt",&_L1mu_upt);
+  outputTree->Branch("_L1mu_charge",&_L1mu_charge);
+  outputTree->Branch("_L1mu_dXY",&_L1mu_dXY);
+
 
   outputTree->Branch("_L1eg_pt",&_L1eg_pt);
   outputTree->Branch("_L1eg_eta",&_L1eg_eta);
   outputTree->Branch("_L1eg_phi",&_L1eg_phi);
   outputTree->Branch("_L1eg_bx",&_L1eg_bx);
+  outputTree->Branch("_L1eg_iso",&_L1eg_iso);
 
 
   outputTree->Branch("_L1jet_pt",&_L1jet_pt);
   outputTree->Branch("_L1jet_eta",&_L1jet_eta);
   outputTree->Branch("_L1jet_phi",&_L1jet_phi);
   outputTree->Branch("_L1jet_bx",&_L1jet_bx);
+
+
+  outputTree->Branch("HLT_PixelClusters_WP1",&HLT_PixelClusters_WP1,"HLT_PixelClusters_WP1/O");
+  outputTree->Branch("HLT_PixelClusters_WP2",&HLT_PixelClusters_WP2,"HLT_PixelClusters_WP2/O");
+  outputTree->Branch("HLT_PixelClusters_WP2_split",&HLT_PixelClusters_WP2_split,"HLT_PixelClusters_WP2_split/O");
+
 
   }
   
@@ -2382,6 +2642,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("hltEG90R9Id90HE10IsoMTrackIsoFilter",&hltEG90R9Id90HE10IsoMTrackIsoFilter );
   outputTree->Branch("hltEG75R9Id90HE10IsoMTrackIsoFilter",&hltEG75R9Id90HE10IsoMTrackIsoFilter );
   outputTree->Branch("hltEG50R9Id90HE10IsoMTrackIsoFilter",&hltEG50R9Id90HE10IsoMTrackIsoFilter );
+  outputTree->Branch("hltEG110EBTightIDTightIsoTrackIsoFilter",&hltEG110EBTightIDTightIsoTrackIsoFilter);
+
 
   outputTree->Branch("hltEle17WPLoose1GsfTrackIsoFilterForHI",&hltEle17WPLoose1GsfTrackIsoFilterForHI);
   outputTree->Branch("hltHIPhoton40Eta3p1",&hltHIPhoton40Eta3p1);
@@ -2664,6 +2926,9 @@ void JMEAnalyzer::InitandClearStuff(){
   _l3dIP.clear();
   _l3dIPError.clear();
   
+  _lpassHLT_IsoMu24.clear();
+  _lpassHLT_Ele32_WPTight_Gsf.clear();
+
   _nEles=0;
   _nMus=0;
   
@@ -2717,11 +2982,20 @@ void JMEAnalyzer::InitandClearStuff(){
   _L1mu_eta.clear();
   _L1mu_phi.clear();
   _L1mu_bx.clear();
+  _L1mu_TFIdx.clear();
+  _L1mu_dXY.clear();
+  _L1mu_upt.clear();
+  _L1mu_charge.clear();
+  _L1mu_TFIdx.clear();
+
+
+
 
   _L1eg_pt.clear();
   _L1eg_eta.clear();
   _L1eg_phi.clear();
   _L1eg_bx.clear();
+  _L1eg_iso.clear();
 
   _L1jet_pt.clear();
   _L1jet_eta.clear();
@@ -2740,6 +3014,7 @@ void JMEAnalyzer::InitandClearStuff(){
   HLT_DiJet110_35_Mjj650_PFMET110=false;
   HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60=false;
   HLT_PFMETNoMu120_PFMHTNoMu120_IDTight=false;
+  HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_FilterHF=false;
   HLT_PFMET120_PFMHT120_IDTight_PFHT60=false;
   HLT_PFMET120_PFMHT120_IDTight=false;
   HLT_PFHT1050=false;
@@ -2778,6 +3053,7 @@ void JMEAnalyzer::InitandClearStuff(){
   hltEG90R9Id90HE10IsoMTrackIsoFilter.clear(); 
   hltEG75R9Id90HE10IsoMTrackIsoFilter.clear(); 
   hltEG50R9Id90HE10IsoMTrackIsoFilter.clear(); 
+  hltEG110EBTightIDTightIsoTrackIsoFilter.clear();
   hltSinglePFJet60.clear(); 
   hltSinglePFJet80.clear(); 
   hltSinglePFJet140.clear();
@@ -2799,14 +3075,20 @@ void JMEAnalyzer::InitandClearStuff(){
 
 bool JMEAnalyzer::PassSkim(){
   
-  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton"){
+  if(Skim_=="L1Study") return Flag_goodVertices;
+
+  if((Skim_=="L1Study_ZToMuMu" || Skim_=="L1Study_SingleMuforJME") && !HLT_IsoMu24) return false;
+  if(Skim_=="L1Study_ZToEE"&&!HLT_Ele32_WPTight_Gsf) return false;
+  if(Skim_=="L1Study_SinglePhotonforJME"&& !HLT_Photon50_R9Id90_HE10_IsoM&& !HLT_Photon110EB_TightID_TightIso) return false;
+  
+  if(Skim_=="ZToEEorMuMu" || Skim_=="Dilepton" || Skim_=="L1Study_ZToMuMu" || Skim_=="L1Study_ZToEE"){
 
 
     if(_mll>20&&Skim_=="Dilepton")  return true;
     if(_mll>70&&_mll<110) return true;
     return false;
   }
-  else if(Skim_=="Photon"){
+  else if(Skim_=="Photon" || Skim_=="L1Study_SinglePhotonforJME"){
     
     int ngoodphotons =0;
     for(unsigned int i = 0; i < _phPt.size(); i++){
@@ -2834,9 +3116,6 @@ bool JMEAnalyzer::PassSkim(){
   }
   else if(Skim_=="HighHT") return (HLT_PFHT1050 || HLT_PFHT900 || HLT_PFJet500 || HLT_AK8PFJet500) ; 
   else if(Skim_=="L1Unprefirable" ){
-    if (Flag_IsUnprefirable) return true;
-    else return false;
-
     std::string str_run = std::to_string(_runNb);
     std::string str_lumi = std::to_string(_lumiBlock);
     std::string str_event = std::to_string(_eventNb);

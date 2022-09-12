@@ -2,7 +2,7 @@ TheSkim = "THESKIM"
 ReclusterCHSJets = False
 ReclusterGenJets = False
 runEra="THERUNERA"
-UseSQLiteFiles=False
+UseSQLiteFiles=True
 
 ISMC=bool(MCBOOL)
 
@@ -23,7 +23,7 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("Demo")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 1000
+process.MessageLogger.cerr.FwkReport.reportEvery = 10000
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(200000) )  
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(23374) )  
@@ -52,7 +52,8 @@ process.source = cms.Source("PoolSource",
 #process.TFileService = cms.Service("TFileService", fileName = cms.string("outputQCDHT1000to1500_puppiv16_23374evts.root") )
 process.TFileService = cms.Service("TFileService", fileName = cms.string("output.root") )
 
-process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
+process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
+#process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_condDBv2_cff')
 process.GlobalTag.globaltag="102X_dataRun2_v8"
 
 process.load("Configuration.StandardSequences.GeometryDB_cff")
@@ -67,18 +68,23 @@ if ReclusterCHSJets:
 else:
     CHSJetCollectionName ="updatedPatJetsUpdatedJEC"
 
+CHSJetCollectionName ="slimmedJets"
+
 if ReclusterGenJets:
     GenJetCollectionName="ak4GenJetsNoNuNEW"
 else:
     GenJetCollectionName="slimmedGenJets"
 
 
-EleVetoWP=''
-EleTightWP=''
-PhotonTightWP=''
+EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+
+
 #Rochester corrections folder: 
 RochesterCorrectionFile="RochesterCorrections/"
-
+#RochesterCorrectionFile+="RoccoR2018UL.txt"
 
 #Starting with pre UL data
 if "Data2016" in runEra:
@@ -168,6 +174,17 @@ if "DataUL2018" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
     RochesterCorrectionFile+="RoccoR2018UL.txt"
 
+
+if "DataRun3" in runEra:
+    process.GlobalTag.globaltag="123X_dataRun3_Prompt_v12" #UL2018 
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2018UL.txt"
+
+
+
 #Now UL MC
 
 if "MCUL2016APV" in runEra:
@@ -202,8 +219,8 @@ if "MCUL2018" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
     RochesterCorrectionFile+="RoccoR2018UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet   
 
-print "Roch corr file: " 
-print RochesterCorrectionFile
+print("Roch corr file: ")
+print(RochesterCorrectionFile)
 
 process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      METFiltersPAT = cms.InputTag("TriggerResults::PAT"),
@@ -248,15 +265,15 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      Photons=cms.InputTag("slimmedPhotons"),
                                      JetPtCut=cms.double(2),
                                      AK8JetPtCut=cms.double(10),
-                                     ElectronPtCut=cms.double(1005),
+                                     ElectronPtCut=cms.double(2),
                                      ElectronVetoWorkingPoint=cms.string(EleVetoWP),
                                      ElectronLooseWorkingPoint=cms.string(EleLooseWP),
                                      ElectronTightWorkingPoint=cms.string(EleTightWP),
-                                     MuonPtCut=cms.double(1005),
+                                     MuonPtCut=cms.double(1),
                                      RochCorrFile=cms.string(RochesterCorrectionFile),
-                                     PhotonPtCut=cms.double(15000),
+                                     PhotonPtCut=cms.double(5),
                                      PhotonTightWorkingPoint=cms.string(PhotonTightWP),
-                                     PFCandPtCut=cms.double(250000),
+                                     PFCandPtCut=cms.double(25000),
                                      SaveTree=cms.bool(True),
                                      IsMC=cms.bool(ISMC),
                                      SavePUIDVariables=cms.bool(False),
@@ -337,6 +354,32 @@ if TheSkim == "L1Unprefirable":
     process.jmeanalyzer.DropBadJets=cms.bool(False)
 
 
+if TheSkim == "L1Study_ZToMuMu" or TheSkim == "L1Study_ZToEE":
+    process.jmeanalyzer.JetPtCut=cms.double(20000)
+    process.jmeanalyzer.AK8JetPtCut=cms.double(20000)
+    process.jmeanalyzer.PhotonPtCut=cms.double(20000)
+    process.jmeanalyzer.ElectronPtCut=cms.double(10)
+    process.jmeanalyzer.MuonPtCut=cms.double(5)
+    process.jmeanalyzer.ApplyPhotonID=cms.bool(False)
+    process.jmeanalyzer.SaveAK8Jets=cms.bool(False)
+    process.jmeanalyzer.SaveCaloJets=cms.bool(False)
+    process.jmeanalyzer.SavenoCHSJets=cms.bool(False)
+    process.jmeanalyzer.DropUnmatchedJets=cms.bool(False)
+    process.jmeanalyzer.DropBadJets=cms.bool(False)
+    
+if TheSkim == "L1Study_SingleMuforJME" or TheSkim == "L1Study_SinglePhotonforJME":
+    process.jmeanalyzer.JetPtCut=cms.double(25)
+    process.jmeanalyzer.AK8JetPtCut=cms.double(20000)
+    process.jmeanalyzer.PhotonPtCut=cms.double(20)
+    process.jmeanalyzer.ElectronPtCut=cms.double(10)
+    process.jmeanalyzer.MuonPtCut=cms.double(5)
+    process.jmeanalyzer.ApplyPhotonID=cms.bool(False)
+    process.jmeanalyzer.SaveAK8Jets=cms.bool(False)
+    process.jmeanalyzer.SaveCaloJets=cms.bool(False)
+    process.jmeanalyzer.SavenoCHSJets=cms.bool(False)
+    process.jmeanalyzer.DropUnmatchedJets=cms.bool(False)
+    process.jmeanalyzer.DropBadJets=cms.bool(False)
+
 #Rerunning the ecalbadcalibration filter
 from RecoMET.METFilters.ecalBadCalibFilter_cfi import ecalBadCalibFilter
 
@@ -414,12 +457,14 @@ if "Data2017" in runEra:
     JSONfile = 'Cert_294927-306462_13TeV_EOY2017ReReco_Collisions17_JSON_v1.txt'
 if "Data2016" in runEra or "DataUL2016" in runEra:
     JSONfile = 'Cert_271036-284044_13TeV_ReReco_07Aug2017_Collisions16_JSON.txt'
+if "DataRun3" in runEra:
+    JSONfile = 'Cert_Collisions2022_355100_357900_Golden.json'
 
 myLumis = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
 if not ISMC:
     process.source.lumisToProcess.extend(myLumis)
-print "json" 
-print JSONfile 
+print( "json" )
+print( JSONfile )
 
 #Updating JECs
 JECsVersion=""
@@ -475,6 +520,14 @@ if "DataUL2016G" in runEra:
     JECsVersion='Summer19UL16_RunFGH_V7_DATA'
 if "DataUL2016H" in runEra:
     JECsVersion='Summer19UL16_RunFGH_V7_DATA'
+
+if "MCRun3" in runEra:
+    JECsVersion='Summer19UL18_V5_MC'
+if "DataRun3" in runEra:
+    JECsVersion='Winter22Run3_RunA_V1_DATA'
+
+
+
 
 SQLiteFile='sqlite:'+JECsVersion+'.db'
 
@@ -558,10 +611,16 @@ if "DataUL2016G" in runEra:
 if "DataUL2016H" in runEra:
     JERVersion='Summer20UL16_JRV3_DATA'
 
+if "MCRun3" in runEra:
+    JERVersion='Summer19UL18_JRV2_MC'
+if "DataRun3" in runEra:
+    JERVersion='Summer19UL18_JRV2_DATA'
+
+
 SQLiteFileJER='sqlite:'+JERVersion+'.db'
 
 
-print SQLiteFileJER
+print( SQLiteFileJER)
 process.jer = cms.ESSource("PoolDBESSource",
                            CondDBSetup,
                            toGet = cms.VPSet(
@@ -810,7 +869,7 @@ if "UL2017" in runEra or "UL2018" in runEra:
 
 
 
-process.applyjecs =  cms.Path( process.jecSequence )
+#process.applyjecs =  cms.Path( process.jecSequence )
 if ISMC and ReclusterGenJets: 
     process.reclustergenjets = cms.Path(process.packedGenParticlesForJetsNoNuNEW * process.packedGenParticlesForJetsWithNuNEW *process.ak4GenJetsNoNuNEW * process.ak4GenJetsWithNuNEW * process.patJetGenJetMatchUpdate *process.patJetGenJetMatchUpdatePuppi  * process.patJetGenWithNuJetMatchUpdate  * process.patJetGenWithNuJetMatchUpdatePuppi *process.patJetGenJetMatchUpdateCalo)
 

@@ -23,6 +23,7 @@
 <use   name="CondCore/DBOutputService"/>
 <use   name="CondFormats/PhysicsToolsObjects"/>
 <use   name="PhysicsTools/SelectorUtils"/>
+<use   name="L1Trigger/L1TGlobal"/>
 <use   name="rootcore"/>
 <use   name="roottmva"/>
 
