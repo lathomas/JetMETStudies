@@ -36,6 +36,9 @@ sed -ie "s/RUNERA/$RUNERA/g" crab_template_temp.py
 sed -ie "s/THEREQUESTNAME/$therequestname/g" crab_template_temp.py
 sed -ie "s/CAMPAIGN/$campaigntag/g" crab_template_temp.py
 
+if [ $ISMC == "True" ]; then
+    sed -ie "s/config.Data.lumiMask/#config.Data.lumiMask/g" crab_template_temp.py
+fi
 
 
 cp JMEanalysis_forcrab.py theconfig.py 

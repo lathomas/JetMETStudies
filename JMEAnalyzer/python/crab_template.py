@@ -39,7 +39,9 @@ config.Data.allowNonValidInputDataset = True
 
 config.Data.publication = True
 config.Data.outputDatasetTag = 'CAMPAIGN_RUNERA_THESKIM'
-config.Data.lumiMask = 'Cert_Collisions2022_355100_357900_Golden.json'
+
+
+config.Data.lumiMask = 'Cert_Collisions2016to2022_273158_357900_Golden.json'
 #config.Data.outLFNDirBase = '/store/group/dpg_trigger/comm_trigger/L1Trigger/lathomas/Run3Commissioning'
 #config.Site.storageSite = 'T2_CH_CERN'
 
