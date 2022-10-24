@@ -130,6 +130,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
   virtual void CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
   virtual int GetRecoIdx(const reco::GenJet * genjet , vector <Float_t> recojetpt,  vector <Float_t> recojeteta, vector <Float_t> recojetphi, vector <Float_t> recojetptgen );
+  virtual bool IsTauCleaned(const pat::Jet *iJ);
   virtual bool IsLeptonPhotonCleaned(const pat::Jet *iJ);
   virtual bool IsLeptonPhotonCleaned(const reco::CaloJet *iJ);
   virtual bool PassJetPreselection(const pat::Jet * iJ, double genjetpt, bool ispuppi);
@@ -183,6 +184,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   edm::EDGetTokenT<std::vector< pat::MET> > puppimetToken_;
   edm::EDGetTokenT<std::vector< pat::Electron> > electronToken_;
   edm::EDGetTokenT<std::vector< pat::Muon> > muonToken_;
+  edm::EDGetTokenT<std::vector< pat::Tau> > tauToken_;
+
   edm::EDGetTokenT<std::vector< pat::Photon> > photonToken_;
 
   edm::EDGetTokenT<GenParticleCollection> genpartToken_;
@@ -297,6 +300,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector <Float_t>  _jetArea;
   vector <bool> _jetPassID;
   vector <bool> _jetLeptonPhotonCleaned;
+  vector <bool> _jetTauCleaned;
   
   vector <Float_t>  _jethfsigmaEtaEta;
   vector <Float_t>  _jethfsigmaPhiPhi;
@@ -408,6 +412,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<Float_t>  _lPhi;
   vector<Float_t>  _lPt;
   vector<Float_t>  _lPtcorr;
+  vector<Float_t>  _lPtSC;
   
   vector<Float_t>  _ldz;
   vector<Float_t>  _ldzError;
@@ -424,6 +429,13 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   vector<Bool_t> _lisSAMuon ;
   vector<int> _lpdgId;
   int _nEles, _nMus;
+
+  vector<Float_t>  _tauEta;
+  vector<Float_t>  _tauPhi;
+  vector<Float_t>  _tauPt;
+  vector<Bool_t>  _tauPassMediumID;
+
+
 
   //Gen leptons
   vector<Float_t>  _lgenEta;
@@ -686,6 +698,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   puppimetToken_(consumes<std::vector<pat::MET> > (iConfig.getParameter<edm::InputTag>("PuppiMet"))),
   electronToken_(consumes< std::vector< pat::Electron> >(iConfig.getParameter<edm::InputTag>("Electrons"))),
   muonToken_(consumes< std::vector< pat::Muon> >(iConfig.getParameter<edm::InputTag>("Muons"))),
+  tauToken_(consumes< std::vector< pat::Tau> >(edm::InputTag("slimmedTaus"))),
   photonToken_(consumes< std::vector< pat::Photon> >(iConfig.getParameter<edm::InputTag>("Photons"))),
   genpartToken_(consumes<GenParticleCollection> (iConfig.getParameter<edm::InputTag>("GenParticles"))),
   geninfoToken_(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("GenInfo"))),
@@ -1109,6 +1122,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lPhi.push_back((&*electron)->phi());
     _lPt.push_back((&*electron)->pt());
     _lPtcorr.push_back(ptelecorr );
+    _lPtSC.push_back( ((&*electron)->superCluster()->energy()) / cosh((&*electron)->superCluster()->eta())   );
     _lpdgId.push_back(-11*(&*electron)->charge());
     _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
     _lPassLooseID.push_back( (&*electron)->electronID(ElectronLooseWP_) );
@@ -1166,6 +1180,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lPhi.push_back((&*muon)->phi());
     _lPt.push_back((&*muon)->pt());
     _lPtcorr.push_back( ptmuoncorr );
+    _lPtSC.push_back( -1 );
     _lpdgId.push_back(-13*(&*muon)->charge());
     _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
     _lPassLooseID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdLoose )&& (&*muon)->passed(reco::Muon::PFIsoLoose ) );
@@ -1201,6 +1216,19 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     hltEle17WPLoose1GsfTrackIsoFilterForHI.push_back(false);
     hltEle15WPLoose1GsfTrackIsoFilterForHI.push_back(false);
 
+  }
+
+
+
+
+  edm::Handle< std::vector<pat::Tau> > thePatTaus;
+  iEvent.getByToken(tauToken_,thePatTaus);
+  for( std::vector<pat::Tau>::const_iterator tau = (*thePatTaus).begin(); tau != (*thePatTaus).end(); tau++ ) {
+    if((&*tau)->pt()<25)continue;
+    _tauEta.push_back((&*tau)->eta());
+    _tauPhi.push_back((&*tau)->phi());
+    _tauPt.push_back((&*tau)->pt());
+    _tauPassMediumID.push_back((&*tau)->tauID("byMediumDeepTau2017v2p1VSjet"));
   }
 
 
@@ -1384,7 +1412,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       _jetArea.push_back((&*jet)->jetArea());
       _jetPassID.push_back(passid);
       _jetLeptonPhotonCleaned.push_back(isleptoncleaned);
-      
+      _jetTauCleaned.push_back( IsTauCleaned((&*jet)));
+
       //Accessing the default PU ID stored in MINIAOD https://twiki.cern.ch/twiki/bin/viewauth/CMS/PileupJetID
       if((&*jet)->hasUserFloat("hfJetShowerShape:sigmaEtaEta")) _jethfsigmaEtaEta.push_back((&*jet)->userFloat("hfJetShowerShape:sigmaEtaEta"));
       if((&*jet)->hasUserFloat("hfJetShowerShape:sigmaPhiPhi")) _jethfsigmaPhiPhi.push_back((&*jet)->userFloat("hfJetShowerShape:sigmaPhiPhi"));
@@ -1913,6 +1942,13 @@ void
 JMEAnalyzer::beginJob()
 {
 
+
+
+  outputTree->Branch("_tauEta",&_tauEta);
+  outputTree->Branch("_tauPhi",&_tauPhi);
+  outputTree->Branch("_tauPt",&_tauPt);
+  outputTree->Branch("_tauPassMediumID",&_tauPassMediumID);
+
  
   if(Skim_.find("L1Study") !=std::string::npos){
 
@@ -1934,6 +1970,7 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_lPhi",&_lPhi);
     outputTree->Branch("_lPt",&_lPt);
     outputTree->Branch("_lPtcorr",&_lPtcorr);
+    outputTree->Branch("_lPtSC",&_lPtSC);
     outputTree->Branch("_lpdgId",&_lpdgId);
     outputTree->Branch("_lPassTightID",&_lPassTightID);
     outputTree->Branch("_lPassLooseID",&_lPassLooseID);
@@ -2044,6 +2081,7 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_jet_NM",&_jet_NM);*/
     outputTree->Branch("_jetPassID",&_jetPassID);
     outputTree->Branch("_jetLeptonPhotonCleaned",&_jetLeptonPhotonCleaned);
+    outputTree->Branch("_jetTauCleaned",&_jetTauCleaned);
     
     outputTree->Branch("_jetDeepJet_b",&_jetDeepJet_b);
     /*outputTree->Branch("_jetParticleNet_b",&_jetParticleNet_b);
@@ -2124,6 +2162,7 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_jetArea",&_jetArea);
     outputTree->Branch("_jetPassID",&_jetPassID);
     outputTree->Branch("_jetLeptonPhotonCleaned",&_jetLeptonPhotonCleaned);
+    outputTree->Branch("_jetTauCleaned",&_jetTauCleaned);
     outputTree->Branch("_jetPtNoL2L3Res",&_jetPtNoL2L3Res);
     outputTree->Branch("_jetPUMVAUpdate2017",&_jetPUMVAUpdate2017);
     outputTree->Branch("_jetPUMVAUpdate2018",&_jetPUMVAUpdate2018);
@@ -2303,6 +2342,7 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("_jetArea",&_jetArea);
   outputTree->Branch("_jetPassID",&_jetPassID);
   outputTree->Branch("_jetLeptonPhotonCleaned",&_jetLeptonPhotonCleaned);
+  outputTree->Branch("_jetTauCleaned",&_jetTauCleaned);
 
   if(IsMC_){
   outputTree->Branch("_jetPtGen",&_jetPtGen);
@@ -2808,6 +2848,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _jetArea.clear();
   _jetPassID.clear();
   _jetLeptonPhotonCleaned.clear();
+  _jetTauCleaned.clear();
   _jethfsigmaEtaEta.clear();
   _jethfsigmaPhiPhi.clear();
   _jethfcentralEtaStripSize.clear();
@@ -2910,10 +2951,16 @@ void JMEAnalyzer::InitandClearStuff(){
   _genAK8jet_PuppiIdx.clear();
 
 
+  _tauEta.clear();
+  _tauPhi.clear();
+  _tauPt.clear();
+  _tauPassMediumID.clear();
+
   _lEta.clear();
   _lPhi.clear();
   _lPt.clear();
   _lPtcorr.clear();
+  _lPtSC.clear();
   _lpdgId.clear();
   _lPassTightID.clear();
   _lPassLooseID.clear();
@@ -3375,6 +3422,16 @@ int  JMEAnalyzer::GetRecoIdx(const reco::GenJet * genjet , vector <Float_t> reco
   return -1;
 }
       
+
+bool JMEAnalyzer::IsTauCleaned(const pat::Jet *iJ){
+  for(unsigned int i = 0 ; i < _tauPt.size(); i++){
+    if(!_tauPassMediumID[i])continue;
+    double dr = deltaR( _tauEta[i],_tauPhi[i],iJ->eta(),iJ->phi());
+    if(dr<0.3) return false;
+  }
+  return true;
+}
+
 
 bool JMEAnalyzer::IsLeptonPhotonCleaned(const pat::Jet *iJ){
   for(unsigned int i = 0 ; i < _lPt.size(); i++){
