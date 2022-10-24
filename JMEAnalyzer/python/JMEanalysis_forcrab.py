@@ -176,7 +176,7 @@ if "DataUL2018" in runEra:
 
 
 if "DataRun3" in runEra:
-    process.GlobalTag.globaltag="123X_dataRun3_Prompt_v12" #UL2018 
+    process.GlobalTag.globaltag="123X_dataRun3_Prompt_v12" 
     EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
     EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
     EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
@@ -218,6 +218,13 @@ if "MCUL2018" in runEra:
     EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
     PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
     RochesterCorrectionFile+="RoccoR2018UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet   
+
+
+##106X GT not working with 12_4 => overwriting it
+process.GlobalTag.globaltag="123X_dataRun3_Prompt_v12"
+if "MC" in runEra:
+    process.GlobalTag.globaltag="123X_mcRun3_2021_realistic_v13"
+
 
 print("Roch corr file: ")
 print(RochesterCorrectionFile)
@@ -444,9 +451,11 @@ process.BadChargedCandidateFilterUpdate=BadChargedCandidateFilter.clone(
 
 import FWCore.PythonUtilities.LumiList as LumiList
 import FWCore.ParameterSet.Types as CfgTypes
-process.source.lumisToProcess = CfgTypes.untracked(CfgTypes.VLuminosityBlockRange())
 
 
+#process.source.lumisToProcess = CfgTypes.untracked(CfgTypes.VLuminosityBlockRange())
+
+'''
 JSONfile =''
 
 if "DataUL2017" in runEra:
@@ -461,11 +470,12 @@ if "DataRun3" in runEra:
     JSONfile = 'Cert_Collisions2022_355100_357900_Golden.json'
 
 myLumis = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
+
 if not ISMC:
     process.source.lumisToProcess.extend(myLumis)
 print( "json" )
 print( JSONfile )
-
+'''
 #Updating JECs
 JECsVersion=""
 if "MCUL2016APV" in runEra:
@@ -849,6 +859,9 @@ process.QGTagger.jetsLabel        = cms.string('QGL_AK4PFchs')
 
 #
 
+
+
+'''
 eraforEGMSmearing=''
 
 if "UL2017" in runEra or "UL2018" in runEra:
@@ -867,7 +880,7 @@ if "UL2017" in runEra or "UL2018" in runEra:
                            era=eraforEGMSmearing)    
     process.ApplyEGMScaleSmearing=cms.Path(process.egammaPostRecoSeq)
 
-
+'''
 
 #process.applyjecs =  cms.Path( process.jecSequence )
 if ISMC and ReclusterGenJets: 

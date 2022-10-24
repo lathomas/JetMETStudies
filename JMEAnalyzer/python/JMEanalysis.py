@@ -7,19 +7,21 @@ TheSkim = "L1Unprefirable"
 TheSkim = "ZJetsResiduals"
 TheSkim = "MCJECs"
 TheSkim = "L1Study"
-#TheSkim = "L1Study_ZToMuMu"
-TheSkim = "L1Study_ZToEE"
+TheSkim = "L1Study_ZToMuMu"
+#TheSkim = "L1Study_ZToEE"
 #TheSkim = "L1Study_SingleMuforJME"
 ReclusterCHSJets = False
 ReclusterGenJets = False
 #TheSkim = ""
-
+TheSkim = "L1Study"
 #runEra="DataUL2017F"
 #runEra="MCUL2017"
+runEra="MCRun3"
+#runEra="DataRun3"
+#runEra="DataUL2018A"
+#runEra="DataRun3"
 #runEra="MCRun3"
-runEra="DataRun3"
-#runEra="DataUL2018D"
-ISMC=True
+ISMC=False
 if "MC" in runEra:
     ISMC=True
 if not ISMC:
@@ -46,10 +48,17 @@ process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )
 from PhysicsTools.PatAlgos.tools.helpers import getPatAlgosToolsTask
 patAlgosToolsTask = getPatAlgosToolsTask(process)
 
+lines = []
+#with open('inputfiles.txt') as f:
+    #lines = f.readlines()
+#    lines = ['file:'+line for line in f.readlines()]
+    #print(type(lines))
 
 process.source = cms.Source("PoolSource",
                                 fileNames = cms.untracked.vstring(
 
+'/store/mc/Run3Winter22MiniAOD/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/MINIAODSIM/PUForMUOVal_122X_mcRun3_2021_realistic_v9-v2/2820000/08b5e1ae-7d65-4198-a9ec-fa27f8b16b3b.root'
+#                                    lines
 #2018
 #'/store/mc/RunIISummer19UL18MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/100000/00556E5A-E6CD-6C4B-83BA-0B5C00C0A5E4.root'
 #2017
@@ -66,7 +75,10 @@ process.source = cms.Source("PoolSource",
 #'file:/user/lathomas/L1Studies/SampleGeneration/SingleNeutrinoPU1/CMSSW_12_2_1/src/jobsubmission/output_MINIAOD.root'
 #'file:/user/lathomas/Run3DQM/CMSSW_12_3_4_patch2/src/JetMETStudies/JMEAnalyzer/python/files2022/0634e291-f4b1-49fc-a542-dde43480831a.root'
 #'/store/data/Run2022C/EGamma/MINIAOD/PromptReco-v1/000/356/071/00000/861766b9-f568-4c74-96be-9a3d037b087d.root'
-'/store/mc/Run3Winter22MiniAOD/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/MINIAODSIM/122X_mcRun3_2021_realistic_v9_ext1-v1/2830000/006d687f-44da-49f0-b0c0-f46b8600731f.root'
+#'/store/mc/Run3Winter22MiniAOD/DYJetsToLL_M-50_TuneCP5_13p6TeV-madgraphMLM-pythia8/MINIAODSIM/122X_mcRun3_2021_realistic_v9_ext1-v1/2830000/006d687f-44da-49f0-b0c0-f46b8600731f.root'
+
+#'/store/mc/RunIISummer20UL18MiniAODv2/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v16_L1v1-v2/100000/4E295BA9-D9F7-6643-B993-57789E70C0CB.root'
+#'/store/data/Run2022D/Commissioning/MINIAOD/PromptReco-v2/000/357/756/00000/414e1689-6bbc-4540-8e1a-0d8f0abe815a.root'
 #'file:MINIAODRun3.root'
 #'/store/data/Run2022C/SingleMuon/MINIAOD/PromptReco-v1/000/356/071/00000/40fbb456-859b-4f95-880a-15491af226fe.root'
 #'/store/data/Run2022C/SingleMuon/MINIAOD/PromptReco-v1/000/356/071/00000/41ea401b-9ada-4481-b948-9c831fcafeb3.root',
@@ -135,7 +147,8 @@ process.source = cms.Source("PoolSource",
 
 
 #'/store/mc/RunIISummer20UL18MiniAODv2/QCD_bEnriched_HT2000toInf_TuneCP5_13TeV-madgraph-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v16_L1v1-v1/110000/C46792AE-B560-3541-B67A-DD73050C49A8.root'
-
+#'/store/data/Run2018A/SingleMuon/MINIAOD/UL2018_MiniAODv2-v3/2530000/07C10A10-6C29-AA46-B465-4FADE04566C4.root'
+#'/store/data/Run2022E/Muon/MINIAOD/PromptReco-v1/000/359/286/00000/7a50e5aa-a891-4159-acc4-30fc2c477b90.root'
 #'/store/data/Run2018D/DoubleMuon/MINIAOD/UL2018_MiniAODv2-v1/270002/152AABA5-91A3-9F4B-82BE-654A96DEAE98.root'
 #Data
 #'/store/data/Run2017F/DoubleMuon/MINIAOD/09Aug2019_UL2017-v1/270000/527C5A3A-7C09-4F42-B9DA-A84871504EBF.root'
@@ -294,6 +307,13 @@ if "DataRun3" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
     RochesterCorrectionFile+="RoccoR2018UL.txt"
 
+if "MCRun3" in runEra:
+    process.GlobalTag.globaltag="123X_dataRun3_Prompt_v12"
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2018UL.txt"
 
 #Now UL MC
 
@@ -328,6 +348,13 @@ if "MCUL2018" in runEra:
     EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
     PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
     RochesterCorrectionFile+="RoccoR2018UL.txt" #Muon POG hasn't released Rochester corrections for UL18 yet   
+
+
+process.GlobalTag.globaltag="123X_dataRun3_Prompt_v12"
+if "MC" in runEra:
+    process.GlobalTag.globaltag="123X_mcRun3_2021_realistic_v13"
+
+
 
 print("Roch corr file: ")
 print(RochesterCorrectionFile)
@@ -570,8 +597,8 @@ if "DataRun3" in runEra:
     JSONfile = 'Cert_Collisions2022_355100_357900_Golden.json' 
 
 myLumis = LumiList.LumiList(filename = JSONfile).getCMSSWString().split(',')
-if not ISMC:
-    process.source.lumisToProcess.extend(myLumis)
+#if not ISMC:
+#    process.source.lumisToProcess.extend(myLumis)
 print( "json" )
 print( JSONfile )
 
@@ -970,6 +997,8 @@ process.QGTagger.jetsLabel        = cms.string('QGL_AK4PFchs')
 
 #
 
+
+'''
 eraforEGMSmearing=''
 
 if "UL2017" in runEra or "UL2018" in runEra:
@@ -989,7 +1018,7 @@ if "UL2017" in runEra or "UL2018" in runEra:
 
 
 from RecoMET.METFilters.primaryVertexFilter_cfi import primaryVertexFilter
-
+'''
 
 #process.applyjecs =  cms.Path( process.jecSequence )
 if ISMC and ReclusterGenJets: 
@@ -997,7 +1026,7 @@ if ISMC and ReclusterGenJets:
 
 
 #You may want to comment out some of the following lines to speed things up
-process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
+#process.ApplyPatAlgos  = cms.Path(process.patAlgosToolsTask)
 
 #process.rerunmetfilters = cms.Path( process.ecalBadCalibReducedMINIAOD2019Filter * process.ecalLaserCorrFilter * process.ecalDeadCellBoundaryEnergyFilterUpdate * process.BadChargedCandidateFilterUpdate ) 
 #process.computepuid = cms.Path(process.pileupJetIdUpdate  * process.pileupJetIdUpdate2017 * process.pileupJetIdUpdate2018)
