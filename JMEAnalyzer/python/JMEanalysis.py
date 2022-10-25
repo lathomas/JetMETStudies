@@ -13,7 +13,7 @@ TheSkim = "L1Study_ZToMuMu"
 ReclusterCHSJets = False
 ReclusterGenJets = False
 #TheSkim = ""
-TheSkim = "L1Study"
+TheSkim = "L1Study_SinglePhotonforJME"
 #runEra="DataUL2017F"
 #runEra="MCUL2017"
 runEra="MCRun3"
@@ -40,7 +40,7 @@ import FWCore.ParameterSet.Config as cms
 process = cms.Process("Demo")
 
 process.load("FWCore.MessageService.MessageLogger_cfi")
-process.MessageLogger.cerr.FwkReport.reportEvery = 10000
+process.MessageLogger.cerr.FwkReport.reportEvery = 100
 
 process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(-1) )  
 #process.maxEvents = cms.untracked.PSet( input = cms.untracked.int32(23374) )  
@@ -56,8 +56,8 @@ lines = []
 
 process.source = cms.Source("PoolSource",
                                 fileNames = cms.untracked.vstring(
-
-'/store/mc/Run3Winter22MiniAOD/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/MINIAODSIM/PUForMUOVal_122X_mcRun3_2021_realistic_v9-v2/2820000/08b5e1ae-7d65-4198-a9ec-fa27f8b16b3b.root'
+'/store/mc/Run3Winter22MiniAOD/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/MINIAODSIM/PUForMUOVal_122X_mcRun3_2021_realistic_v9-v2/2830000/1f1937c4-c277-4ee0-9a54-9e4f87d9be2f.root'
+#'/store/mc/Run3Winter22MiniAOD/TTToSemiLeptonic_TuneCP5_13p6TeV-powheg-pythia8/MINIAODSIM/PUForMUOVal_122X_mcRun3_2021_realistic_v9-v2/2820000/08b5e1ae-7d65-4198-a9ec-fa27f8b16b3b.root'
 #                                    lines
 #2018
 #'/store/mc/RunIISummer19UL18MiniAOD/DYJetsToLL_M-50_TuneCP5_13TeV-amcatnloFXFX-pythia8/MINIAODSIM/106X_upgrade2018_realistic_v11_L1v1-v2/100000/00556E5A-E6CD-6C4B-83BA-0B5C00C0A5E4.root'
@@ -399,6 +399,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      PuppiMet=cms.InputTag("slimmedMETsPuppi"),
                                      Electrons=cms.InputTag("slimmedElectrons"),
                                      Muons=cms.InputTag("slimmedMuons"),
+                                     Taus=cms.InputTag("slimmedTaus"),
                                      Photons=cms.InputTag("slimmedPhotons"),
                                      JetPtCut=cms.double(2),
                                      AK8JetPtCut=cms.double(10),
@@ -407,6 +408,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      ElectronLooseWorkingPoint=cms.string(EleLooseWP),
                                      ElectronTightWorkingPoint=cms.string(EleTightWP),
                                      MuonPtCut=cms.double(1),
+                                     TauPtCut=cms.double(1000),
                                      RochCorrFile=cms.string(RochesterCorrectionFile),
                                      PhotonPtCut=cms.double(5),
                                      PhotonTightWorkingPoint=cms.string(PhotonTightWP),

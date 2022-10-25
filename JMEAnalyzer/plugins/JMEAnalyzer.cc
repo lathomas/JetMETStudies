@@ -220,6 +220,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   Float_t ElectronPtCut_;
   string ElectronVetoWP_, ElectronTightWP_, ElectronLooseWP_;
   Float_t MuonPtCut_;
+  Float_t TauPtCut_;
   string RochCorrFile_;
   Float_t PhotonPtCut_;
   string PhotonTightWP_;
@@ -698,7 +699,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   puppimetToken_(consumes<std::vector<pat::MET> > (iConfig.getParameter<edm::InputTag>("PuppiMet"))),
   electronToken_(consumes< std::vector< pat::Electron> >(iConfig.getParameter<edm::InputTag>("Electrons"))),
   muonToken_(consumes< std::vector< pat::Muon> >(iConfig.getParameter<edm::InputTag>("Muons"))),
-  tauToken_(consumes< std::vector< pat::Tau> >(edm::InputTag("slimmedTaus"))),
+  tauToken_(consumes< std::vector< pat::Tau> >(iConfig.getParameter<edm::InputTag>("Taus"))),
   photonToken_(consumes< std::vector< pat::Photon> >(iConfig.getParameter<edm::InputTag>("Photons"))),
   genpartToken_(consumes<GenParticleCollection> (iConfig.getParameter<edm::InputTag>("GenParticles"))),
   geninfoToken_(consumes<GenEventInfoProduct>(iConfig.getParameter<edm::InputTag>("GenInfo"))),
@@ -725,6 +726,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   ElectronTightWP_(iConfig.getParameter<string>("ElectronTightWorkingPoint")),
   ElectronLooseWP_(iConfig.getParameter<string>("ElectronLooseWorkingPoint")),
   MuonPtCut_(iConfig.getParameter<double>("MuonPtCut")),
+  TauPtCut_(iConfig.getParameter<double>("TauPtCut")),
   RochCorrFile_(iConfig.getParameter<string>("RochCorrFile")),
   PhotonPtCut_(iConfig.getParameter<double>("PhotonPtCut")),
   PhotonTightWP_(iConfig.getParameter<string>("PhotonTightWorkingPoint")),
@@ -1224,7 +1226,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
   edm::Handle< std::vector<pat::Tau> > thePatTaus;
   iEvent.getByToken(tauToken_,thePatTaus);
   for( std::vector<pat::Tau>::const_iterator tau = (*thePatTaus).begin(); tau != (*thePatTaus).end(); tau++ ) {
-    if((&*tau)->pt()<25)continue;
+    if((&*tau)->pt()<TauPtCut_)continue;
     _tauEta.push_back((&*tau)->eta());
     _tauPhi.push_back((&*tau)->phi());
     _tauPt.push_back((&*tau)->pt());

@@ -183,6 +183,13 @@ if "DataRun3" in runEra:
     PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
     RochesterCorrectionFile+="RoccoR2018UL.txt"
 
+if "MCRun3" in runEra:
+    process.GlobalTag.globaltag="123X_dataRun3_Prompt_v12"
+    EleVetoWP='cutBasedElectronID-Fall17-94X-V2-veto'
+    EleTightWP='mvaEleID-Fall17-iso-V2-wp90'
+    EleLooseWP='mvaEleID-Fall17-iso-V2-wpHZZ'
+    PhotonTightWP='mvaPhoID-RunIIFall17-v2-wp80'
+    RochesterCorrectionFile+="RoccoR2018UL.txt"
 
 
 #Now UL MC
@@ -269,6 +276,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      PuppiMet=cms.InputTag("slimmedMETsPuppi"),
                                      Electrons=cms.InputTag("slimmedElectrons"),
                                      Muons=cms.InputTag("slimmedMuons"),
+                                     Taus=cms.InputTag("slimmedTaus"),
                                      Photons=cms.InputTag("slimmedPhotons"),
                                      JetPtCut=cms.double(2),
                                      AK8JetPtCut=cms.double(10),
@@ -277,6 +285,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      ElectronLooseWorkingPoint=cms.string(EleLooseWP),
                                      ElectronTightWorkingPoint=cms.string(EleTightWP),
                                      MuonPtCut=cms.double(1),
+                                     TauPtCut=cms.double(1000),
                                      RochCorrFile=cms.string(RochesterCorrectionFile),
                                      PhotonPtCut=cms.double(5),
                                      PhotonTightWorkingPoint=cms.string(PhotonTightWP),
