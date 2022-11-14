@@ -128,6 +128,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   virtual TString GetIdxFilterName(int it);
   virtual void InitandClearStuff();
   virtual void CalcDileptonInfo(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
+  virtual void CalcFourLeptonInfo(Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll);
   virtual void CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll, Float_t & thephill, Float_t & thedphill, Float_t & thecosthll);
   virtual int GetRecoIdx(const reco::GenJet * genjet , vector <Float_t> recojetpt,  vector <Float_t> recojeteta, vector <Float_t> recojetphi, vector <Float_t> recojetptgen );
   virtual bool IsTauCleaned(const pat::Jet *iJ);
@@ -226,7 +227,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   string PhotonTightWP_;
   Float_t PFCandPtCut_;
 
-  Bool_t SaveTree_, IsMC_, SavePUIDVariables_, SaveAK8Jets_, SaveCaloJets_, SavenoCHSJets_, DropUnmatchedJets_, DropBadJets_, SavePFinJets_, ApplyPhotonID_;
+  Bool_t SaveTree_, IsMC_, SaveTaus_, SavePUIDVariables_, SaveAK8Jets_, SaveCaloJets_, SavenoCHSJets_, DropUnmatchedJets_, DropBadJets_, SavePFinJets_, ApplyPhotonID_;
   string Skim_;
   Bool_t Debug_;
 
@@ -427,6 +428,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
   vector<Bool_t>  _lPassTightID;
   vector<Bool_t>  _lPassLooseID;
+  vector<Bool_t>  _lPassVetoID;
   vector<Bool_t> _lisSAMuon ;
   vector<int> _lpdgId;
   int _nEles, _nMus;
@@ -470,6 +472,11 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   //For single photon studies
   Float_t _ptgamma;
   Float_t _phigamma;
+  //For h->4l studies
+  Float_t _m4l;
+  Float_t _pt4l;
+  Float_t _pz4l;
+  Float_t _y4l;
 
   //Event variables (gen)
   Float_t _mll_gen;
@@ -572,7 +579,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool HLT_PixelClusters_WP2;
   bool HLT_PixelClusters_WP2_split;
 
-  bool _l1prefire;
+  bool _l1FinalOR_BXmin1;
+  bool _l1FinalOR_BX0;
 
 
   //These are variables for a TTree where each entry is a jet and where one stores all PF cands
@@ -623,6 +631,7 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool passL1_Initial_bxmin1[512];
   bool passL1_Initial_bx0[512];
   bool passL1_Initial_bxplus1[512];
+  bool passL1_Final_bx0[512];
 
   //L1 muon
   vector <int> _L1mu_Qual;
@@ -733,6 +742,7 @@ JMEAnalyzer::JMEAnalyzer(const edm::ParameterSet& iConfig)
   PFCandPtCut_(iConfig.getParameter<double>("PFCandPtCut")),
   SaveTree_(iConfig.getParameter<bool>("SaveTree")), 
   IsMC_(iConfig.getParameter<bool>("IsMC")),
+  SaveTaus_(iConfig.getParameter<bool>("SaveTaus")),
   SavePUIDVariables_(iConfig.getParameter<bool>("SavePUIDVariables")),
   SaveAK8Jets_(iConfig.getParameter<bool>("SaveAK8Jets")),
   SaveCaloJets_(iConfig.getParameter<bool>("SaveCaloJets")),
@@ -914,19 +924,31 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     std::cout << "L1 algo: " << initialDecisions[i].first<<std::endl;
     }*/
 
-  _l1prefire= false;
-  if(!IsMC_)_l1prefire = l1GtHandle->begin(-1)->getFinalOR();
-
+  _l1FinalOR_BXmin1= false;
+  _l1FinalOR_BX0= false;
+  if(!IsMC_)_l1FinalOR_BXmin1 = l1GtHandle->begin(-1)->getFinalOR();
+  _l1FinalOR_BX0 = l1GtHandle->begin(0)->getFinalOR();
 
   for(int i =0; i <512; i++){
     if(!IsMC_) passL1_Initial_bxmin1[i]= l1GtHandle->begin(-1)->getAlgoDecisionInitial(i);
     else passL1_Initial_bxmin1[i]= false;
     passL1_Initial_bx0[i]= l1GtHandle->begin(0)->getAlgoDecisionInitial(i);
+    passL1_Final_bx0[i]= l1GtHandle->begin(0)->getAlgoDecisionFinal(i);
     if(!IsMC_) passL1_Initial_bxplus1[i]= l1GtHandle->begin(+1)->getAlgoDecisionInitial(i);
     else passL1_Initial_bxmin1[i]= false;
   }
 
 
+  //Unprefirable
+  Flag_IsUnprefirable = false;
+  edm::Handle<GlobalExtBlkBxCollection> handleUnprefEventResults;
+  iEvent.getByToken(UnprefirableEventToken_, handleUnprefEventResults);
+  if(handleUnprefEventResults.isValid()){
+    if (handleUnprefEventResults->size() != 0) {
+      Flag_IsUnprefirable = handleUnprefEventResults->at(0, 0).getExternalDecision(GlobalExtBlk::maxExternalConditions - 1);
+    }
+  }
+  if(Skim_ == "L1Studies_EphemeralHLTPhysics" || Skim_ == "L1Studies_EphemeralZeroBias"){ if(SaveTree_)outputTree->Fill(); return;}
 
 
   if(Debug_) std::cout <<"Entering analyze 4" <<std::endl;
@@ -984,15 +1006,6 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
 
-  //Unprefirable
-  Flag_IsUnprefirable = false;
-  edm::Handle<GlobalExtBlkBxCollection> handleUnprefEventResults;
-  iEvent.getByToken(UnprefirableEventToken_, handleUnprefEventResults);
-  if(handleUnprefEventResults.isValid()){
-    if (handleUnprefEventResults->size() != 0) {
-      Flag_IsUnprefirable = handleUnprefEventResults->at(0, 0).getExternalDecision(GlobalExtBlk::maxExternalConditions - 1);
-    }
-  }
   if(Debug_) std::cout <<"Entering analyze 6" <<std::endl;
   
   //Vertices
@@ -1171,8 +1184,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       else if(! ((&*muon)->innerTrack()).isNull()) ptmuoncorr *= rc.kSmearMC( (&*muon)->charge(),  (&*muon)->pt(), (&*muon)->eta(),(&*muon)->phi(),  (&*muon)->innerTrack()->hitPattern().trackerLayersWithMeasurement(), gRandom->Rndm());
     }
     
-    bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>10 ;  
-    passvetoid=  (&*muon)->isStandAloneMuon() || (&*muon)->pt()>5;
+    bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>5 ;  
+    if(Skim_.find("L1Study") !=std::string::npos) passvetoid=  (&*muon)->isStandAloneMuon() || (&*muon)->pt()>5;
     if(!passvetoid) continue;
     //Counting the number of muons, not all of them will be stored 
     _nMus++;
@@ -1336,7 +1349,10 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	else _nElesll = 1;
       }
   }
-    
+   
+  if(_lPt.size()>=4) CalcFourLeptonInfo(_m4l, _pt4l, _pz4l, _y4l);
+  else {_m4l=-1; _pt4l=-1; _pz4l=-1; _y4l =-1;}
+  
 
   //  if(!PassSkim()) return;
 
@@ -1945,11 +1961,36 @@ JMEAnalyzer::beginJob()
 {
 
 
+  if(Skim_ == "L1Studies_EphemeralHLTPhysics" || Skim_ == "L1Studies_EphemeralZeroBias"){
+    outputTree->Branch("_eventNb",   &_eventNb,   "_eventNb/l");
+    outputTree->Branch("_runNb",     &_runNb,     "_runNb/l");
+    outputTree->Branch("_lumiBlock", &_lumiBlock, "_lumiBlock/l");
+    outputTree->Branch("_bx", &_bx, "_bx/l");
+    outputTree->Branch("passL1_Initial_bx0",&passL1_Initial_bx0,"passL1_Initial_bx0[512]/O");
+    outputTree->Branch("passL1_Final_bx0",&passL1_Final_bx0,"passL1_Final_bx0[512]/O");
+    outputTree->Branch("passL1_Initial_bxmin1",&passL1_Initial_bxmin1,"passL1_Initial_bxmin1[512]/O");
+    outputTree->Branch("Flag_IsUnprefirable",&Flag_IsUnprefirable,"Flag_IsUnprefirable/O");
+    outputTree->Branch("_l1FinalOR_BXmin1",&_l1FinalOR_BXmin1,"_l1FinalOR_BXmin1/O");
+    outputTree->Branch("_l1FinalOR_BX0",&_l1FinalOR_BX0,"_l1FinalOR_BX0/O");
+    return ;
+  }
 
-  outputTree->Branch("_tauEta",&_tauEta);
-  outputTree->Branch("_tauPhi",&_tauPhi);
-  outputTree->Branch("_tauPt",&_tauPt);
-  outputTree->Branch("_tauPassMediumID",&_tauPassMediumID);
+
+
+  if(SaveTaus_){
+    outputTree->Branch("_tauEta",&_tauEta);
+    outputTree->Branch("_tauPhi",&_tauPhi);
+    outputTree->Branch("_tauPt",&_tauPt);
+    outputTree->Branch("_tauPassMediumID",&_tauPassMediumID);
+  }
+
+  if(Skim_=="FourLeptons"){
+    outputTree->Branch("_m4l", &_m4l, "_m4l/F");
+    outputTree->Branch("_pt4l", &_pt4l, "_pt4l/F");
+    outputTree->Branch("_pz4l", &_pz4l, "_pz4l/F");
+    outputTree->Branch("_y4l", &_y4l, "_y4l/F");
+  }
+
 
  
   if(Skim_.find("L1Study") !=std::string::npos){
@@ -1964,7 +2005,8 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_LV_y", &_LV_y, "_LV_y/F");
     outputTree->Branch("_LV_z", &_LV_z, "_LV_z/F");
 
-    outputTree->Branch("_l1prefire",&_l1prefire,"_l1prefire/O");
+    outputTree->Branch("_l1FinalOR_BXmin1",&_l1FinalOR_BXmin1,"_l1FinalOR_BXmin1/O");
+    outputTree->Branch("_l1FinalOR_BX0",&_l1FinalOR_BX0,"_l1FinalOR_BX0/O");
 
 
 
@@ -2027,6 +2069,7 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_costhCSll", &_costhCSll, "_costhCSll/F");
     outputTree->Branch("_nElesll",&_nElesll,"_nElesll/I");
     }
+
 
     
     if(Skim_.find("ZToEE") !=std::string::npos){
@@ -2635,7 +2678,8 @@ JMEAnalyzer::beginJob()
   outputTree->Branch("HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL",&HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL,"HLT_Mu23_TrkIsoVVL_Ele12_CaloIdL_TrackIdL_IsoVL/O");
   outputTree->Branch("HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL",&HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL,"HLT_Mu8_TrkIsoVVL_Ele23_CaloIdL_TrackIdL_IsoVL/O");
 
-  if(!IsMC_)outputTree->Branch("_l1prefire",&_l1prefire,"_l1prefire/O");
+  if(!IsMC_)outputTree->Branch("_l1FinalOR_BXmin1",&_l1FinalOR_BXmin1,"_l1FinalOR_BXmin1/O");
+  if(!IsMC_)outputTree->Branch("_l1FinalOR_BX0",&_l1FinalOR_BX0,"_l1FinalOR_BX0/O");
 
   if(Skim_=="L1Unprefirable" || Skim_==""){
   outputTree->Branch("_L1mu_Qual",&_L1mu_Qual);
@@ -3153,11 +3197,13 @@ bool JMEAnalyzer::PassSkim(){
   else if(Skim_=="FourLeptons" &&_lPt.size()<4 ) return false;
   else if(Skim_=="FourLeptons" &&_lPt.size() >=4) {
     int nl= 0;
+    int nlpt20 = 0;
     for(unsigned int i = 0; i < _lPt.size(); i++){
       if(!_lPassLooseID[i])  continue;
       nl++;
+      if(_lPt[i]>20) nlpt20 ++;
     }
-    if(nl>=4){
+    if(nl>=2&&nlpt20>=2){
       //      cout << "found " <<endl;
       return true;
     }
@@ -3305,10 +3351,28 @@ JMEAnalyzer::CalcDileptonInfoGen(const int& i, const int& j, Float_t & themass, 
 
 
 
+void JMEAnalyzer::CalcFourLeptonInfo(Float_t & themass, Float_t & theptll, Float_t & thepzll,  Float_t & theyll){
+  TLorentzVector p4_leptons;
+  themass = -1;
+  theptll = -1;
+  thepzll = -1;
+  theyll = -1;
+  if((_lPt).size()<4) return;
+  for(int i = 0; i < 4 ; i++) {
+    double mass = 0.;
+    if (fabs((_lpdgId)[0]) == 13) mass = 0.1; 
+    TLorentzVector l; 
+    l.SetPtEtaPhiM((_lPt)[i], (_lEta)[i], (_lPhi)[i], mass);
+    p4_leptons += l; 
+  }
+  
+  themass = p4_leptons.Mag();
+  theptll = p4_leptons.Pt();
+  theyll = p4_leptons.Rapidity();
+  thepzll = p4_leptons.Pz();
 
-
-
-
+  
+}
 bool JMEAnalyzer::PassTriggerLeg(std::string triggerlegstring, std::string triggerlegstringalt,  const pat::Muon *muonit, const edm::Event& iEvent ){
 
   edm::Handle<edm::TriggerResults> triggerBits;

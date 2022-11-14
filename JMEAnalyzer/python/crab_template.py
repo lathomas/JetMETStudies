@@ -2,7 +2,7 @@ from CRABClient.UserUtilities import config
 config = config()
 
 config.General.requestName = 'THEREQUESTNAME'
-config.General.workArea = 'crabworkarea_9sep2022_pnfs_bugfix'
+config.General.workArea = 'crabworkarea_10nov2022_new'
 config.General.transferOutputs = True
 config.General.transferLogs = True
 
@@ -33,11 +33,13 @@ config.Data.inputDataset = 'THEDATASET'
 
 config.Data.inputDBS = 'global'
 config.Data.splitting = 'Automatic'
+#config.Data.splitting = 'FileBased'
 #config.Data.unitsPerJob = 2
 config.Data.allowNonValidInputDataset = True 
 
 
-config.Data.publication = True
+#config.Data.publication = True
+config.Data.publication = False
 config.Data.outputDatasetTag = 'CAMPAIGN_RUNERA_THESKIM'
 
 

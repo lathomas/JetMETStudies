@@ -292,6 +292,7 @@ process.jmeanalyzer = cms.EDAnalyzer('JMEAnalyzer',
                                      PFCandPtCut=cms.double(25000),
                                      SaveTree=cms.bool(True),
                                      IsMC=cms.bool(ISMC),
+                                     SaveTaus=cms.bool(False),
                                      SavePUIDVariables=cms.bool(False),
                                      SaveAK8Jets=cms.bool(False),
                                      SaveCaloJets=cms.bool(True),
@@ -332,8 +333,8 @@ if TheSkim == "ZJetsResiduals" or TheSkim == "GammaJetsResiduals":
 
 
 if TheSkim == "FourLeptons":
-    process.jmeanalyzer.ElectronPtCut=cms.double(10)
-    process.jmeanalyzer.MuonPtCut=cms.double(10)
+    process.jmeanalyzer.ElectronPtCut=cms.double(7)
+    process.jmeanalyzer.MuonPtCut=cms.double(5)
     process.jmeanalyzer.JetPtCut=cms.double(25)
     process.jmeanalyzer.AK8JetPtCut=cms.double(1000)
     process.jmeanalyzer.PhotonPtCut=cms.double(2000)
