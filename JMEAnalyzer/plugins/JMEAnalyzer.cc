@@ -425,6 +425,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
 
   vector<Bool_t>  _lpassHLT_IsoMu24;
   vector<Bool_t>  _lpassHLT_Ele32_WPTight_Gsf;
+  vector<Bool_t>  hltL3fL1sSingleMuOpenCandidateL1f0L2f3QL3Filtered50Q;
+  vector<Bool_t>  hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q;
 
   vector<Bool_t>  _lPassTightID;
   vector<Bool_t>  _lPassLooseID;
@@ -564,6 +566,8 @@ class JMEAnalyzer : public edm::one::EDAnalyzer<edm::one::SharedResources,edm::o
   bool HLT_IsoMu27;
   bool HLT_IsoMu24;
   bool HLT_IsoTkMu24;
+  bool HLT_Mu50;
+  bool HLT_Mu50_L1SingleMuShower;// active since run 361424
   bool HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ;
   bool HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ;
   bool HLT_Mu17_TrkIsoVVL_Mu8_TrkIsoVVL;
@@ -906,6 +910,9 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 	if(TrigPath.Contains("HLT_PixelClusters_WP1_v"))HLT_PixelClusters_WP1 =true;
 	if(TrigPath.Contains("HLT_PixelClusters_WP2_v"))HLT_PixelClusters_WP2 =true;
 	if(TrigPath.Contains("HLT_PixelClusters_WP2_split_v"))HLT_PixelClusters_WP2_split =true;
+	if(TrigPath.Contains("HLT_Mu50_v"))HLT_Mu50 =true;
+	if(TrigPath.Contains("HLT_Mu50_L1SingleMuShower_v"))HLT_Mu50_L1SingleMuShower =true;
+
       }
     }
   }
@@ -1115,7 +1122,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     PassBadChargedCandidateFilter_Update = true;
   }
 
-
+  if(Debug_) std::cout <<"Offline electrons" <<endl;
   //Electrons
   edm::Handle< std::vector<pat::Electron> > thePatElectrons;
   iEvent.getByToken(electronToken_,thePatElectrons);
@@ -1141,6 +1148,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lpdgId.push_back(-11*(&*electron)->charge());
     _lPassTightID.push_back( (&*electron)->electronID(ElectronTightWP_) );
     _lPassLooseID.push_back( (&*electron)->electronID(ElectronLooseWP_) );
+    _lPassVetoID.push_back( passvetoid );
     _lisSAMuon.push_back( false); 
 
     _ldz.push_back( (&*electron)->gsfTrack()->dz(PV));
@@ -1153,6 +1161,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lpassHLT_IsoMu24.push_back(false);
     //if((&*electron)->pt()>30)std::cout << "Pt, Eta, Phi, pass Ele32 " <<  ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v*",true,true) != nullptr) << ", "<<   ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v",true,true) != nullptr)  <<", " <<  ((&*electron)->triggerObjectMatchByPath ("HLT_Ele35_WPTight_Gsf_v*",true,true) != nullptr)<<", " << ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v*",true,false) != nullptr) <<", " << ((&*electron)->triggerObjectMatchByPath ("HLT_Ele32_WPTight_Gsf_v*",false,false) != nullptr)  <<std::endl; 
     _lpassHLT_Ele32_WPTight_Gsf.push_back( PassTriggerLeg("hltEle32WPTightGsfTrackIsoFilter",&*electron,iEvent) );
+    hltL3fL1sSingleMuOpenCandidateL1f0L2f3QL3Filtered50Q.push_back( false);
+    hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q.push_back( false);
 
     hltEle27WPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle27WPTightGsfTrackIsoFilter",&*electron,iEvent));
     hltEle35noerWPTightGsfTrackIsoFilter.push_back(PassTriggerLeg("hltEle35noerWPTightGsfTrackIsoFilter",&*electron,iEvent));
@@ -1167,7 +1177,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     hltEle17WPLoose1GsfTrackIsoFilterForHI.push_back(PassTriggerLeg("hltEle17WPLoose1GsfTrackIsoFilterForHI",&*electron,iEvent));
     hltEle15WPLoose1GsfTrackIsoFilterForHI.push_back(PassTriggerLeg("hltEle15WPLoose1GsfTrackIsoFilterForHI",&*electron,iEvent));  
   }
-  
+
+  if(Debug_) std::cout <<"Offline muons" <<endl;  
   //Muons
   edm::Handle< std::vector<pat::Muon> > thePatMuons;
   iEvent.getByToken(muonToken_,thePatMuons);
@@ -1184,8 +1195,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
       else if(! ((&*muon)->innerTrack()).isNull()) ptmuoncorr *= rc.kSmearMC( (&*muon)->charge(),  (&*muon)->pt(), (&*muon)->eta(),(&*muon)->phi(),  (&*muon)->innerTrack()->hitPattern().trackerLayersWithMeasurement(), gRandom->Rndm());
     }
     
-    bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>5 ;  
-    if(Skim_.find("L1Study") !=std::string::npos) passvetoid=  (&*muon)->isStandAloneMuon() || (&*muon)->pt()>5;
+    bool passvetoid=  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>3 ;  
+    if(Skim_.find("L1Study") !=std::string::npos) passvetoid=  (&*muon)->isStandAloneMuon() || (&*muon)->pt()>3;
     if(!passvetoid) continue;
     //Counting the number of muons, not all of them will be stored 
     _nMus++;
@@ -1199,6 +1210,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _lpdgId.push_back(-13*(&*muon)->charge());
     _lPassTightID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdMediumPrompt )&& (&*muon)->passed(reco::Muon::PFIsoTight ) );
     _lPassLooseID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdLoose )&& (&*muon)->passed(reco::Muon::PFIsoLoose ) );
+    _lPassVetoID.push_back(  (&*muon)->passed(reco::Muon::CutBasedIdLoose)&& (&*muon)->passed(reco::Muon::PFIsoVeryLoose)&&(&*muon)->pt()>3 );
     _lisSAMuon.push_back( (&*muon)->isStandAloneMuon());
     if( !((&*muon)->innerTrack()).isNull()){
       _ldz.push_back( (&*muon)->innerTrack()->dz(PV));
@@ -1218,6 +1230,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     }
     _lpassHLT_IsoMu24.push_back((&*muon)->triggered("HLT_IsoMu24_v*"));
     _lpassHLT_Ele32_WPTight_Gsf.push_back(false);
+    hltL3fL1sSingleMuOpenCandidateL1f0L2f3QL3Filtered50Q.push_back(PassTriggerLeg("hltL3fL1sSingleMuOpenCandidateL1f0L2f3QL3Filtered50Q",&*muon,iEvent));
+    hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q.push_back(PassTriggerLeg("hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q",&*muon,iEvent));
 
     hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p09","hltL3crIsoL1sSingleMu22L1f0L2f10QL3f24QL3trkIsoFiltered0p07",&*muon,iEvent));
     hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09.push_back(PassTriggerLeg("hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p09","hltL3crIsoL1sMu22Or25L1f0L2f10QL3f27QL3trkIsoFiltered0p07",&*muon,iEvent));
@@ -1235,7 +1249,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
 
 
-
+  if(Debug_) std::cout <<"Offline taus" <<endl;
   edm::Handle< std::vector<pat::Tau> > thePatTaus;
   iEvent.getByToken(tauToken_,thePatTaus);
   for( std::vector<pat::Tau>::const_iterator tau = (*thePatTaus).begin(); tau != (*thePatTaus).end(); tau++ ) {
@@ -1246,7 +1260,7 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     _tauPassMediumID.push_back((&*tau)->tauID("byMediumDeepTau2017v2p1VSjet"));
   }
 
-
+  if(Debug_) std::cout <<"Offline photons" <<endl;
   //Photons
   //These two variables store the pt/phi of the photon in monophoton events
   _ptgamma=0;
@@ -1329,17 +1343,17 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
     hltEG110EBTightIDTightIsoTrackIsoFilter.push_back(PassTriggerLeg("hltEG110EBTightIDTightIsoTrackIsoFilter",&*photon,iEvent));
   }
   
-  
+  if(Debug_) std::cout <<"Dilepton info" <<endl;  
   //Compute dilepton variables
   Float_t mll(0),ptll(0),pzll(0),yll(0),phill(0),dphill(0),costhCSll(0);
   for(unsigned int i = 0; i < _lPt.size(); i++){
     if(_lPt.size() !=2) continue;
-    if(_lPt[i]<5) continue;
-      if(!_lPassTightID[i])  continue;
+    if(_lPt[i]<3) continue;
+      if(!_lPassVetoID[i])  continue;
       if(fabs(_lpdgId[i]) !=11 && fabs(_lpdgId[i])!=13 ) continue;
       for(unsigned int j = 0; j < i; j++){
-        if(_lPt[j]<5) continue;
-        if(!_lPassTightID[j])  continue;
+        if(_lPt[j]<3) continue;
+        if(!_lPassVetoID[j])  continue;
         if(fabs(_lpdgId[j]) !=11 && fabs(_lpdgId[j])!=13 ) continue;
         //if( _lpdgId[i] != -_lpdgId[j]  ) continue;
         CalcDileptonInfo(i,j, mll,ptll,pzll,yll,phill,dphill,costhCSll);
@@ -1358,7 +1372,8 @@ JMEAnalyzer::analyze(const edm::Event& iEvent, const edm::EventSetup& iSetup)
 
     
   //Jets
-  
+  if(Debug_) std::cout <<"Offline jets" <<endl;
+
   edm::Handle< std::vector< pat::Jet> > theJets;
   iEvent.getByToken(jetToken_,theJets );
 
@@ -2018,6 +2033,7 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_lpdgId",&_lpdgId);
     outputTree->Branch("_lPassTightID",&_lPassTightID);
     outputTree->Branch("_lPassLooseID",&_lPassLooseID);
+    outputTree->Branch("_lPassVetoID",&_lPassVetoID);
     outputTree->Branch("_lisSAMuon",&_lisSAMuon);
     outputTree->Branch("_nEles", &_nEles, "_nEles/I");
     outputTree->Branch("_nMus", &_nMus, "_nMus/I");
@@ -2030,7 +2046,10 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("_l3dIPError",&_l3dIPError);
     outputTree->Branch("_lpassHLT_IsoMu24",&_lpassHLT_IsoMu24);
     outputTree->Branch("_lpassHLT_Ele32_WPTight_Gsf",&_lpassHLT_Ele32_WPTight_Gsf);
-    
+    outputTree->Branch("hltL3fL1sSingleMuOpenCandidateL1f0L2f3QL3Filtered50Q",&hltL3fL1sSingleMuOpenCandidateL1f0L2f3QL3Filtered50Q);
+    outputTree->Branch("hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q",&hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q);
+
+ 
 
     outputTree->Branch("_phEta",&_phEta);
     outputTree->Branch("_phPhi",&_phPhi);
@@ -2164,6 +2183,10 @@ JMEAnalyzer::beginJob()
     outputTree->Branch("HLT_PixelClusters_WP2_split",&HLT_PixelClusters_WP2_split,"HLT_PixelClusters_WP2_split/O");
     outputTree->Branch("HLT_IsoMu24",&HLT_IsoMu24,"HLT_IsoMu24/O");
     outputTree->Branch("HLT_Ele32_WPTight_Gsf",&HLT_Ele32_WPTight_Gsf,"HLT_Ele32_WPTight_Gsf/O");
+
+    outputTree->Branch("HLT_Mu50",&HLT_Mu50,"HLT_Mu50/O");
+    outputTree->Branch("HLT_Mu50_L1SingleMuShower",&HLT_Mu50_L1SingleMuShower,"HLT_Mu50_L1SingleMuShower/O");
+    
 
 
     outputTree->Branch("HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60",&HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60,"HLT_PFMETNoMu120_PFMHTNoMu120_IDTight_PFHT60/O");
@@ -3010,6 +3033,7 @@ void JMEAnalyzer::InitandClearStuff(){
   _lpdgId.clear();
   _lPassTightID.clear();
   _lPassLooseID.clear();
+  _lPassVetoID.clear();
   _lisSAMuon.clear();
 
   _ldz.clear();
@@ -3021,6 +3045,8 @@ void JMEAnalyzer::InitandClearStuff(){
   
   _lpassHLT_IsoMu24.clear();
   _lpassHLT_Ele32_WPTight_Gsf.clear();
+  hltL3fL1sSingleMuOpenCandidateL1f0L2f3QL3Filtered50Q.clear();
+  hltL3fL1sMu22Or25L1f0L2f10QL3Filtered50Q.clear();
 
   _nEles=0;
   _nMus=0;
@@ -3119,6 +3145,9 @@ void JMEAnalyzer::InitandClearStuff(){
   HLT_Ele27_WPTight_Gsf=false;
   HLT_IsoMu27=false;
   HLT_IsoMu24=false;
+
+  HLT_Mu50=false;
+  HLT_Mu50_L1SingleMuShower=false;
   HLT_IsoTkMu24=false;
   HLT_TkMu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ=false;
   HLT_Mu17_TrkIsoVVL_TkMu8_TrkIsoVVL_DZ=false;
