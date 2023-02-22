@@ -28,6 +28,8 @@ bool PassDiMumass4to56(ROOT::VecOps::RVec<float>pt, ROOT::VecOps::RVec<float>eta
 
  return false;
 }
+
+
 bool PassDiJet140_70_Mjj900(ROOT::VecOps::RVec<float>pt, ROOT::VecOps::RVec<float>eta, ROOT::VecOps::RVec<float>phi){
 
   for(unsigned int i = 0; i<pt.size(); i++){
@@ -43,4 +45,33 @@ bool PassDiJet140_70_Mjj900(ROOT::VecOps::RVec<float>pt, ROOT::VecOps::RVec<floa
     }
   }
   return false;
+}
+
+
+
+vector<float> HighestMjj(ROOT::VecOps::RVec<float>pt, ROOT::VecOps::RVec<float>eta, ROOT::VecOps::RVec<float>phi){
+
+  vector<float> result;
+  result.push_back(0);
+  result.push_back(0);
+  result.push_back(0);
+  result.push_back(0);
+  for(unsigned int i = 0; i<pt.size(); i++){
+    if(pt[i]<20.)continue;
+    for(unsigned int j = 0; j<pt.size(); j++){
+      if(eta[i]*eta[j]>0) continue;
+      if(pt[j]<20.)continue;
+      TLorentzVector jet1, jet2;
+      jet1.SetPtEtaPhiM(pt[i], eta[i], phi[i], 0.);
+      jet2.SetPtEtaPhiM(pt[j], eta[j], phi[j], 0.);
+      float mass = (jet1+jet2).Mag();
+      if(mass>result[0]){
+	result[0] = mass;
+	result[3] = abs(eta[i]-eta[j]);
+	if(pt[j]> pt[i]){ result[1] = pt[j] ; result[2] = pt[i] ;}
+	else {  result[1] = pt[i] ; result[2] = pt[j] ; }
+      }
+    }
+  }
+  return result;
 }
